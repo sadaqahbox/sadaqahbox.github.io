@@ -51,7 +51,14 @@ export const boxes = sqliteTable(
     createdAt: integer("createdAt", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updatedAt", { mode: "timestamp" }).notNull(),
   },
-  (table) => [index("Box_createdAt_idx").on(table.createdAt), index("Box_userId_idx").on(table.userId)]
+  (table) => [
+    index("Box_createdAt_idx").on(table.createdAt),
+    index("Box_userId_idx").on(table.userId),
+    // Composite indexes for common query patterns
+    index("Box_userId_createdAt_idx").on(table.userId, table.createdAt),
+    index("Box_userId_count_idx").on(table.userId, table.count),
+    index("Box_userId_totalValue_idx").on(table.userId, table.totalValue),
+  ]
 );
 
 // ============== Sadaqah Table ==============
@@ -76,6 +83,10 @@ export const sadaqahs = sqliteTable(
     index("Sadaqah_createdAt_idx").on(table.createdAt),
     index("Sadaqah_currencyId_idx").on(table.currencyId),
     index("Sadaqah_userId_idx").on(table.userId),
+    // Composite indexes for common query patterns
+    index("Sadaqah_boxId_createdAt_idx").on(table.boxId, table.createdAt),
+    index("Sadaqah_userId_createdAt_idx").on(table.userId, table.createdAt),
+    index("Sadaqah_currencyId_value_idx").on(table.currencyId, table.value),
   ]
 );
 

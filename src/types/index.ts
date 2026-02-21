@@ -1,50 +1,38 @@
-export interface Currency {
-  id: string;
-  code: string;
-  name: string;
-  symbol?: string;
-  currencyTypeId?: string;
-}
+/**
+ * Frontend Types
+ * 
+ * Re-exported from unified Zod schemas for single source of truth.
+ * @see src/api/schemas/index.ts
+ */
 
-export interface Tag {
-  id: string;
-  name: string;
-  color?: string;
-  createdAt: string;
-}
+// Re-export all types from unified schemas
+export type {
+  CurrencyType,
+  Currency,
+  Tag,
+  Box,
+  Sadaqah,
+  Collection,
+  BoxStats,
+  BoxSummary,
+  CollectionResult,
+  DeleteBoxResult,
+  CreateSadaqahResult,
+  PaginationQuery,
+  PaginationInfo,
+} from "../api/schemas";
 
-export interface Box {
-  id: string;
-  name: string;
-  description?: string;
-  count: number;
-  totalValue: number;
-  currencyId?: string;
-  currency?: Currency;
-  tags?: Tag[];
-  createdAt: string;
-  updatedAt: string;
-}
+// Re-export input types for forms
+export type {
+  CreateCurrencyTypeInput,
+  CreateCurrencyInput,
+  CreateTagInput,
+  CreateBoxInput,
+  UpdateBoxInput,
+  AddSadaqahInput,
+} from "../api/schemas";
 
-export interface Sadaqah {
-  id: string;
-  boxId: string;
-  value: number;
-  currencyId: string;
-  currency?: Currency;
-  createdAt: string;
-}
-
-export interface Collection {
-  id: string;
-  boxId: string;
-  emptiedAt: string;
-  sadaqahsCollected: number;
-  totalValue: number;
-  currencyId: string;
-  currency?: Currency;
-}
-
+// API response type for generic use
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
@@ -52,4 +40,4 @@ export interface ApiResponse<T> {
 }
 
 // Re-export all type guards
-export * from './guards';
+export * from "./guards";

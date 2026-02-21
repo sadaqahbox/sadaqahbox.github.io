@@ -1,174 +1,113 @@
 /**
- * Domain types - Pure TypeScript interfaces
- * No Zod dependencies here - just shapes
+ * Domain types
+ * 
+ * Re-exported from unified Zod schemas for single source of truth.
+ * Additional domain-specific types that don't need Zod schemas are defined here.
+ * 
+ * @see src/api/schemas/index.ts
  */
 
-// ============== Base Types ==============
+// Re-export all types from unified schemas
+export type {
+  CurrencyType,
+  Currency,
+  Tag,
+  Box,
+  Sadaqah,
+  Collection,
+  BoxStats,
+  BoxSummary,
+  CollectionResult,
+  DeleteBoxResult,
+  CreateSadaqahResult,
+  PaginationQuery,
+  PaginationInfo,
+} from "../schemas";
 
-export interface CurrencyType {
-	id: string;
-	name: string;
-	description?: string;
-}
+// Re-export input types
+export type {
+  CreateCurrencyTypeInput,
+  CreateCurrencyInput,
+  CreateTagInput,
+  CreateBoxInput,
+  UpdateBoxInput,
+  AddSadaqahInput,
+} from "../schemas";
 
-export interface Currency {
-	id: string;
-	code: string;
-	name: string;
-	symbol?: string;
-	currencyTypeId?: string;
-	currencyType?: CurrencyType;
-}
-
-export interface Tag {
-	id: string;
-	name: string;
-	color?: string;
-	createdAt: string;
-}
-
-export interface Box {
-	id: string;
-	name: string;
-	description?: string;
-	metadata?: Record<string, string>;
-	count: number;
-	totalValue: number;
-	currencyId?: string;
-	currency?: Currency;
-	tags?: Tag[];
-	createdAt: string;
-	updatedAt: string;
-}
-
-export interface Sadaqah {
-	id: string;
-	boxId: string;
-	value: number;
-	currencyId: string;
-	currency?: Currency;
-	userId: string;
-	createdAt: string;
-}
-
-export interface Collection {
-	id: string;
-	boxId: string;
-	emptiedAt: string;
-	sadaqahsCollected: number;
-	totalValue: number;
-	currencyId: string;
-	currency?: Currency;
-}
-
-// ============== Result Types ==============
-
-export interface BoxStats {
-	firstSadaqahAt: string | null;
-	lastSadaqahAt: string | null;
-	totalSadaqahs: number;
-}
-
-export interface CollectionResult {
-	box: Box;
-	collection: {
-		id: string;
-		sadaqahsCollected: number;
-		totalValue: number;
-		currencyId: string;
-		emptiedAt: string;
-	};
-}
+// ============== Domain-Specific Types ==============
+// These types are used internally and don't need Zod schemas
 
 export interface CollectionsListResult {
-	collections: Collection[];
-	total: number;
-}
-
-export interface DeleteBoxResult {
-	deleted: boolean;
-	sadaqahsDeleted: number;
-	collectionsDeleted: number;
-}
-
-export interface CreateSadaqahResult {
-	sadaqah: Sadaqah;
-	updatedBox: Box;
+  collections: import("../schemas").Collection[];
+  total: number;
 }
 
 export interface ListSadaqahsResult {
-	sadaqahs: Sadaqah[];
-	total: number;
-	summary: {
-		totalSadaqahs: number;
-		totalValue: number;
-		currency: Currency;
-	};
+  sadaqahs: import("../schemas").Sadaqah[];
+  total: number;
+  summary: {
+    totalSadaqahs: number;
+    totalValue: number;
+    currency: import("../schemas").Currency;
+  };
 }
 
 export interface AddMultipleResult {
-	sadaqahs: Sadaqah[];
-	box: Box;
+  sadaqahs: import("../schemas").Sadaqah[];
+  box: import("../schemas").Box;
 }
 
 // ============== Options Interfaces ==============
 
 export interface AddSadaqahOptions {
-	boxId: string;
-	value: number;
-	currencyId: string;
-	amount?: number;
-	metadata?: Record<string, string>;
+  boxId: string;
+  value: number;
+  currencyId: string;
+  amount?: number;
+  metadata?: Record<string, string>;
 }
 
 export interface CreateTagOptions {
-	name: string;
-	color?: string;
+  name: string;
+  color?: string;
 }
 
 export interface CreateCurrencyOptions {
-	code: string;
-	name: string;
-	symbol?: string;
-	currencyTypeId?: string;
+  code: string;
+  name: string;
+  symbol?: string;
+  currencyTypeId?: string;
 }
 
 export interface GetOrCreateOptions {
-	code: string;
-	name?: string;
-	symbol?: string;
-	currencyTypeId?: string;
+  code: string;
+  name?: string;
+  symbol?: string;
+  currencyTypeId?: string;
 }
 
 export interface CreateCurrencyTypeOptions {
-	name: string;
-	description?: string;
+  name: string;
+  description?: string;
 }
 
 // ============== Pagination ==============
 
 export interface PaginationOptions {
-	page?: number;
-	limit?: number;
-}
-
-export interface PaginationInfo {
-	page: number;
-	limit: number;
-	total: number;
-	totalPages: number;
+  page?: number;
+  limit?: number;
 }
 
 // ============== List Results ==============
 
 export interface ListResult<T> {
-	items: T[];
-	pagination: PaginationInfo;
+  items: T[];
+  pagination: import("../schemas").PaginationInfo;
 }
 
 // ============== Date Range ==============
 
 export interface DateRange {
-	from?: string;
-	to?: string;
+  from?: string;
+  to?: string;
 }

@@ -288,4 +288,11 @@ export class SadaqahEntity {
 			return sadaqah;
 		});
 	}
+
+	/**
+	 * Delete all sadaqahs for a box (used when emptying a box)
+	 */
+	async deleteByBoxId(boxId: string): Promise<void> {
+		await this.db.delete(sadaqahs).where(eq(sadaqahs.boxId, boxId));
+	}
 }

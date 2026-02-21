@@ -2,7 +2,9 @@
  * Services
  * 
  * Domain services that encapsulate business logic.
- * Services orchestrate entities and handle complex operations.
+ * Services orchestrate repositories and handle complex operations.
+ * 
+ * @module api/services
  */
 
 export { BaseService, createServiceFactory, type ServiceFactory } from "./base-service";
@@ -25,3 +27,36 @@ export {
 	type ListSadaqahsOptions,
 	type AddSadaqahResult,
 } from "./sadaqah-service";
+
+// Currency service
+export {
+	CurrencyService,
+	getCurrencyService,
+	type CreateCurrencyInput,
+	type UpdateCurrencyInput,
+} from "./currency-service";
+
+// Currency Type service
+export {
+	CurrencyTypeService,
+	getCurrencyTypeService,
+	type CreateCurrencyTypeInput,
+	type UpdateCurrencyTypeInput,
+} from "./currency-type-service";
+
+// Tag service
+export {
+	TagService,
+	getTagService,
+	type CreateTagInput,
+	type UpdateTagInput,
+	type ListTagsOptions,
+} from "./tag-service";
+
+// Collection service
+export {
+	CollectionService,
+	getCollectionService,
+	type ListCollectionsOptions as ListUserCollectionsOptions,
+	type CreateCollectionInput,
+} from "./collection-service";
