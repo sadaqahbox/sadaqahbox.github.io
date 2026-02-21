@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import type { PrimaryCurrency, TotalValueExtraEntry } from "@/hooks/useStats";
+import { formatHighPrecision } from "@/lib/utils";
 
 interface StatsProps {
   stats: {
@@ -102,14 +103,13 @@ function StatCard({ title, value, subtitle, icon, delay = 0, extraContent }: Sta
 function formatCurrencyValue(value: number, currency: PrimaryCurrency | null): { display: string; subtitle: string } {
   if (!currency) {
     return {
-      display: value.toFixed(2),
+      display: formatHighPrecision(value),
       subtitle: "No base currency set",
     };
   }
   
-  // For gold and commodities, show more decimal places
-  const isCommodity = ["XAU", "XAG", "XPT", "XPd", "XCU", "XAL", "COCOA"].includes(currency.code);
-  const decimals = isCommodity ? 6 : 2;
+  // Use high precision (5 decimals) for all currencies including gold prices
+  const decimals = 5;
   
   const symbol = currency.symbol || currency.code;
   
@@ -128,7 +128,7 @@ function formatExtraValues(extra: Record<string, TotalValueExtraEntry> | null | 
   }
   
   return Object.entries(extra)
-    .map(([, entry]) => `${entry.total.toFixed(2)} ${entry.code}`)
+    .map(([, entry]) => `${formatHighPrecision(entry.total)} ${entry.code}`)
     .join(", ");
 }
 
@@ -159,7 +159,7 @@ function ExtraValuesDialog({ extra }: { extra: Record<string, TotalValueExtraEnt
                 <p className="font-medium text-amber-800 dark:text-amber-300">{entry.code}</p>
                 <p className="text-xs text-muted-foreground">{entry.name}</p>
               </div>
-              <p className="font-bold text-amber-700 dark:text-amber-400">{entry.total.toFixed(2)}</p>
+              <p className="font-bold text-amber-700 dark:text-amber-400">{formatHighPrecision(entry.total)}</p>
             </div>
           ))}
         </div>

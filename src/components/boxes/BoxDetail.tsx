@@ -33,8 +33,9 @@ import {
 import { SadaqahList } from "@/components/sadaqah/SadaqahList";
 import { CollectionHistory } from "@/components/sadaqah/CollectionHistory";
 import { AddSadaqah } from "@/components/sadaqah/AddSadaqah";
-import { Plus, Coins, MoreVertical, AlertCircle, Gem, Wallet, Info, FileDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Plus, Coins, Gem, Wallet, Info, FileDown } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { GoldIngotsFreeIcons } from "@hugeicons/core-free-icons";
 import { generateCollectionReceiptPDF } from "@/lib/pdf";
 import {
     useSadaqahs,
@@ -155,6 +156,11 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
     const currency = box.baseCurrency || box.currency;
     if (!currency) return <Wallet className="h-4 w-4" />;
     
+
+    if (currency.id === "cur_100") {
+      return <HugeiconsIcon icon={GoldIngotsFreeIcons} className="h-4 w-4 text-yellow-500"  />
+    }
+    
     if (currency.currencyTypeId === "ctyp_3") {
       return <Gem className="h-4 w-4 text-green-500" />;
     }
@@ -192,7 +198,7 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
                   <p className="font-medium text-amber-800 dark:text-amber-300">{entry.code}</p>
                   <p className="text-xs text-muted-foreground">{entry.name}</p>
                 </div>
-                <p className="font-bold text-amber-700 dark:text-amber-400">{entry.total.toFixed(2)}</p>
+                <p className="font-bold text-amber-700 dark:text-amber-400">{entry.total.toFixed(5)}</p>
               </div>
             ))}
           </div>
@@ -332,7 +338,7 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
             <Card className="p-0">
               <CardContent className="p-8 text-center relative">
                 <div className="flex items-center justify-center gap-2">
-                  <div className="text-2xl font-bold">{box.totalValue.toFixed(2)}</div>
+                  <div className="text-2xl font-bold">{box.totalValue.toFixed(5)}</div>
                   {getCurrencyIcon()}
                 </div>
                 <div className="text-muted-foreground text-xs">{getCurrencyDisplay() || "Value"}</div>

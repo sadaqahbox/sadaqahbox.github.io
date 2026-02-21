@@ -40,7 +40,7 @@ export function formatDateShortForPDF(dateStr: string): string {
  * Format a number for display, removing trailing zeros
  */
 export function formatValueForPDF(value: number): string {
-  return value.toFixed(6).replace(/\.?0+$/, "");
+  return value.toFixed(5).replace(/\.?0+$/, "");
 }
 
 /**
@@ -207,7 +207,7 @@ export function generateAllCollectionsPDF(
   doc.setTextColor(0);
   doc.setFontSize(11);
   doc.text(`Total Collections: ${collections.length}`, 20, 50);
-  doc.text(`Total Value: ${totalCollected.toFixed(2)}`, 20, 58);
+  doc.text(`Total Value: ${formatValueForPDF(totalCollected)}`, 20, 58);
 
   // Table header
   let yPos = 70;
@@ -229,7 +229,7 @@ export function generateAllCollectionsPDF(
     }
 
     doc.text(formatDateShortForPDF(collection.emptiedAt), 20, yPos);
-    doc.text(collection.totalValue.toFixed(2), 70, yPos);
+    doc.text(formatValueForPDF(collection.totalValue), 70, yPos);
     doc.text(getCurrencyCode(collection), 100, yPos);
 
     yPos += 6;

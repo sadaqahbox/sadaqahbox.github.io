@@ -30,7 +30,7 @@ import {
 import { Trash2, MoreVertical, Package, Coins } from "lucide-react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Mosque01Icon } from "@hugeicons/core-free-icons";
-import { cn } from "@/lib/utils";
+import { cn, formatHighPrecision } from "@/lib/utils";
 import type { Box } from "@/types";
 
 interface VirtualBoxListProps {
@@ -238,7 +238,7 @@ export function VirtualBoxList({
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <span className="font-medium">
                             {box.currency?.symbol || "$"}
-                            {box.totalValue.toFixed(2)}
+                            {formatHighPrecision(box.totalValue)}
                           </span>
                         </div>
                       )}

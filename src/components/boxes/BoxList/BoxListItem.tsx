@@ -16,7 +16,7 @@ import {
 import { Coins, MoreVertical, Star, Trash2 } from "lucide-react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Mosque01Icon } from "@hugeicons/core-free-icons";
-import { cn } from "@/lib/utils";
+import { cn, formatHighPrecision } from "@/lib/utils";
 import { listItemVariants, iconVariants, contentVariants, tagVariants } from "@/lib/animations";
 import type { Box } from "@/types";
 
@@ -157,7 +157,7 @@ export function BoxListItem({
             {box.totalValue > 0 && (
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <span className="font-medium">
-                  {box.currency?.symbol || "$"}{box.totalValue.toFixed(2)}
+                  {box.currency?.symbol || "$"}{formatHighPrecision(box.totalValue)}
                 </span>
               </div>
             )}
