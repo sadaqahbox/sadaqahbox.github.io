@@ -35,6 +35,7 @@ function createAuth(env?: AuthEnv, cf?: IncomingRequestCfProperties) {
                 kv: env?.AUTH_KV,
             },
             {
+                baseURL: "https://sadaqahbox.apps.erklab.com",
                 emailAndPassword: {
                     enabled: true,
                 },
