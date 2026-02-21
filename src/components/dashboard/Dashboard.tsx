@@ -21,7 +21,8 @@ const DashboardContent = React.memo(function DashboardContent() {
         boxes,
         selectedBox,
         showCreateForm,
-        loading,
+        isLoadingBoxes,
+        isLoadingStats,
         setSelectedBox,
         setShowCreateForm,
         handleBoxCreated,
@@ -29,9 +30,8 @@ const DashboardContent = React.memo(function DashboardContent() {
         handleBoxUpdated,
     } = useDashboard();
 
-    if (loading) {
-        return <DashboardSkeleton />;
-    }
+    // Show initial skeleton only on first load when we have no data
+    const showInitialLoading = isLoadingBoxes && boxes.length === 0;
 
     return (
         <div className="flex min-h-screen flex-col">
@@ -56,12 +56,14 @@ const DashboardContent = React.memo(function DashboardContent() {
                             onBoxCreated={handleBoxCreated}
                             onBoxDeleted={handleBoxDeleted}
                             onCancelCreate={() => setShowCreateForm(false)}
+                            isLoading={showInitialLoading}
                         />
 
                         {/* Main Content - Box Detail */}
                         <BoxDetailSection
                             selectedBox={selectedBox}
                             onBoxUpdated={handleBoxUpdated}
+                            isLoading={isLoadingStats && !selectedBox}
                         />
                     </div>
                 </motion.div>
@@ -79,6 +81,7 @@ interface BoxListSectionProps {
     onBoxCreated: (box: Box) => void;
     onBoxDeleted: (id: string) => void;
     onCancelCreate: () => void;
+    isLoading?: boolean;
 }
 
 function BoxListSection({
@@ -90,6 +93,7 @@ function BoxListSection({
     onBoxCreated,
     onBoxDeleted,
     onCancelCreate,
+    isLoading,
 }: BoxListSectionProps) {
     return (
         <motion.div
@@ -166,9 +170,10 @@ function BoxListSection({
 interface BoxDetailSectionProps {
     selectedBox: Box | null;
     onBoxUpdated: (box: Box) => void;
+    isLoading?: boolean;
 }
 
-function BoxDetailSection({ selectedBox, onBoxUpdated }: BoxDetailSectionProps) {
+function BoxDetailSection({ selectedBox, onBoxUpdated, isLoading }: BoxDetailSectionProps) {
     return (
         <motion.div
             variants={mainContentVariants}
@@ -198,15 +203,16 @@ function BoxDetailSection({ selectedBox, onBoxUpdated }: BoxDetailSectionProps) 
 export function ProtectedDashboard() {
     return (
         <>
-            <AuthLoading>
-                <LoadingFallback />
-            </AuthLoading>
             <SignedOut>
                 <RedirectToSignIn />
             </SignedOut>
             <SignedIn>
                 <DashboardContent />
             </SignedIn>
+            {/* AuthLoading shows fallback only when auth is actually loading */}
+            <AuthLoading>
+                <LoadingFallback />
+            </AuthLoading>
         </>
     );
 }

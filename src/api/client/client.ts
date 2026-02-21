@@ -49,14 +49,6 @@ export function getErrorMessage(error: unknown, defaultMessage = "An unexpected 
     return defaultMessage;
 }
 
-async function handleResponse<T>(response: Response): Promise<unknown> {
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: "Unknown error" })) as { error?: string };
-        throw new ApiError(errorData.error || `HTTP ${response.status}`, response.status);
-    }
-    return response.json();
-}
-
 async function request<T extends z.ZodType>(
     endpoint: string,
     schema: T,
@@ -115,6 +107,9 @@ export const api = {
 
     put: <T extends z.ZodType>(endpoint: string, schema: T, body?: unknown) =>
         request(endpoint, schema, createRequestInit("PUT", body), `Failed to update ${endpoint}`),
+
+    patch: <T extends z.ZodType>(endpoint: string, schema: T, body?: unknown) =>
+        request(endpoint, schema, createRequestInit("PATCH", body), `Failed to patch ${endpoint}`),
 
     del: <T extends z.ZodType>(endpoint: string, schema: T) =>
         request(endpoint, schema, { method: "DELETE" }, `Failed to delete ${endpoint}`),

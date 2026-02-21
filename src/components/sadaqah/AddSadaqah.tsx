@@ -16,11 +16,12 @@ import type { Currency } from "@/types";
 
 interface AddSadaqahProps {
   boxId: string;
-  onAdded: () => void;
+  onAdded: (value: number, currencyId?: string) => void;
   onCancel: () => void;
+  isLoading?: boolean;
 }
 
-export function AddSadaqah({ boxId, onAdded, onCancel }: AddSadaqahProps) {
+export function AddSadaqah({ boxId, onAdded, onCancel, isLoading }: AddSadaqahProps) {
   const [amount, setAmount] = useState(1);
   const [value, setValue] = useState<number>(1);
   const [currencyCode, setCurrencyCode] = useState("USD");
@@ -49,19 +50,9 @@ export function AddSadaqah({ boxId, onAdded, onCancel }: AddSadaqahProps) {
     e.preventDefault();
     if (value <= 0 || amount <= 0) return;
 
-    setLoading(true);
-    try {
-      await boxesApi.addSadaqah(boxId, {
-        amount,
-        value,
-        currencyCode,
-      });
-      onAdded();
-    } catch {
-      // Error handled by api.ts
-    } finally {
-      setLoading(false);
-    }
+    // Call the parent handler with the form data
+    // Parent will handle the API call via TanStack Query mutation
+    onAdded(value * amount, currencyCode);
   };
 
   return (
@@ -116,9 +107,9 @@ export function AddSadaqah({ boxId, onAdded, onCancel }: AddSadaqahProps) {
               <X className="mr-2 h-4 w-4" />
               Cancel
             </Button>
-            <Button type="submit" disabled={loading || fetchingCurrencies}>
+            <Button type="submit" disabled={isLoading || loading || fetchingCurrencies}>
               <Plus className="mr-2 h-4 w-4" />
-              {loading
+              {isLoading || loading
                 ? "Adding..."
                 : `Add ${amount > 1 ? `${amount} × ` : ""}${value} Sadaqah`}
             </Button>

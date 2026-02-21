@@ -75,6 +75,12 @@ export const queryKeys = {
         details: ["sadaqahs", "detail"] as const,
         detail: (id: string) => ["sadaqahs", "detail", id] as const,
     },
+    // Collections
+    collections: {
+        all: ["collections"] as const,
+        lists: ["collections", "list"] as const,
+        list: (boxId: string) => ["collections", "list", boxId] as const,
+    },
     // Tags
     tags: {
         all: ["tags"] as const,

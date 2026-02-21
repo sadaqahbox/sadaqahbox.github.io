@@ -1,12 +1,12 @@
 /**
  * API Routes
- * 
+ *
  * All route registrations are centralized here.
  * Endpoints are grouped by resource for better organization.
  */
 
 import type { OpenAPIHono } from "@hono/zod-openapi";
-import { registerRoutes as registerRouteGroup } from "./shared/route-builder";
+import { registerRoutes as registerRouteGroup, type RouteDefinition } from "./shared/route-builder";
 
 // System endpoints
 import { healthRoute, healthHandler } from "./endpoints/health";
@@ -28,33 +28,29 @@ import { currencyTypeRouteDefinitions } from "./endpoints/currency-types";
 import { tagRouteDefinitions } from "./endpoints/tags";
 
 /**
+ * All route definitions for the API
+ */
+export const allRouteDefinitions: RouteDefinition[] = [
+	// System routes
+	{ route: healthRoute, handler: healthHandler },
+	// Resource routes
+	...statsRouteDefinitions,
+	...boxRouteDefinitions,
+	...sadaqahRouteDefinitions,
+	...currencyTypeRouteDefinitions,
+	...currencyRouteDefinitions,
+	...tagRouteDefinitions,
+];
+
+/**
  * Registers all API routes with the OpenAPIHono app
  */
 export function registerRoutes(app: OpenAPIHono<{ Bindings: Env }>): void {
-	// ============== System Routes ==============
-	registerRouteGroup(app, [
-		{ route: healthRoute, handler: healthHandler },
-	]);
-
-	// ============== Stats Routes ==============
-	registerRouteGroup(app, statsRouteDefinitions);
-
-	// ============== Box Routes ==============
-	registerRouteGroup(app, boxRouteDefinitions);
-
-	// ============== Sadaqah Routes ==============
-	registerRouteGroup(app, sadaqahRouteDefinitions);
-
-	// ============== Currency Type Routes ==============
-	registerRouteGroup(app, currencyTypeRouteDefinitions);
-
-	// ============== Currency Routes ==============
-	registerRouteGroup(app, currencyRouteDefinitions);
-
-	// ============== Tag Routes =============-
-	registerRouteGroup(app, tagRouteDefinitions);
+	registerRouteGroup(app, allRouteDefinitions);
 }
 
 // Re-export for convenience
 export { healthRoute, healthHandler } from "./endpoints/health";
 export { statsRouteDefinitions } from "./endpoints/stats";
+export { boxRouteDefinitions } from "./endpoints/boxes";
+export { sadaqahRouteDefinitions } from "./endpoints/sadaqahs";

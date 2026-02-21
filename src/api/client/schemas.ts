@@ -140,6 +140,12 @@ export const DeleteBoxResponseSchema = z.object({
   collectionsDeleted: z.number(),
 });
 
+export const DeleteSadaqahResponseSchema = z.object({
+  success: z.boolean(),
+  deleted: z.boolean(),
+  updatedBox: BoxSchema.optional(),
+});
+
 export const AddSadaqahResponseSchema = z.object({
   success: z.boolean(),
   sadaqahs: SadaqahSchema.array(),

@@ -63,6 +63,60 @@ export function useCreateBox() {
 }
 
 /**
+ * Hook to update a box
+ * Optimistically updates the cache for better UX
+ */
+export function useUpdateBox() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ id, data }: { id: string; data: Partial<Box> }) =>
+            boxesApi.update(id, data),
+        onMutate: async ({ id, data }) => {
+            // Cancel outgoing refetches
+            await queryClient.cancelQueries({ queryKey: queryKeys.boxes.detail(id) });
+            await queryClient.cancelQueries({ queryKey: queryKeys.boxes.lists });
+
+            // Snapshot previous values
+            const previousBox = queryClient.getQueryData<Box>(queryKeys.boxes.detail(id));
+            const previousBoxes = queryClient.getQueryData<Box[]>(queryKeys.boxes.lists);
+
+            // Optimistically update box detail
+            if (previousBox) {
+                queryClient.setQueryData(queryKeys.boxes.detail(id), {
+                    ...previousBox,
+                    ...data,
+                });
+            }
+
+            // Optimistically update in list
+            if (previousBoxes) {
+                queryClient.setQueryData(
+                    queryKeys.boxes.lists,
+                    previousBoxes.map((b) => (b.id === id ? { ...b, ...data } : b))
+                );
+            }
+
+            return { previousBox, previousBoxes, id };
+        },
+        onError: (_err, _variables, context) => {
+            // Rollback on error
+            if (context?.previousBox) {
+                queryClient.setQueryData(queryKeys.boxes.detail(context.id), context.previousBox);
+            }
+            if (context?.previousBoxes) {
+                queryClient.setQueryData(queryKeys.boxes.lists, context.previousBoxes);
+            }
+        },
+        onSettled: (_data, _error, variables) => {
+            // Always refetch
+            queryClient.invalidateQueries({ queryKey: queryKeys.boxes.detail(variables.id) });
+            queryClient.invalidateQueries({ queryKey: queryKeys.boxes.lists });
+        },
+    });
+}
+
+/**
  * Hook to delete a box
  * Optimistically removes from UI before server confirmation
  */
@@ -102,13 +156,38 @@ export function useDeleteBox() {
     });
 }
 
+/**
+ * Hook to empty a box (collect all sadaqahs)
+ */
+export function useEmptyBox() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (boxId: string) => boxesApi.empty(boxId),
+        onSuccess: (_data, boxId) => {
+            // Invalidate sadaqahs list (all collected)
+            queryClient.invalidateQueries({ queryKey: queryKeys.sadaqahs.list(boxId) });
+            // Invalidate collections list (new collection added)
+            queryClient.invalidateQueries({ queryKey: queryKeys.collections?.list(boxId) ?? ["collections", "list", boxId] });
+            // Invalidate box detail (counts changed)
+            queryClient.invalidateQueries({ queryKey: queryKeys.boxes.detail(boxId) });
+            // Invalidate boxes list (counts changed)
+            queryClient.invalidateQueries({ queryKey: queryKeys.boxes.lists });
+            // Invalidate stats
+            queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
+        },
+    });
+}
+
 // ============== Prefetching ==============
+
+import type { QueryClient } from "@tanstack/react-query";
 
 /**
  * Prefetch box data for improved navigation UX
  * Call this when hovering over a box link
  */
-export function prefetchBox(id: string) {
+export function prefetchBox(queryClient: QueryClient, id: string) {
     return queryClient.prefetchQuery({
         queryKey: queryKeys.boxes.detail(id),
         queryFn: () => boxesApi.getById(id),

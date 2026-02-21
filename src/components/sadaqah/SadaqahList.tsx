@@ -11,6 +11,7 @@ interface SadaqahListProps {
   sadaqahs: Sadaqah[];
   currency?: Currency;
   onDelete?: (sadaqahId: string) => void;
+  isDeleting?: boolean;
 }
 
 function getCurrencyDisplay(sadaqah: Sadaqah, fallbackCurrency?: Currency) {
@@ -118,7 +119,7 @@ const groupHeaderVariants = {
   },
 };
 
-export function SadaqahList({ sadaqahs, currency, onDelete }: SadaqahListProps) {
+export function SadaqahList({ sadaqahs, currency, onDelete, isDeleting }: SadaqahListProps) {
   if (sadaqahs.length === 0) {
     return (
       <Card className="border-dashed">
@@ -200,8 +201,9 @@ export function SadaqahList({ sadaqahs, currency, onDelete }: SadaqahListProps) 
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                          className="h-8 w-8 text-destructive hover:bg-destructive/10 disabled:opacity-50"
                           onClick={() => onDelete(sadaqah.id)}
+                          disabled={isDeleting}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

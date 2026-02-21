@@ -33,6 +33,11 @@ export const boxesApi = {
     return r.box;
   },
 
+  update: async (id: string, data: Partial<Box>): Promise<Box> => {
+    const r = await api.patch(`/boxes/${id}`, BoxResponseSchema, data);
+    return r.box;
+  },
+
   delete: (id: string): Promise<{ success: boolean }> =>
     api.del(`/boxes/${id}`, SuccessResponseSchema),
 

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { boxesApi } from "@/api/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -25,6 +24,8 @@ import { Trash2, MoreVertical, Package, Coins } from "lucide-react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Mosque01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
+import { prefetchBox } from "@/hooks";
+import { useQueryClient } from "@tanstack/react-query";
 import type { Box } from "@/types";
 
 interface BoxListProps {
@@ -60,17 +61,20 @@ const contentVariants = {
 };
 
 export function BoxList({ boxes, selectedBoxId, onSelectBox, onBoxDeleted }: BoxListProps) {
+  const queryClient = useQueryClient();
   const [deletingBox, setDeletingBox] = useState<Box | null>(null);
   const [hoveredBoxId, setHoveredBoxId] = useState<string | null>(null);
 
   const handleDelete = async (box: Box) => {
-    try {
-      await boxesApi.delete(box.id);
-      onBoxDeleted(box.id);
-    } catch {
-      // Error handled by api.ts
-    }
+    // Let the parent handle deletion via TanStack Query mutation
+    onBoxDeleted(box.id);
     setDeletingBox(null);
+  };
+
+  const handleMouseEnter = (boxId: string) => {
+    setHoveredBoxId(boxId);
+    // Prefetch box details on hover for instant navigation
+    prefetchBox(queryClient, boxId);
   };
 
   if (boxes.length === 0) {
@@ -132,7 +136,7 @@ export function BoxList({ boxes, selectedBoxId, onSelectBox, onBoxDeleted }: Box
                       : "hover:bg-muted/50"
                   )}
                   onClick={() => onSelectBox(box)}
-                  onMouseEnter={() => setHoveredBoxId(box.id)}
+                  onMouseEnter={() => handleMouseEnter(box.id)}
                   onMouseLeave={() => setHoveredBoxId(null)}
                   whileHover={{ x: 4 }}
                   transition={{ duration: 0.2 }}

@@ -1,6 +1,6 @@
 /**
  * Main API Application - Refactored
- * 
+ *
  * Sets up the OpenAPIHono app with OpenAPI documentation,
  * middleware, and route registration.
  */
@@ -9,20 +9,11 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import { Scalar } from "@scalar/hono-api-reference";
 
 import { requestLogger, errorHandler, securityHeaders } from "./middleware";
-import { registerRoutes } from "./shared/route-builder";
+import { registerRoutes } from "./routes";
 
 import { openApiConfig, scalarConfig } from "./config/openapi";
 import { authCors } from "./setup/cors";
 import { handleAuthRoute } from "./setup/auth";
-
-// Import route definitions
-import { healthRouteDefinitions } from "./endpoints/health";
-import { statsRouteDefinitions } from "./endpoints/stats";
-import { boxRouteDefinitions } from "./endpoints/boxes";
-import { sadaqahRouteDefinitions } from "./endpoints/sadaqahs";
-import { currencyRouteDefinitions } from "./endpoints/currencies";
-import { currencyTypeRouteDefinitions } from "./endpoints/currency-types";
-import { tagRouteDefinitions } from "./endpoints/tags";
 
 // ============== App Initialization ==============
 
@@ -44,14 +35,8 @@ app.use("*", errorHandler);
 // Auth routes - handled by better-auth
 app.all("/api/auth/*", handleAuthRoute);
 
-// API routes (OpenAPI documented)
-registerRoutes(app, healthRouteDefinitions);
-registerRoutes(app, statsRouteDefinitions);
-registerRoutes(app, boxRouteDefinitions);
-registerRoutes(app, sadaqahRouteDefinitions);
-registerRoutes(app, currencyRouteDefinitions);
-registerRoutes(app, currencyTypeRouteDefinitions);
-registerRoutes(app, tagRouteDefinitions);
+// API routes (OpenAPI documented) - centralized in routes.ts
+registerRoutes(app);
 
 // ============== Documentation ==============
 
