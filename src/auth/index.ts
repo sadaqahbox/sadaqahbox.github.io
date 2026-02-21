@@ -45,6 +45,12 @@ function createAuth(env?: AuthEnv, cf?: IncomingRequestCfProperties) {
                             required: false,
                             input: true,
                         },
+                        preferredCurrencyId: {
+                            type: "string",
+                            required: false,
+                            input: true,
+                            defaultValue: "cur_279",
+                        },
                     },
                 },
                 advanced: {

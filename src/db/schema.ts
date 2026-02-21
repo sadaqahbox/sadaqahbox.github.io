@@ -3,7 +3,7 @@ import { relations } from "drizzle-orm";
 import * as authSchema from "./auth.schema";
 
 // Re-export auth tables for drizzle-kit migrations
-export const { users, sessions, accounts, verifications, passkeys, apikeys } = authSchema;
+export const { users, sessions, accounts, verifications, passkeys, apikeys, usersRelations } = authSchema;
 
 // Combine all schemas for drizzle-orm
 export const schema = {
@@ -168,6 +168,7 @@ export const currenciesRelations = relations(currencies, ({ one, many }) => ({
   boxes: many(boxes),
   baseCurrencyBoxes: many(boxes, { relationName: "boxBaseCurrency" }),
   collections: many(collections),
+  preferredCurrencyUsers: many(users, { relationName: "userPreferredCurrency" }),
 }));
 
 export const tagsRelations = relations(tags, ({ many }) => ({

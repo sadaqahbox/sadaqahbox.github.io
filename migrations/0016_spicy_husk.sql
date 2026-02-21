@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `preferred_currency_id` text;

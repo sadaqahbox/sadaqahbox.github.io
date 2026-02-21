@@ -199,13 +199,13 @@ export function useEmptyBox() {
 
     return useMutation({
         mutationFn: (boxId: string) => boxesApi.empty(boxId),
-        onSuccess: (_data, boxId) => {
+        onSuccess: (data, boxId) => {
+            // Update the box cache with the new box data
+            queryClient.setQueryData(queryKeys.boxes.detail(boxId), data.box);
             // Invalidate sadaqahs list (all collected)
             queryClient.invalidateQueries({ queryKey: queryKeys.sadaqahs.list(boxId) });
             // Invalidate collections list (new collection added)
             queryClient.invalidateQueries({ queryKey: queryKeys.collections?.list(boxId) ?? ["collections", "list", boxId] });
-            // Invalidate box detail (counts changed)
-            queryClient.invalidateQueries({ queryKey: queryKeys.boxes.detail(boxId) });
             // Invalidate boxes list (counts changed)
             queryClient.invalidateQueries({ queryKey: queryKeys.boxes.lists });
             // Invalidate stats

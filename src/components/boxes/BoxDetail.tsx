@@ -33,8 +33,9 @@ import {
 import { SadaqahList } from "@/components/sadaqah/SadaqahList";
 import { CollectionHistory } from "@/components/sadaqah/CollectionHistory";
 import { AddSadaqah } from "@/components/sadaqah/AddSadaqah";
-import { Plus, Coins, MoreVertical, AlertCircle, Gem, Wallet, Info } from "lucide-react";
+import { Plus, Coins, MoreVertical, AlertCircle, Gem, Wallet, Info, FileDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { generateCollectionReceiptPDF } from "@/lib/pdf";
 import {
     useSadaqahs,
     useCollections,
@@ -47,7 +48,7 @@ import {
     prefetchBox,
 } from "@/hooks";
 import { useQueryClient } from "@tanstack/react-query";
-import type { Box, Tag } from "@/types";
+import type { Box, Tag, Collection } from "@/types";
 
 interface BoxDetailProps {
   box: Box;
@@ -58,6 +59,9 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"sadaqahs" | "collections">("sadaqahs");
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showPdfDialog, setShowPdfDialog] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfTitle, setPdfTitle] = useState<string>("Collection Receipt");
 
   // TanStack Query hooks for data fetching
   const { data: sadaqahs = [], isLoading: sadaqahsLoading } = useSadaqahs(box.id);
@@ -103,7 +107,14 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
   const handleCollect = () => {
     emptyBox(box.id, {
         onSuccess: (result) => {
-            onBoxUpdated(result);
+            onBoxUpdated(result.box);
+            // Generate and show PDF receipt
+            if (result.collection) {
+                const pdfDataUrl = generateCollectionReceiptPDF(result.collection, box.name);
+                setPdfUrl(pdfDataUrl);
+                setPdfTitle(`Collection - ${box.name}`);
+                setShowPdfDialog(true);
+            }
         },
     });
   };
@@ -380,9 +391,59 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
           />
         </TabsContent>
         <TabsContent value="collections" className="mt-4">
-          <CollectionHistory collections={collections} />
+          <CollectionHistory collections={collections} boxName={box.name} />
         </TabsContent>
       </Tabs>
+
+      {/* PDF Viewer Dialog */}
+      <Dialog open={showPdfDialog} onOpenChange={setShowPdfDialog}>
+        <DialogContent className="max-w-3xl h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Coins className="h-5 w-5" />
+              {pdfTitle}
+            </DialogTitle>
+            <DialogDescription>
+              Your collection details
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 min-h-0 bg-muted rounded-lg overflow-hidden">
+            {pdfUrl && (
+              <object
+                data={pdfUrl}
+                type="application/pdf"
+                className="w-full h-full"
+              >
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center p-8">
+                    <Coins className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground mb-4">PDF could not be displayed</p>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => window.open(pdfUrl, '_blank')}
+                    >
+                      Open in New Tab
+                    </Button>
+                  </div>
+                </div>
+              </object>
+            )}
+          </div>
+          <div className="flex justify-between items-center pt-4 border-t">
+            <p className="text-sm text-muted-foreground">
+              A5 Portrait • SadaqahBox Collection
+            </p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => pdfUrl && window.open(pdfUrl, '_blank')}
+            >
+              <FileDown className="h-4 w-4 mr-2" />
+              Download
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
