@@ -19,6 +19,23 @@
 
 Sadaqah Box helps Muslims track their charitable contributions (Sadaqah) in a modern, secure, and private way. The app converts all donations to gold grams for consistent tracking across different currencies, making it easy to see your total giving regardless of the currency used.
 
+## 🌟 Our Intention
+
+The Prophet Muhammad ﷺ said:
+
+> "There is a sadaqah to be given for every joint of the human body every day the sun rises. To judge justly between two persons is regarded as sadaqah, and to help a man concerning his riding animal by helping him to ride it or by lifting his luggage on to it, is also regarded as sadaqah, and (saying) a good word is also sadaqah, and every step taken on one's way to offer the compulsory prayer (in the mosque) is also sadaqah and to remove a harmful thing from the way is also sadaqah." — *Sahih al-Bukhari 2989*
+
+Giving sadaqah daily is a beautiful Sunnah, but modern life can make this challenging. We often intend to give charity every day, yet find ourselves too busy, without cash on hand, or simply forgetting.
+
+**Sadaqah Box was created to solve this:**
+
+- **Remember daily** — Set aside your intended sadaqah each day so you don't forget
+- **Track your commitment** — See exactly how much you've promised to give
+- **Fulfill your promise** — When ready, collect and distribute to those in need
+- **Build consistency** — Make giving charity a regular habit without the daily friction
+
+The reward for sadaqah comes when it actually reaches those in need. This tool helps you organize your giving so you can follow through on your daily commitment to charity.
+
 ### Key Features
 
 - 📦 **Multiple Charity Boxes** - Create separate boxes for different causes, family members, or categories
