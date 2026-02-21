@@ -1,6 +1,6 @@
 /**
  * Auth Route Handler
- * 
+ *
  * Handles all authentication routes by delegating to better-auth.
  */
 
@@ -17,5 +17,6 @@ export async function handleAuthRoute(c: Context<{ Bindings: Env }>): Promise<Re
         c.env as unknown as Parameters<typeof createAuth>[0],
         cf
     );
-    return auth.handler(c.req.raw);
+    const res = await auth.handler(c.req.raw);
+    return c.newResponse(res.body, res);
 }

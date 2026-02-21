@@ -10,7 +10,7 @@
     "generate:favicons": "node scripts/generate-favicons.js",
     "generate:llms": "bun scripts/generate-llms.ts",
     "build": "bun run generate:llms && bunx vite build",
-    "build:static": "bun run generate:llms && bunx vite build --config vite.static.config.ts",
+    "build:static": "bun run generate:llms && bunx vite build --config vite.static.config.ts && cp dist/static/index.html dist/static/404.html",
     "deploy:static": "echo 'Deploy dist/static to your static host (e.g., GitHub Pages)'",
     "db:generate": "bunx drizzle-kit generate",
     "migrate:local": "bunx wrangler d1 migrations apply sadaqahbox --local",
