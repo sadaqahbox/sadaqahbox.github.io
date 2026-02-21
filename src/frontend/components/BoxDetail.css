@@ -1,0 +1,90 @@
+.box-detail {
+  height: 100%;
+}
+
+.box-detail-loading {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+}
+
+.box-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.box-detail-header h2 {
+  font-size: 1.75rem;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.box-detail-header .box-description {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.box-detail-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.box-stats-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.box-stats-summary .stat {
+  background: #f9fafb;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.box-stats-summary .stat-number {
+  display: block;
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: #667eea;
+}
+
+.box-stats-summary .stat-label {
+  font-size: 0.8rem;
+  color: #666;
+  text-transform: uppercase;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 2px solid #e5e7eb;
+  margin-bottom: 1rem;
+}
+
+.tab {
+  padding: 0.75rem 1.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #666;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s;
+}
+
+.tab:hover {
+  color: #667eea;
+}
+
+.tab.active {
+  color: #667eea;
+  border-bottom-color: #667eea;
+  font-weight: 500;
+}
