@@ -1,0 +1,1 @@
+ALTER TABLE `Collection` ADD `metadata` text;

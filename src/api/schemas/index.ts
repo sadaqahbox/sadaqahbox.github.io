@@ -173,6 +173,15 @@ export type AddSadaqahInput = z.infer<typeof AddSadaqahSchema>;
 
 // ============== Collection Schema ==============
 
+export const CollectionConversionSchema = z.object({
+  currencyId: z.string(),
+  code: z.string(),
+  name: z.string(),
+  symbol: z.string().nullable().optional(),
+  value: z.number(),
+  rate: z.number(),
+});
+
 export const CollectionSchema = z.object({
   id: z.string().openapi({ example: "col_abc123" }),
   boxId: z.string(),
@@ -183,11 +192,17 @@ export const CollectionSchema = z.object({
     code: z.string(),
     name: z.string(),
   })).optional(),
+  metadata: z.object({
+    conversions: z.array(CollectionConversionSchema).optional(),
+    preferredCurrencyId: z.string().optional(),
+    preferredCurrencyCode: z.string().optional(),
+  }).optional(),
   currencyId: z.string(),
   currency: CurrencySchema.optional(),
 });
 
 export type Collection = z.infer<typeof CollectionSchema>;
+export type CollectionConversion = z.infer<typeof CollectionConversionSchema>;
 
 // ============== Stats Schemas ==============
 
@@ -219,6 +234,11 @@ export const CollectionResultSchema = z.object({
       code: z.string(),
       name: z.string(),
     })).optional(),
+    metadata: z.object({
+      conversions: z.array(CollectionConversionSchema).optional(),
+      preferredCurrencyId: z.string().optional(),
+      preferredCurrencyCode: z.string().optional(),
+    }).optional(),
     currencyId: z.string(),
     emptiedAt: IsoDateSchema,
   }),

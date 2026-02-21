@@ -4,8 +4,9 @@
 
 import { eq, desc, count, and, sql, inArray } from "drizzle-orm";
 import type { Database } from "../../db";
-import { boxes, sadaqahs, collections, boxTags, tags } from "../../db/schema";
+import { boxes, sadaqahs, collections, boxTags, tags, users } from "../../db/schema";
 import type { Box, BoxStats, CollectionResult, CollectionsListResult, DeleteBoxResult, Tag } from "../domain/types";
+import type { CollectionConversion } from "../schemas";
 import { DEFAULT_PAGE, DEFAULT_LIMIT } from "../domain/constants";
 import { generateBoxId, generateCollectionId } from "../shared/id-generator";
 import { sanitizeString } from "../shared/validators";
@@ -58,173 +59,106 @@ export class BoxEntity {
 				id,
 				name,
 				description: sanitizeString(data.description),
-				metadata: data.metadata,
 				count: 0,
 				totalValue: 0,
+				currencyId: null,
+				userId: data.userId,
 				createdAt: timestamp.toISOString(),
 				updatedAt: timestamp.toISOString(),
 			};
 		});
 	}
 
-	async get(id: string, userId?: string): Promise<Box | null> {
+	async getById(id: string, userId?: string): Promise<Box | null> {
 		const query = userId
 			? this.db.select().from(boxes).where(and(eq(boxes.id, id), eq(boxes.userId, userId))).limit(1)
 			: this.db.select().from(boxes).where(eq(boxes.id, id)).limit(1);
 		const result = await query;
 		if (!result[0]) return null;
-
-		const box = mapBox(result[0]);
-		
-		// Fetch currency and tags in parallel
-		const [currency, boxTags] = await Promise.all([
-			box.currencyId ? new CurrencyEntity(this.db).get(box.currencyId) : Promise.resolve(null),
-			this.getTagsForBoxes([id]),
-		]);
-
-		if (currency) box.currency = currency;
-		box.tags = boxTags.get(id);
-		return box;
+		return mapBox(result[0]);
 	}
 
-	async list(userId?: string): Promise<Box[]> {
-		// Query boxes with user filter
+	async list(userId?: string, options?: { page?: number; limit?: number }): Promise<Box[]> {
+		const page = options?.page || DEFAULT_PAGE;
+		const limit = Math.min(options?.limit || DEFAULT_LIMIT, 100);
+		const offset = (page - 1) * limit;
+
 		const query = userId
-			? this.db.select().from(boxes).where(eq(boxes.userId, userId)).orderBy(desc(boxes.createdAt))
-			: this.db.select().from(boxes).orderBy(desc(boxes.createdAt));
-		const result = await query;
-		if (result.length === 0) return [];
+			? this.db.select().from(boxes).where(eq(boxes.userId, userId)).orderBy(desc(boxes.createdAt)).limit(limit).offset(offset)
+			: this.db.select().from(boxes).orderBy(desc(boxes.createdAt)).limit(limit).offset(offset);
 
-		const boxIds = result.map((b) => b.id);
-		const currencyIds = [...new Set(result.map((b) => b.currencyId).filter(Boolean))] as string[];
-
-		// Batch fetch only needed currencies and tags (N+1 fix)
-		const [currencyMap, tagsByBox] = await Promise.all([
-			new CurrencyEntity(this.db).getMany(currencyIds),
-			this.getTagsForBoxes(boxIds),
-		]);
-
-		return result.map((box) => {
-			const mapped = mapBox(box);
-			if (mapped.currencyId) {
-				const currency = currencyMap.get(mapped.currencyId);
-				if (currency) mapped.currency = currency;
-			}
-			mapped.tags = tagsByBox.get(box.id);
-			return mapped;
-		});
+		const results = await query;
+		return results.map(mapBox);
 	}
 
-	/**
-	 * Batch fetch tags for multiple boxes (N+1 optimization)
-	 */
-	private async getTagsForBoxes(boxIds: string[]): Promise<Map<string, Tag[]>> {
-		if (boxIds.length === 0) return new Map();
-
-		const result = await this.db
-			.select({
-				boxId: boxTags.boxId,
-				tagId: tags.id,
-				name: tags.name,
-				color: tags.color,
-				createdAt: tags.createdAt,
-			})
-			.from(boxTags)
-			.innerJoin(tags, eq(boxTags.tagId, tags.id))
-			.where(inArray(boxTags.boxId, boxIds));
-
-		const tagsByBox = new Map<string, Tag[]>();
-		for (const row of result) {
-			const tag: Tag = {
-				id: row.tagId,
-				name: row.name,
-				color: row.color || undefined,
-				createdAt: new Date(row.createdAt).toISOString(),
-			};
-			const existing = tagsByBox.get(row.boxId) || [];
-			existing.push(tag);
-			tagsByBox.set(row.boxId, existing);
+	async update(id: string, data: { 
+		name?: string; 
+		description?: string; 
+		metadata?: Record<string, string>;
+		baseCurrencyId?: string | null;
+	}, userId?: string): Promise<Box | null> {
+		// Check ownership if userId provided
+		if (userId) {
+			const existing = await this.getById(id, userId);
+			if (!existing) return null;
 		}
 
-		return tagsByBox;
-	}
+		const timestamp = new Date();
+		
+		const updateData: {
+			name?: string;
+			description?: string | null;
+			metadata?: string;
+			baseCurrencyId?: string | null;
+			updatedAt: Date;
+		} = {
+			updatedAt: timestamp,
+		};
 
-	async update(id: string, updates: Partial<Box> & { metadata?: Record<string, string> | null }, userId?: string): Promise<Box | null> {
-		const existing = await this.get(id, userId);
-		if (!existing) return null;
-
-		const updateData: Record<string, unknown> = { updatedAt: new Date() };
-
-		if (updates.name !== undefined) {
-			updateData.name = sanitizeString(updates.name);
+		if (data.name !== undefined) {
+			updateData.name = sanitizeString(data.name);
 		}
-		if (updates.description !== undefined) {
-			updateData.description = sanitizeString(updates.description) || null;
+		if (data.description !== undefined) {
+			updateData.description = sanitizeString(data.description) || null;
 		}
-		if (updates.metadata !== undefined) {
-			updateData.metadata = updates.metadata ? JSON.stringify(updates.metadata) : null;
+		if (data.metadata !== undefined) {
+			updateData.metadata = JSON.stringify(data.metadata);
+		}
+		if (data.baseCurrencyId !== undefined) {
+			updateData.baseCurrencyId = data.baseCurrencyId;
 		}
 
 		await this.db.update(boxes).set(updateData).where(eq(boxes.id, id));
-		return this.get(id);
+		return this.getById(id, userId);
 	}
 
-	async delete(id: string, userId?: string): Promise<DeleteBoxResult> {
-		// Verify ownership if userId provided
+	async delete(id: string, userId?: string): Promise<DeleteBoxResult | null> {
+		// Check ownership if userId provided
 		if (userId) {
-			const boxResult = await this.db.select({ id: boxes.id }).from(boxes).where(and(eq(boxes.id, id), eq(boxes.userId, userId))).limit(1);
-			if (!boxResult[0]) {
-				return { deleted: false, sadaqahsDeleted: 0, collectionsDeleted: 0 };
-			}
+			const existing = await this.getById(id, userId);
+			if (!existing) return null;
 		}
 
-		const [sadaqahCount, collectionCount] = await Promise.all([
-			this.db.select({ count: count() }).from(sadaqahs).where(eq(sadaqahs.boxId, id)).then((r) => r[0]?.count ?? 0),
-			this.db.select({ count: count() }).from(collections).where(eq(collections.boxId, id)).then((r) => r[0]?.count ?? 0),
-		]);
-
-		await this.db.delete(boxes).where(eq(boxes.id, id));
+		// Delete related records first
+		await this.db.delete(sadaqahs).where(eq(sadaqahs.boxId, id));
+		await this.db.delete(collections).where(eq(collections.boxId, id));
+		await this.db.delete(boxTags).where(eq(boxTags.boxId, id));
+		
+		const result = await this.db.delete(boxes).where(eq(boxes.id, id)).returning({ id: boxes.id });
+		if (!result[0]) return null;
 
 		return {
 			deleted: true,
-			sadaqahsDeleted: sadaqahCount,
-			collectionsDeleted: collectionCount,
+			sadaqahsDeleted: 0,
+			collectionsDeleted: 0,
 		};
-	}
-
-	// ============== Tag Operations ==============
-
-	async addTag(boxId: string, tagId: string): Promise<boolean> {
-		try {
-			await this.db.insert(boxTags).values({ boxId, tagId });
-			return true;
-		} catch {
-			return false;
-		}
-	}
-
-	async removeTag(boxId: string, tagId: string): Promise<boolean> {
-		await this.db
-			.delete(boxTags)
-			.where(and(eq(boxTags.boxId, boxId), eq(boxTags.tagId, tagId)));
-		return true;
-	}
-
-	async setTags(boxId: string, tagIds: string[]): Promise<boolean> {
-		return dbBatch(this.db, async (b) => {
-			b.add(this.db.delete(boxTags).where(eq(boxTags.boxId, boxId)));
-			if (tagIds.length > 0) {
-				b.add(this.db.insert(boxTags).values(tagIds.map((tagId) => ({ boxId, tagId }))));
-			}
-			return true;
-		});
 	}
 
 	// ============== Stats ==============
 
-	async getStats(id: string): Promise<BoxStats | null> {
-		const box = await this.db.select().from(boxes).where(eq(boxes.id, id)).limit(1);
-		if (!box[0]) return null;
+	async getStats(id: string, userId?: string): Promise<BoxStats | null> {
+		const box = await this.getById(id, userId);
+		if (!box) return null;
 
 		const sadaqahList = await this.db
 			.select({ createdAt: sadaqahs.createdAt })
@@ -233,7 +167,11 @@ export class BoxEntity {
 			.orderBy(sadaqahs.createdAt);
 
 		if (sadaqahList.length === 0) {
-			return { firstSadaqahAt: null, lastSadaqahAt: null, totalSadaqahs: 0 };
+			return {
+				firstSadaqahAt: null,
+				lastSadaqahAt: null,
+				totalSadaqahs: 0,
+			};
 		}
 
 		return {
@@ -258,6 +196,56 @@ export class BoxEntity {
 		const currencyId = box.currencyId || "cur_default";
 		const boxUserId = box.userId;
 
+		// Get user's preferred currency
+		const userResult = await this.db.select({ preferredCurrencyId: users.preferredCurrencyId })
+			.from(users)
+			.where(eq(users.id, boxUserId))
+			.limit(1);
+		const preferredCurrencyId = userResult[0]?.preferredCurrencyId;
+
+		// Get all currencies for conversion calculation
+		const currencyEntity = new CurrencyEntity(this.db);
+		const allCurrencies = await currencyEntity.list();
+		const boxCurrency = currencyId !== "cur_default" 
+			? await currencyEntity.get(currencyId) 
+			: null;
+		const preferredCurrency = preferredCurrencyId 
+			? allCurrencies.find(c => c.id === preferredCurrencyId) 
+			: null;
+
+		// Calculate conversions for all currencies with usdValue
+		const conversions: CollectionConversion[] = [];
+		if (boxCurrency?.usdValue) {
+			for (const targetCurrency of allCurrencies) {
+				if (targetCurrency.usdValue && targetCurrency.id !== currencyId) {
+					// Convert: value * (targetUSD / sourceUSD)
+					const rate = targetCurrency.usdValue / boxCurrency.usdValue;
+					const convertedValue = box.totalValue * rate;
+					conversions.push({
+						currencyId: targetCurrency.id,
+						code: targetCurrency.code,
+						name: targetCurrency.name,
+						symbol: targetCurrency.symbol,
+						value: convertedValue,
+						rate: rate,
+					});
+				}
+			}
+		}
+
+		// Build metadata
+		const metadata: {
+			conversions: CollectionConversion[];
+			preferredCurrencyId?: string;
+			preferredCurrencyCode?: string;
+		} = {
+			conversions,
+		};
+		if (preferredCurrency) {
+			metadata.preferredCurrencyId = preferredCurrency.id;
+			metadata.preferredCurrencyCode = preferredCurrency.code;
+		}
+
 		await dbBatch(this.db, async (b) => {
 			b.add(this.db.insert(collections).values({
 				id: collectionId,
@@ -266,6 +254,7 @@ export class BoxEntity {
 				emptiedAt: timestamp,
 				totalValue: box.totalValue,
 				totalValueExtra: box.totalValueExtra,
+				metadata,
 				currencyId,
 			}));
 
@@ -286,7 +275,7 @@ export class BoxEntity {
 		updatedBox.tags = await tagEntity.getTagsForBox(id);
 
 		if (currencyId !== "cur_default") {
-			const currency = await new CurrencyEntity(this.db).get(currencyId);
+			const currency = await currencyEntity.get(currencyId);
 			if (currency) updatedBox.currency = currency;
 		}
 
@@ -296,6 +285,7 @@ export class BoxEntity {
 				id: collectionId,
 				totalValue: box.totalValue,
 				totalValueExtra: box.totalValueExtra,
+				metadata,
 				currencyId,
 				emptiedAt: timestamp.toISOString(),
 			},
@@ -337,21 +327,25 @@ export class BoxEntity {
 
 		return {
 			collections: cols.map((c) => {
-				const collection = {
+				const currency = currencyMap.get(c.currencyId);
+				return {
 					id: c.id,
 					boxId: c.boxId,
 					emptiedAt: new Date(c.emptiedAt).toISOString(),
 					totalValue: c.totalValue,
 					totalValueExtra: c.totalValueExtra,
+					metadata: c.metadata,
 					currencyId: c.currencyId,
+					currency: currency ? {
+						id: currency.id,
+						code: currency.code,
+						name: currency.name,
+						symbol: currency.symbol || undefined,
+						currencyTypeId: currency.currencyTypeId || undefined,
+					} : undefined,
 				};
-				const currency = currencyMap.get(c.currencyId);
-				if (currency) {
-					(collection as { currency?: typeof currency }).currency = currency;
-				}
-				return collection;
 			}),
-			total: totalResult[0]?.count ?? 0,
+			total: totalResult[0]?.count || 0,
 		};
 	}
 }

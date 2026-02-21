@@ -10,7 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Coins, FileDown } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { Collection } from "@/types";
 import {
   generateSingleCollectionPDF,
@@ -18,7 +18,10 @@ import {
   getCurrencyCode,
   formatDateForPDF,
   formatDateShortForPDF,
+  type PreferredCurrencyInfo,
 } from "@/lib/pdf";
+import { authClient } from "@/lib/auth";
+import { useCurrencies } from "@/hooks";
 
 interface CollectionHistoryProps {
   collections: Collection[];
@@ -26,6 +29,22 @@ interface CollectionHistoryProps {
 }
 
 export function CollectionHistory({ collections, boxName }: CollectionHistoryProps) {
+  // Get user's preferred currency
+  const { data: session } = authClient.useSession();
+  const { data: currencies = [] } = useCurrencies();
+  
+  const preferredCurrency: PreferredCurrencyInfo | null = useMemo(() => {
+    const preferredId = session?.user?.preferredCurrencyId;
+    if (!preferredId) return null;
+    const currency = currencies.find(c => c.id === preferredId);
+    if (!currency) return null;
+    return {
+      code: currency.code,
+      name: currency.name,
+      symbol: currency.symbol,
+      usdValue: currency.usdValue,
+    };
+  }, [session?.user?.preferredCurrencyId, currencies]);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfTitle, setPdfTitle] = useState<string>("PDF Viewer");
 
@@ -69,7 +88,7 @@ export function CollectionHistory({ collections, boxName }: CollectionHistoryPro
             <Button
               variant="outline"
               size="sm"
-              onClick={() => handleShowPdf(generateAllCollectionsPDF(collections, boxName), `${boxName} - All Collections`)}
+              onClick={() => handleShowPdf(generateAllCollectionsPDF(collections, boxName, preferredCurrency), `${boxName} - All Collections`)}
               className="gap-2"
             >
               <FileDown className="h-4 w-4" />
@@ -103,7 +122,7 @@ export function CollectionHistory({ collections, boxName }: CollectionHistoryPro
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => handleShowPdf(generateSingleCollectionPDF(collection, boxName), `Collection - ${formatDateShortForPDF(collection.emptiedAt)}`)}
+                    onClick={() => handleShowPdf(generateSingleCollectionPDF(collection, boxName, preferredCurrency), `Collection - ${formatDateShortForPDF(collection.emptiedAt)}`)}
                     title="View PDF"
                     className="h-8 w-8 shrink-0"
                   >
@@ -119,7 +138,7 @@ export function CollectionHistory({ collections, boxName }: CollectionHistoryPro
 
       {/* PDF Viewer Dialog */}
       <Dialog open={!!pdfUrl} onOpenChange={(open) => !open && handleClosePdf()}>
-        <DialogContent className="max-w-3xl h-[90vh] flex flex-col">
+        <DialogContent className="max-w-5xl h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileDown className="h-5 w-5" />

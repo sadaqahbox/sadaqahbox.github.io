@@ -7,11 +7,13 @@
  * @module api/services/box-service
  */
 
+import { eq } from "drizzle-orm";
 import type { Context } from "hono";
 import { BaseService, createServiceFactory } from "./base-service";
 import { BoxRepository, SadaqahRepository, CurrencyRepository, TagRepository, CollectionRepository } from "../repositories";
 import type { BoxRecord } from "../repositories/box.repository";
 import type { Box, BoxStats, BoxSummary, Collection, Tag, Currency } from "../schemas";
+import { users } from "../../db/schema";
 import { DEFAULT_PAGE, DEFAULT_LIMIT, DEFAULT_BASE_CURRENCY_CODE } from "../config/constants";
 import { sanitizeString } from "../shared/validators";
 import { dbBatch } from "../shared/transaction";
@@ -286,13 +288,74 @@ export class BoxService extends BaseService {
 
     const currencyId = record.currencyId || "cur_default";
 
+    // Get user's preferred currency
+    const user = await this.db.query.users.findFirst({
+      where: (users) => eq(users.id, userId),
+      columns: { preferredCurrencyId: true },
+    });
+    const preferredCurrencyId = user?.preferredCurrencyId;
+
+    // Get all currencies for conversion calculation
+    const allCurrencies = await this.currencyRepo.findAll();
+    const boxCurrency = currencyId !== "cur_default"
+      ? await this.currencyRepo.findById(currencyId)
+      : null;
+    const preferredCurrency = preferredCurrencyId
+      ? allCurrencies.find(c => c.id === preferredCurrencyId)
+      : null;
+
+    // Calculate conversions for all currencies with usdValue
+    // usdValue represents: 1 unit of currency = X USD
+    // To convert: value_in_target = value_in_source * (sourceUSD / targetUSD)
+    const conversions: Array<{
+      currencyId: string;
+      code: string;
+      name: string;
+      symbol?: string | null;
+      value: number;
+      rate: number;
+    }> = [];
+    if (boxCurrency?.usdValue) {
+      for (const targetCurrency of allCurrencies) {
+        if (targetCurrency.usdValue && targetCurrency.id !== currencyId) {
+          // Correct formula: sourceUSD / targetUSD
+          // Example: XAU (159.14 USD) to TRY (0.023 USD)
+          // 1 XAU = 159.14 / 0.023 = ~6919 TRY
+          const rate = boxCurrency.usdValue / targetCurrency.usdValue;
+          const convertedValue = record.totalValue * rate;
+          conversions.push({
+            currencyId: targetCurrency.id,
+            code: targetCurrency.code,
+            name: targetCurrency.name,
+            symbol: targetCurrency.symbol,
+            value: convertedValue,
+            rate: rate,
+          });
+        }
+      }
+    }
+
+    // Build metadata
+    const metadata: {
+      conversions: typeof conversions;
+      preferredCurrencyId?: string;
+      preferredCurrencyCode?: string;
+    } = {
+      conversions,
+    };
+    if (preferredCurrency) {
+      metadata.preferredCurrencyId = preferredCurrency.id;
+      metadata.preferredCurrencyCode = preferredCurrency.code;
+    }
+
     // Create collection and reset box counters
     const collection = await this.boxRepo.createCollection(
       boxId,
       userId,
       record.totalValue,
       record.totalValueExtra,
-      currencyId
+      currencyId,
+      metadata
     );
 
     // Delete all sadaqahs in the box
@@ -305,6 +368,11 @@ export class BoxService extends BaseService {
     const updatedBox = await this.getBox(boxId);
     if (!updatedBox) return null;
 
+    // Get currency details for the collection
+    const collectionCurrency = currencyId !== "cur_default"
+      ? await this.currencyRepo.findById(currencyId)
+      : null;
+
     return {
       box: updatedBox,
       collection: {
@@ -312,8 +380,16 @@ export class BoxService extends BaseService {
         boxId,
         emptiedAt: collection.emptiedAt,
         totalValue: record.totalValue,
-        totalValueExtra: record.totalValueExtra,
+        totalValueExtra: record.totalValueExtra ?? undefined,
+        metadata,
         currencyId,
+        currency: collectionCurrency ? {
+          id: collectionCurrency.id,
+          code: collectionCurrency.code,
+          name: collectionCurrency.name,
+          symbol: collectionCurrency.symbol || undefined,
+          currencyTypeId: collectionCurrency.currencyTypeId || undefined,
+        } : undefined,
       },
     };
   }

@@ -113,6 +113,18 @@ export const collections = sqliteTable(
     totalValueExtra: text("totalValueExtra", { mode: "json" }).$type<{
       [currencyId: string]: { total: number; code: string; name: string };
     }>(),
+    metadata: text("metadata", { mode: "json" }).$type<{
+      conversions?: Array<{
+        currencyId: string;
+        code: string;
+        name: string;
+        symbol?: string | null;
+        value: number;
+        rate: number;
+      }>;
+      preferredCurrencyId?: string;
+      preferredCurrencyCode?: string;
+    }>(),
     currencyId: text("currencyId")
       .notNull()
       .references(() => currencies.id),

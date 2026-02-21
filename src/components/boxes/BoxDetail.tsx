@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,11 +36,12 @@ import { AddSadaqah } from "@/components/sadaqah/AddSadaqah";
 import { Plus, Coins, Gem, Wallet, Info, FileDown } from "lucide-react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { GoldIngotsFreeIcons } from "@hugeicons/core-free-icons";
-import { generateCollectionReceiptPDF } from "@/lib/pdf";
+import { generateCollectionReceiptPDF, type PreferredCurrencyInfo } from "@/lib/pdf";
 import {
     useSadaqahs,
     useCollections,
     useTags,
+    useCurrencies,
     useCreateSadaqah,
     useDeleteSadaqah,
     useEmptyBox,
@@ -50,6 +51,7 @@ import {
 } from "@/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Box, Tag, Collection } from "@/types";
+import { authClient } from "@/lib/auth";
 
 interface BoxDetailProps {
   box: Box;
@@ -68,6 +70,22 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
   const { data: sadaqahs = [], isLoading: sadaqahsLoading } = useSadaqahs(box.id);
   const { data: collections = [], isLoading: collectionsLoading } = useCollections(box.id);
   const { data: availableTags = [], isLoading: tagsLoading } = useTags();
+  const { data: currencies = [] } = useCurrencies();
+  const { data: session } = authClient.useSession();
+
+  // Get user's preferred currency
+  const preferredCurrency: PreferredCurrencyInfo | null = useMemo(() => {
+    const preferredId = session?.user?.preferredCurrencyId;
+    if (!preferredId) return null;
+    const currency = currencies.find(c => c.id === preferredId);
+    if (!currency) return null;
+    return {
+      code: currency.code,
+      name: currency.name,
+      symbol: currency.symbol,
+      usdValue: currency.usdValue,
+    };
+  }, [session?.user?.preferredCurrencyId, currencies]);
 
   // Mutations
   const { mutate: createSadaqah, isPending: isCreatingSadaqah } = useCreateSadaqah();
@@ -111,7 +129,7 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
             onBoxUpdated(result.box);
             // Generate and show PDF receipt
             if (result.collection) {
-                const pdfDataUrl = generateCollectionReceiptPDF(result.collection, box.name);
+                const pdfDataUrl = generateCollectionReceiptPDF(result.collection, box.name, preferredCurrency);
                 setPdfUrl(pdfDataUrl);
                 setPdfTitle(`Collection - ${box.name}`);
                 setShowPdfDialog(true);
@@ -403,7 +421,7 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
 
       {/* PDF Viewer Dialog */}
       <Dialog open={showPdfDialog} onOpenChange={setShowPdfDialog}>
-        <DialogContent className="max-w-3xl h-[90vh] flex flex-col">
+        <DialogContent className="max-w-5xl h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Coins className="h-5 w-5" />

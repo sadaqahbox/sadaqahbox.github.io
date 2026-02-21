@@ -437,7 +437,19 @@ export class BoxRepository {
     totalValueExtra: {
       [currencyId: string]: { total: number; code: string; name: string };
     } | null,
-    currencyId: string
+    currencyId: string,
+    metadata?: {
+      conversions?: Array<{
+        currencyId: string;
+        code: string;
+        name: string;
+        symbol?: string | null;
+        value: number;
+        rate: number;
+      }>;
+      preferredCurrencyId?: string;
+      preferredCurrencyCode?: string;
+    }
   ): Promise<{ id: string; emptiedAt: string }> {
     const timestamp = new Date();
     const id = generateCollectionId();
@@ -449,6 +461,7 @@ export class BoxRepository {
       emptiedAt: timestamp,
       totalValue,
       totalValueExtra,
+      metadata,
       currencyId,
     });
 
@@ -493,6 +506,7 @@ export class BoxRepository {
         emptiedAt: new Date(c.emptiedAt).toISOString(),
         totalValue: c.totalValue,
         totalValueExtra: c.totalValueExtra,
+        metadata: c.metadata,
         currencyId: c.currencyId,
         currency: c.currency ? {
           id: c.currency.id,

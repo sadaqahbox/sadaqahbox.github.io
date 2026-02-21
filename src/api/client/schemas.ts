@@ -40,6 +40,15 @@ const TotalValueExtraEntrySchema = z.object({
   name: z.string(),
 });
 
+const CollectionConversionSchema = z.object({
+  currencyId: z.string(),
+  code: z.string(),
+  name: z.string(),
+  symbol: z.string().nullable().optional(),
+  value: z.number(),
+  rate: z.number(),
+});
+
 export const BoxSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -71,6 +80,11 @@ export const CollectionSchema = z.object({
   emptiedAt: z.string(),
   totalValue: z.number(),
   totalValueExtra: z.record(z.string(), TotalValueExtraEntrySchema).nullable().optional(),
+  metadata: z.object({
+    conversions: z.array(CollectionConversionSchema).optional(),
+    preferredCurrencyId: z.string().optional(),
+    preferredCurrencyCode: z.string().optional(),
+  }).optional(),
   currencyId: z.string(),
   currency: CurrencySchema.optional(),
 });
