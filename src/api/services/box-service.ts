@@ -14,12 +14,13 @@ import { BoxRepository, SadaqahRepository, CurrencyRepository, TagRepository, Co
 import type { BoxRecord } from "../repositories/box.repository";
 import type { Box, BoxStats, BoxSummary, Collection, Tag, Currency } from "../schemas";
 import { users } from "../../db/schema";
-import { DEFAULT_PAGE, DEFAULT_LIMIT, DEFAULT_BASE_CURRENCY_CODE } from "../config/constants";
+import { DEFAULT_PAGE, DEFAULT_LIMIT, DEFAULT_BASE_CURRENCY_CODE, MAX_BOXES_PER_USER } from "../config/constants";
 import { sanitizeString } from "../shared/validators";
 import { dbBatch } from "../shared/transaction";
 import {
   BoxNotFoundError,
   BoxValidationError,
+  BoxLimitError,
   AuthorizationError,
   Result,
   type Result as ResultType,
@@ -102,6 +103,12 @@ export class BoxService extends BaseService {
     const name = sanitizeString(input.name);
     if (!name) {
       throw new BoxValidationError("Box name is required");
+    }
+
+    // Check box limit for user
+    const userBoxCount = await this.boxRepo.countByUserId(input.userId);
+    if (userBoxCount >= MAX_BOXES_PER_USER) {
+      throw new BoxLimitError(MAX_BOXES_PER_USER);
     }
 
     // Get or set default base currency

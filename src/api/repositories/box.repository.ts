@@ -286,6 +286,17 @@ export class BoxRepository {
   }
 
   /**
+   * Count boxes for a user
+   */
+  async countByUserId(userId: string): Promise<number> {
+    const result = await this.db
+      .select({ count: count() })
+      .from(boxes)
+      .where(eq(boxes.userId, userId));
+    return result[0]?.count ?? 0;
+  }
+
+  /**
    * Update a box
    */
   async update(id: string, data: UpdateBoxData): Promise<BoxRecord | null> {

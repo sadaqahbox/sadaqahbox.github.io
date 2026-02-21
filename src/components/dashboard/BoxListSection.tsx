@@ -7,6 +7,7 @@ import { BoxList, CreateBox } from "@/components/boxes";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Add01Icon } from "@hugeicons/core-free-icons";
 import { sidebarVariants, fadeInVariants } from "@/lib/animations";
+import { MAX_BOXES_PER_USER } from "@/api/config/constants";
 import type { Box } from "@/types";
 import type { UseMutateFunction } from "@tanstack/react-query";
 
@@ -66,7 +67,13 @@ export const BoxListSection = React.memo(function BoxListSection({
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
                         >
-                            <Button size="sm" onClick={onToggleCreateForm} className="gap-1">
+                            <Button
+                                size="sm"
+                                onClick={onToggleCreateForm}
+                                className="gap-1"
+                                disabled={boxes.length >= MAX_BOXES_PER_USER}
+                                title={boxes.length >= MAX_BOXES_PER_USER ? `Maximum ${MAX_BOXES_PER_USER} boxes allowed` : undefined}
+                            >
                                 <HugeiconsIcon icon={Add01Icon} className="size-4" />
                                 New
                             </Button>
@@ -79,7 +86,7 @@ export const BoxListSection = React.memo(function BoxListSection({
                         transition={{ delay: 0.4 }}
                     >
                         <CardDescription>
-                            {boxes.length} {boxes.length === 1 ? "box" : "boxes"} total
+                            {boxes.length} / {MAX_BOXES_PER_USER} boxes
                         </CardDescription>
                     </motion.div>
                 </CardHeader>

@@ -48,6 +48,13 @@ export const DEFAULT_BASE_CURRENCY_CODE = "XAU";
  */
 export const DEFAULT_BASE_CURRENCY_NAME = "Gold";
 
+// ============== Box Limits ==============
+
+/**
+ * Maximum number of boxes a user can create
+ */
+export const MAX_BOXES_PER_USER = 20;
+
 /**
  * Default base currency symbol
  */

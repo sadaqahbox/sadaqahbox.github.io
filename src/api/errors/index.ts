@@ -110,6 +110,20 @@ export class BoxValidationError extends ValidationError {
 }
 
 /**
+ * Error thrown when user reaches the maximum number of boxes
+ */
+export class BoxLimitError extends BoxError {
+  constructor(limit: number) {
+    super(
+      `You have reached the maximum limit of ${limit} boxes. Please delete an existing box before creating a new one.`,
+      "BOX_LIMIT_REACHED",
+      422
+    );
+    this.name = "BoxLimitError";
+  }
+}
+
+/**
  * Error thrown when a sadaqah operation fails
  */
 export class SadaqahError extends AppError {
