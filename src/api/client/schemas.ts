@@ -81,7 +81,7 @@ export const CreateBoxBodySchema = z.object({
 export const AddSadaqahBodySchema = z.object({
   amount: z.number().optional(),
   value: z.number().optional(),
-  currencyCode: z.string().optional(),
+  currencyId: z.string().optional(),
 });
 
 // ============== Response Schemas ==============

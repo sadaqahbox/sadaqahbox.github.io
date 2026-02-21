@@ -7,6 +7,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { boxesApi } from "@/api/client";
+import { authClient } from "@/lib/auth/client";
 import { queryKeys, queryClient } from "@/lib/query-client";
 import type { Box, CreateBoxBody } from "@/api/client";
 
@@ -44,20 +45,54 @@ export function useBox(id: string | null) {
 
 /**
  * Hook to create a new box
- * Automatically invalidates the boxes list cache
+ * Automatically updates the boxes list cache
+ * Sets as default if it's the first box
  */
 export function useCreateBox() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (data: CreateBoxBody) => boxesApi.create(data),
+        mutationFn: async (data: CreateBoxBody) => {
+            const newBox = await boxesApi.create(data);
+            return newBox;
+        },
         onSuccess: (newBox) => {
-            // Invalidate boxes list
-            queryClient.invalidateQueries({ queryKey: queryKeys.boxes.lists });
-            // Also invalidate stats since counts changed
-            queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
-            // Add the new box to the cache
+            // Find and update all box list queries (handles different filter keys)
+            queryClient.setQueriesData<Box[]>(
+                { queryKey: ["boxes", "list"] },
+                (old) => old ? [newBox, ...old] : [newBox]
+            );
+            
+            // Also add to detail cache
             queryClient.setQueryData(queryKeys.boxes.detail(newBox.id), newBox);
+            
+            // Set as default if it's the first box (check from first list query)
+            const firstList = queryClient.getQueryData<Box[]>(queryKeys.boxes.list({}));
+            if (!firstList || firstList.length <= 1) {
+                authClient.updateUser({ defaultBoxId: newBox.id });
+            }
+            
+            // Invalidate queries in background for consistency
+            queryClient.invalidateQueries({ queryKey: ["boxes"] });
+            queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
+        },
+    });
+}
+
+/**
+ * Hook to set a box as the default for the user
+ */
+export function useSetDefaultBox() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (boxId: string) => {
+            const result = await authClient.updateUser({ defaultBoxId: boxId });
+            return result;
+        },
+        onSuccess: () => {
+            // Invalidate session/user data to refresh defaultBoxId
+            queryClient.invalidateQueries({ queryKey: ["auth"] });
         },
     });
 }

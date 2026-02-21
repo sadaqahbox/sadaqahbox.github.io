@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "motion/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,11 +19,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Trash2, MoreVertical, Package, Coins } from "lucide-react";
+import { Trash2, MoreVertical, Package, Coins, Star } from "lucide-react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Mosque01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
-import { prefetchBox } from "@/hooks";
+import { prefetchBox, useSetDefaultBox } from "@/hooks";
+import { authClient } from "@/lib/auth/client";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Box } from "@/types";
 
@@ -64,6 +64,10 @@ export function BoxList({ boxes, selectedBoxId, onSelectBox, onBoxDeleted }: Box
   const queryClient = useQueryClient();
   const [deletingBox, setDeletingBox] = useState<Box | null>(null);
   const [hoveredBoxId, setHoveredBoxId] = useState<string | null>(null);
+  
+  const { mutate: setDefaultBox } = useSetDefaultBox();
+  const session = authClient.useSession();
+  const defaultBoxId = session.data?.user?.defaultBoxId;
 
   const handleDelete = async (box: Box) => {
     // Let the parent handle deletion via TanStack Query mutation
@@ -115,8 +119,8 @@ export function BoxList({ boxes, selectedBoxId, onSelectBox, onBoxDeleted }: Box
 
   return (
     <>
-      <ScrollArea className="h-[calc(100vh-380px)]">
-        <div className="px-2">
+      <ScrollArea className="h-[calc(100vh-280px)]">
+        <div className="py-2">
           <AnimatePresence mode="popLayout">
             {boxes.map((box, index) => (
               <motion.div
@@ -130,7 +134,7 @@ export function BoxList({ boxes, selectedBoxId, onSelectBox, onBoxDeleted }: Box
               >
                 <motion.div
                   className={cn(
-                    "group relative flex items-start gap-3 rounded-lg p-3 cursor-pointer transition-colors",
+                    "group relative flex items-start gap-3 rounded-lg mx-2 my-1 px-3 py-3 cursor-pointer transition-colors",
                     selectedBoxId === box.id
                       ? "bg-accent"
                       : "hover:bg-muted/50"
@@ -147,10 +151,12 @@ export function BoxList({ boxes, selectedBoxId, onSelectBox, onBoxDeleted }: Box
                     initial="initial"
                     animate={selectedBoxId === box.id ? "selected" : hoveredBoxId === box.id ? "hover" : "initial"}
                     className={cn(
-                      "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors",
+                      "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors ring-2",
                       selectedBoxId === box.id
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted group-hover:bg-background"
+                        ? "bg-primary text-primary-foreground ring-primary"
+                        : defaultBoxId === box.id
+                          ? "bg-muted group-hover:bg-background ring-primary"
+                          : "bg-muted group-hover:bg-background ring-transparent"
                     )}
                   >
                     <HugeiconsIcon icon={Mosque01Icon} className="size-5" />
@@ -199,6 +205,17 @@ export function BoxList({ boxes, selectedBoxId, onSelectBox, onBoxDeleted }: Box
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" sideOffset={4}>
+                          {defaultBoxId !== box.id && (
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDefaultBox(box.id);
+                              }}
+                            >
+                              <Star className="size-4 mr-2" />
+                              Make default
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem
                             className="text-destructive focus:text-destructive"
                             onClick={(e) => {
@@ -271,7 +288,6 @@ export function BoxList({ boxes, selectedBoxId, onSelectBox, onBoxDeleted }: Box
                     </AnimatePresence>
                   </motion.div>
                 </motion.div>
-                {index < boxes.length - 1 && <Separator className="mx-3 w-auto" />}
               </motion.div>
             ))}
           </AnimatePresence>

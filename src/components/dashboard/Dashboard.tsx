@@ -8,7 +8,7 @@ import { BoxList, BoxDetail, CreateBox } from "@/components/boxes";
 import { SignedIn, SignedOut, RedirectToSignIn, AuthLoading } from "@daveyplate/better-auth-ui";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Mosque01Icon, Add01Icon } from "@hugeicons/core-free-icons";
-import { useDashboard } from "@/components/hooks/useDashboard";
+import { useDashboard } from "@/hooks";
 import { containerVariants, itemVariants, mainContentVariants } from "@/lib/animations";
 import { DashboardSkeleton } from "./DashboardSkeleton";
 import { LoadingFallback } from "./LoadingFallback";
@@ -28,6 +28,8 @@ const DashboardContent = React.memo(function DashboardContent() {
         handleBoxCreated,
         handleBoxDeleted,
         handleBoxUpdated,
+        createBox,
+        isCreating,
     } = useDashboard();
 
     // Show initial skeleton only on first load when we have no data
@@ -57,6 +59,8 @@ const DashboardContent = React.memo(function DashboardContent() {
                             onBoxDeleted={handleBoxDeleted}
                             onCancelCreate={() => setShowCreateForm(false)}
                             isLoading={showInitialLoading}
+                            createBox={createBox}
+                            isCreating={isCreating}
                         />
 
                         {/* Main Content - Box Detail */}
@@ -82,6 +86,8 @@ interface BoxListSectionProps {
     onBoxDeleted: (id: string) => void;
     onCancelCreate: () => void;
     isLoading?: boolean;
+    createBox: ReturnType<typeof import("@/hooks").useCreateBox>['mutate'];
+    isCreating: boolean;
 }
 
 function BoxListSection({
@@ -94,6 +100,8 @@ function BoxListSection({
     onBoxDeleted,
     onCancelCreate,
     isLoading,
+    createBox,
+    isCreating,
 }: BoxListSectionProps) {
     return (
         <motion.div
@@ -102,8 +110,8 @@ function BoxListSection({
             transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
             className="lg:col-span-4 xl:col-span-3"
         >
-            <Card className="h-full overflow-hidden">
-                <CardHeader className="pb-4">
+            <Card className="h-full overflow-hidden flex flex-col">
+                <CardHeader className="pb-4 shrink-0">
                     <motion.div
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -151,7 +159,12 @@ function BoxListSection({
                                 transition={{ duration: 0.3 }}
                                 className="p-4 border-b"
                             >
-                                <CreateBox onCreated={onBoxCreated} onCancel={onCancelCreate} />
+                                <CreateBox
+                                    onCreated={onBoxCreated}
+                                    onCancel={onCancelCreate}
+                                    createBox={createBox}
+                                    isCreating={isCreating}
+                                />
                             </motion.div>
                         )}
                     </AnimatePresence>

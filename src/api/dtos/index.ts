@@ -160,7 +160,7 @@ export type SadaqahDto = z.infer<typeof SadaqahSchema>;
 export const AddSadaqahBodySchema = z.object({
 	amount: z.number().int().positive().optional(),
 	value: z.number().positive().optional(),
-	currencyCode: z.string().optional(),
+	currencyId: z.string().optional(),
 	metadata: z.record(z.string(), z.string()).optional(),
 });
 

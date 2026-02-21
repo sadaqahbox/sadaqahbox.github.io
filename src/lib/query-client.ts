@@ -91,6 +91,11 @@ export const queryKeys = {
         all: ["currencies"] as const,
         list: ["currencies", "list"] as const,
     },
+    // Currency Types
+    currencyTypes: {
+        all: ["currencyTypes"] as const,
+        list: ["currencyTypes", "list"] as const,
+    },
 } as const;
 
 /**

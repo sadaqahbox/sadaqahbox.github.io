@@ -12,6 +12,7 @@ export {
     useDeleteBox,
     useUpdateBox,
     useEmptyBox,
+    useSetDefaultBox,
     prefetchBox,
     prefetchBoxes,
 } from "./useBoxes";
@@ -34,3 +35,6 @@ export { useTags, useAddTagToBox, useRemoveTagFromBox } from "./useTags";
 
 // Dashboard
 export { useDashboard } from "./useDashboard";
+
+// Currencies
+export { useCurrencies, useCurrencyTypes } from "./useCurrencies";

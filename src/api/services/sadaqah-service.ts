@@ -1,6 +1,6 @@
 /**
  * Sadaqah Service
- * 
+ *
  * Business logic for sadaqah operations.
  */
 
@@ -14,7 +14,7 @@ import { DEFAULT_PAGE, DEFAULT_LIMIT } from "../config/constants";
 export interface AddSadaqahInput {
 	amount?: number;
 	value?: number;
-	currencyCode?: string;
+	currencyId?: string;
 	metadata?: Record<string, string>;
 }
 
@@ -51,15 +51,16 @@ export class SadaqahService extends BaseService {
 		const box = await this.boxEntity.get(boxId, userId);
 		if (!box) return null;
 
-		let currencyId = box.currencyId;
-
 		// Calculate value
 		const value = input.value ?? input.amount ?? 1;
+
+		// Use provided currency ID or fall back to box's currency
+		const currencyId = input.currencyId || box.currencyId || "cur_default";
 
 		const result = await this.sadaqahEntity.create({
 			boxId,
 			value,
-			currencyId: currencyId || "cur_default",
+			currencyId,
 			userId,
 		});
 

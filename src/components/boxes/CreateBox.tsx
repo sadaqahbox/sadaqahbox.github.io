@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { boxesApi, tagsApi } from "@/api/client";
+import { tagsApi } from "@/api/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,18 +9,20 @@ import { Field, FieldLabel } from "@/components/ui/field";
 import { X, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Box, Tag } from "@/types";
+import type { CreateBoxBody } from "@/api/client";
 
 interface CreateBoxProps {
   onCreated: (box: Box) => void;
   onCancel: () => void;
+  createBox?: (data: CreateBoxBody) => void;
+  isCreating?: boolean;
 }
 
-export function CreateBox({ onCreated, onCancel }: CreateBoxProps) {
+export function CreateBox({ onCreated, onCancel, createBox, isCreating = false }: CreateBoxProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
-  const [loading, setLoading] = useState(false);
   const [fetchingTags, setFetchingTags] = useState(true);
 
   useEffect(() => {
@@ -37,26 +39,24 @@ export function CreateBox({ onCreated, onCancel }: CreateBoxProps) {
     fetchTags();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
-    setLoading(true);
-    try {
-      const box = await boxesApi.create({
+    if (createBox) {
+      // Use the mutation from props
+      createBox({
         name,
         description,
         tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
       });
-      onCreated(box);
-      setName("");
-      setDescription("");
-      setSelectedTagIds([]);
-    } catch {
-      // Error handled by api.ts
-    } finally {
-      setLoading(false);
     }
+    
+    // Clear form
+    setName("");
+    setDescription("");
+    setSelectedTagIds([]);
+    onCreated({} as Box); // Let parent handle the actual box from mutation
   };
 
   const toggleTag = (tagId: string) => {
@@ -130,13 +130,13 @@ export function CreateBox({ onCreated, onCancel }: CreateBoxProps) {
           )}
 
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onCancel}>
+            <Button type="button" variant="outline" onClick={onCancel} disabled={isCreating}>
               <X className="mr-2 h-4 w-4" />
               Cancel
             </Button>
-            <Button type="submit" disabled={loading || fetchingTags}>
+            <Button type="submit" disabled={isCreating || fetchingTags || !name.trim()}>
               <Plus className="mr-2 h-4 w-4" />
-              {loading ? "Creating..." : "Create Box"}
+              {isCreating ? "Creating..." : "Create Box"}
             </Button>
           </div>
         </form>

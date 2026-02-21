@@ -1,18 +1,25 @@
-import { useState, useEffect } from "react";
-import { boxesApi, currenciesApi } from "@/api/client";
+import { useState, useMemo, useEffect } from "react";
+import { useCurrencies, useCurrencyTypes } from "@/hooks";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FieldLabel } from "@/components/ui/field";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Combobox,
+  ComboboxInput,
+  ComboboxContent,
+  ComboboxList,
+  ComboboxItem,
+  ComboboxGroup,
+  ComboboxLabel,
+  ComboboxEmpty,
+  ComboboxSeparator,
+  ComboboxCollection,
+  ComboboxValue,
+} from "@/components/ui/combobox";
 import { X, Plus } from "lucide-react";
 import type { Currency } from "@/types";
+import type { CurrencyType } from "@/api/client/currency-types";
 
 interface AddSadaqahProps {
   boxId: string;
@@ -21,39 +28,83 @@ interface AddSadaqahProps {
   isLoading?: boolean;
 }
 
+const GROUP_ORDER = ["Commodity", "Fiat", "Crypto"];
+
+interface CurrencyGroup {
+  value: string;
+  items: Currency[];
+}
+
 export function AddSadaqah({ boxId, onAdded, onCancel, isLoading }: AddSadaqahProps) {
   const [amount, setAmount] = useState(1);
   const [value, setValue] = useState<number>(1);
-  const [currencyCode, setCurrencyCode] = useState("USD");
-  const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [fetchingCurrencies, setFetchingCurrencies] = useState(true);
+  const [currencyId, setCurrencyId] = useState<string>("");
 
+  const { data: currencies = [], isLoading: isLoadingCurrencies } = useCurrencies();
+  const { data: currencyTypes = [] } = useCurrencyTypes();
+
+  // Set default currency when data loads
   useEffect(() => {
-    const fetchCurrencies = async () => {
-      try {
-        const currencies = await currenciesApi.getAll();
-        if (currencies.length > 0) {
-          setCurrencies(currencies);
-          setCurrencyCode(currencies[0]!.code);
-        }
-      } catch {
-        // Error handled by api.ts
-      } finally {
-        setFetchingCurrencies(false);
+    if (currencies.length > 0 && !currencyId) {
+      const usdCurrency = currencies.find(c => c.code === "USD");
+      setCurrencyId(usdCurrency?.id || currencies[0]!.id);
+    }
+  }, [currencies, currencyId]);
+
+  // Create a lookup map for currency types
+  const currencyTypeMap = useMemo(() => {
+    const map = new Map<string, CurrencyType>();
+    for (const type of currencyTypes) {
+      map.set(type.id, type);
+    }
+    return map;
+  }, [currencyTypes]);
+
+  // Group currencies by their type
+  const groupedCurrencies: CurrencyGroup[] = useMemo(() => {
+    const groups = new Map<string, Currency[]>();
+    
+    for (const currency of currencies) {
+      const typeId = currency.currencyTypeId;
+      const typeName = typeId ? currencyTypeMap.get(typeId)?.name || "Other" : "Other";
+      if (!groups.has(typeName)) {
+        groups.set(typeName, []);
       }
-    };
-    fetchCurrencies();
-  }, []);
+      groups.get(typeName)!.push(currency);
+    }
+    
+    // Sort groups by predefined order, then alphabetically
+    const sortedEntries = Array.from(groups.entries()).sort((a, b) => {
+      const indexA = GROUP_ORDER.indexOf(a[0]);
+      const indexB = GROUP_ORDER.indexOf(b[0]);
+      
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      return a[0].localeCompare(b[0]);
+    });
+    
+    // Sort currencies within each group alphabetically by code
+    return sortedEntries.map(([type, items]) => ({
+      value: type,
+      items: items.sort((a, b) => a.code.localeCompare(b.code)),
+    }));
+  }, [currencies, currencyTypeMap]);
+
+  const selectedCurrency = useMemo(() =>
+    currencies.find(c => c.id === currencyId),
+    [currencies, currencyId]
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (value <= 0 || amount <= 0) return;
+    if (!currencyId) return;
 
-    // Call the parent handler with the form data
-    // Parent will handle the API call via TanStack Query mutation
-    onAdded(value * amount, currencyCode);
+    onAdded(value * amount, currencyId);
   };
+
+  const isFetchingCurrencies = isLoadingCurrencies || currencies.length === 0;
 
   return (
     <Card>
@@ -84,22 +135,40 @@ export function AddSadaqah({ boxId, onAdded, onCancel, isLoading }: AddSadaqahPr
             </Field>
             <Field>
               <FieldLabel>Currency</FieldLabel>
-              <Select
-                value={currencyCode}
-                onValueChange={setCurrencyCode}
-                disabled={fetchingCurrencies}
+              <Combobox
+                items={groupedCurrencies}
+                value={currencyId}
+                onValueChange={(val) => val && setCurrencyId(val)}
+                disabled={isFetchingCurrencies}
+                itemToStringLabel={(v)=>selectedCurrency?.name + " ("+ selectedCurrency?.symbol+")"}
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {currencies.map((c) => (
-                    <SelectItem key={c.id} value={c.code}>
-                      {c.code} {c.symbol ? `(${c.symbol})` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <ComboboxInput
+                  placeholder={isFetchingCurrencies ? "Loading..." : "Select currency..."}
+                  showClear
+                />
+                <ComboboxContent>
+                  <ComboboxEmpty>No currencies found.</ComboboxEmpty>
+                  <ComboboxList>
+                    {(group, index) => (
+                      <ComboboxGroup key={group.value} items={group.items}>
+                        <ComboboxLabel>{group.value}</ComboboxLabel>
+                        <ComboboxCollection>
+                          {(item) => (
+                            <ComboboxItem key={item.id} value={item.id}>
+                              <span className="font-medium w-12">{item.code}</span>
+                              <span className="text-muted-foreground text-xs truncate">
+                                {item.name}
+                                {item.symbol ? ` (${item.symbol})` : ""}
+                              </span>
+                            </ComboboxItem>
+                          )}
+                        </ComboboxCollection>
+                        {index < groupedCurrencies.length - 1 && <ComboboxSeparator />}
+                      </ComboboxGroup>
+                    )}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
             </Field>
           </div>
           <div className="mt-4 flex justify-end gap-2">
@@ -107,9 +176,9 @@ export function AddSadaqah({ boxId, onAdded, onCancel, isLoading }: AddSadaqahPr
               <X className="mr-2 h-4 w-4" />
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading || loading || fetchingCurrencies}>
+            <Button type="submit" disabled={isLoading || isFetchingCurrencies || !currencyId}>
               <Plus className="mr-2 h-4 w-4" />
-              {isLoading || loading
+              {isLoading
                 ? "Adding..."
                 : `Add ${amount > 1 ? `${amount} × ` : ""}${value} Sadaqah`}
             </Button>

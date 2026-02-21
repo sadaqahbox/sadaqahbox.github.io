@@ -78,7 +78,7 @@ export function useCreateSadaqah() {
         mutationFn: (data: CreateSadaqahInput) =>
             boxesApi.addSadaqah(data.boxId, {
                 value: data.value,
-                currencyCode: data.currencyId,
+                currencyId: data.currencyId,
             }),
         onMutate: async (data) => {
             // Cancel outgoing refetches

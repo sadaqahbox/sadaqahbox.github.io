@@ -38,6 +38,15 @@ function createAuth(env?: AuthEnv, cf?: IncomingRequestCfProperties) {
                 emailAndPassword: {
                     enabled: true,
                 },
+                user: {
+                    additionalFields: {
+                        defaultBoxId: {
+                            type: "string",
+                            required: false,
+                            input: true,
+                        },
+                    },
+                },
                 advanced: {
                     cookiePrefix: "sadaqahbox",
                     useSecureCookies: false,
@@ -94,3 +103,12 @@ function createAuth(env?: AuthEnv, cf?: IncomingRequestCfProperties) {
 
 // Export for runtime usage
 export { createAuth };
+
+// Export type for client-side inference
+export type AuthInstance = ReturnType<typeof createAuth>;
+
+// Create a default auth instance for CLI schema generation
+// This will be overridden at runtime with actual env/cf
+const auth = createAuth();
+export default auth;
+export { auth };

@@ -16,8 +16,7 @@
     "auth:format": "bunx prettier --write src/db/auth.schema.ts",
     "auth:update": "npm run auth:generate && npm run auth:format",
     "studio:dev": "drizzle-kit studio",
-    "studio:prd": "cross-env NODE_ENV=production drizzle-kit studio",
-    "generate:api": "bun run scripts/generate-api-client.ts"
+    "studio:prd": "cross-env NODE_ENV=production drizzle-kit studio"
   },
   "dependencies": {
     "@base-ui/react": "^1.1.0",

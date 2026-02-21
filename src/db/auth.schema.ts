@@ -21,6 +21,7 @@ export const users = sqliteTable("users", {
   banReason: text("ban_reason"),
   banExpires: integer("ban_expires", { mode: "timestamp_ms" }),
   isAnonymous: integer("is_anonymous", { mode: "boolean" }).default(false),
+  defaultBoxId: text("default_box_id"),
 });
 
 export const sessions = sqliteTable(

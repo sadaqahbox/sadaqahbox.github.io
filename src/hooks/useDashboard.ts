@@ -5,8 +5,9 @@
  * for automatic caching, background refetching, and optimistic updates.
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useBoxes, useDashboardStats, useCreateBox, useDeleteBox } from "@/hooks";
+import { authClient } from "@/lib/auth/client";
 import type { Box } from "@/types";
 
 export interface DashboardStats {
@@ -32,6 +33,7 @@ export interface UseDashboardReturn {
     refreshData: () => Promise<void>;
     isCreating: boolean;
     isDeleting: boolean;
+    createBox: ReturnType<typeof useCreateBox>['mutate'];
 }
 
 // Stable default stats object to prevent re-renders
@@ -41,6 +43,9 @@ export function useDashboard(): UseDashboardReturn {
     const [selectedBox, setSelectedBox] = useState<Box | null>(null);
     const [showCreateForm, setShowCreateForm] = useState(false);
 
+    // Get session for defaultBoxId (must be at top level)
+    const session = authClient.useSession();
+
     // Server state queries
     const {
         data: boxes = [],
@@ -48,6 +53,28 @@ export function useDashboard(): UseDashboardReturn {
         error: boxesError,
         refetch: refetchBoxes,
     } = useBoxes();
+
+    // Preselect default box when boxes load
+    useEffect(() => {
+        if (boxes.length > 0 && !selectedBox) {
+            // Get defaultBoxId from session
+            const defaultBoxId = session.data?.user?.defaultBoxId;
+            
+            if (defaultBoxId) {
+                const defaultBox = boxes.find(b => b.id === defaultBoxId);
+                if (defaultBox) {
+                    setSelectedBox(defaultBox);
+                    return;
+                }
+            }
+            
+            // Fallback to first box if no default set or default not found
+            const firstBox = boxes[0];
+            if (firstBox) {
+                setSelectedBox(firstBox);
+            }
+        }
+    }, [boxes, selectedBox, session.data?.user?.defaultBoxId]);
 
     const {
         data: stats = DEFAULT_STATS,
@@ -62,10 +89,6 @@ export function useDashboard(): UseDashboardReturn {
 
     const loading = boxesLoading || statsLoading;
     const error = boxesError || statsError;
-
-    // Expose individual loading states for granular UI control
-    const isLoadingBoxes = boxesLoading;
-    const isLoadingStats = statsLoading;
 
     const refreshData = useCallback(async () => {
         await Promise.all([refetchBoxes(), refetchStats()]);
@@ -110,8 +133,8 @@ export function useDashboard(): UseDashboardReturn {
         showCreateForm,
         stats,
         loading,
-        isLoadingBoxes,
-        isLoadingStats,
+        isLoadingBoxes: boxesLoading,
+        isLoadingStats: statsLoading,
         error: error as Error | null,
         setSelectedBox,
         setShowCreateForm,
@@ -121,5 +144,6 @@ export function useDashboard(): UseDashboardReturn {
         refreshData,
         isCreating,
         isDeleting,
+        createBox,
     };
 }
