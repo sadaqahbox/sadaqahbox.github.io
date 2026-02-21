@@ -14,7 +14,7 @@ export function DashboardSkeleton() {
                     >
                         {[1, 2, 3].map((i) => (
                             <motion.div
-                                key={i}
+                                key={`skeleton-${i}`}
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: i * 0.1 }}

@@ -140,11 +140,19 @@ export function VirtualBoxList({
                 transition={{ duration: 0.2, delay: Math.min(virtualItem.index * 0.02, 0.3) }}
               >
                 <div
+                  role="button"
+                  tabIndex={0}
                   className={cn(
                     "group relative flex items-start gap-3 rounded-lg p-3 mx-2 cursor-pointer transition-colors",
                     isSelected ? "bg-accent" : "hover:bg-muted/50"
                   )}
                   onClick={() => onSelectBox(box)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onSelectBox(box);
+                    }
+                  }}
                   onMouseEnter={() => setHoveredBoxId(box.id)}
                   onMouseLeave={() => setHoveredBoxId(null)}
                 >

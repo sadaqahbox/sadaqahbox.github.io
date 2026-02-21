@@ -243,9 +243,9 @@ function QuoteCarousel() {
         </Button>
 
         <div className="flex gap-1.5">
-          {allQuotes.map((_, index) => (
+          {allQuotes.map((quote, index) => (
             <button
-              key={index}
+              key={quote.id}
               onClick={() => {
                 setDirection(index > currentIndex ? 1 : -1);
                 setCurrentIndex(index);
@@ -581,8 +581,8 @@ export function LandingPage() {
                   iconColor: "text-orange-600",
                   bgColor: "bg-orange-500/10",
                 },
-              ].map((feature, i) => (
-                <motion.div key={i} variants={scaleIn}>
+              ].map((feature) => (
+                <motion.div key={feature.title} variants={scaleIn}>
                   <Card className={`h-full bg-gradient-to-br ${feature.color} ${feature.borderColor} border`}>
                     <CardContent className="p-6 text-center">
                       <div className={`w-12 h-12 rounded-full ${feature.bgColor} flex items-center justify-center mx-auto mb-4`}>

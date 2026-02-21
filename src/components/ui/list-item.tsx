@@ -79,6 +79,65 @@ export interface ListItemProps
   iconVariant?: "default" | "selected" | "highlight";
 }
 
+/**
+ * Icon component that renders different icon types based on the input
+ */
+function ListItemIcon({
+  icon,
+  resolvedIconVariant,
+  iconClassName,
+}: {
+  icon: ListItemProps["icon"];
+  resolvedIconVariant: "default" | "selected" | "highlight";
+  iconClassName?: string;
+}) {
+  if (icon === null || icon === undefined) {
+    return null;
+  }
+
+  if (icon === "logo") {
+    return (
+      <div className={cn(iconContainerVariants({ variant: resolvedIconVariant }), iconClassName)}>
+        <Logo
+          className={cn(
+            "size-10 transition-all duration-200",
+            resolvedIconVariant === "selected" && "brightness-0 invert"
+          )}
+        />
+      </div>
+    );
+  }
+
+  if (
+    typeof icon === "object" &&
+    icon !== null &&
+    "type" in icon &&
+    icon.type === "numbered"
+  ) {
+    const numberedIcon = icon as { type: "numbered"; index: number };
+    return (
+      <div className={cn(iconContainerVariants({ variant: resolvedIconVariant }), iconClassName)}>
+        <span
+          className={cn(
+            "text-sm font-bold transition-colors duration-200",
+            resolvedIconVariant === "selected"
+              ? "text-primary-foreground"
+              : "text-primary"
+          )}
+        >
+          #{numberedIcon.index}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn(iconContainerVariants({ variant: resolvedIconVariant }), iconClassName)}>
+      {icon as React.ReactNode}
+    </div>
+  );
+}
+
 export function ListItem({
   className,
   variant,
@@ -95,33 +154,6 @@ export function ListItem({
 }: ListItemProps) {
   const resolvedIconVariant = iconVariant || (variant === "selected" ? "selected" : "default");
 
-  const renderIcon = (): React.ReactNode => {
-    if (icon === "logo") {
-      return (
-        <Logo
-          className={cn(
-            "size-10 transition-all duration-200",
-            resolvedIconVariant === "selected" && "brightness-0 invert"
-          )}
-        />
-      );
-    }
-
-    if (typeof icon === "object" && icon !== null && "type" in icon && icon.type === "numbered") {
-      const numberedIcon = icon as { type: "numbered"; index: number };
-      return (
-        <span className={cn(
-          "text-sm font-bold transition-colors duration-200",
-          resolvedIconVariant === "selected" ? "text-primary-foreground" : "text-primary"
-        )}>
-          #{numberedIcon.index}
-        </span>
-      );
-    }
-
-    return icon as React.ReactNode;
-  };
-
   return (
     <motion.div
       className={cn(listItemVariants({ variant }), className)}
@@ -131,11 +163,7 @@ export function ListItem({
       {...(props as any)}
     >
       {/* Icon Container */}
-      {icon !== null && icon !== undefined && (
-        <div className={cn(iconContainerVariants({ variant: resolvedIconVariant }), iconClassName)}>
-          {renderIcon()}
-        </div>
-      )}
+      <ListItemIcon icon={icon} resolvedIconVariant={resolvedIconVariant} iconClassName={iconClassName} />
 
       {/* Content */}
       <div className="flex-1 min-w-0 pt-0.5">

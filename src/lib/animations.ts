@@ -3,9 +3,31 @@
  *
  * Centralized animation definitions for consistent motion across the application.
  * All variants are typed for use with framer-motion.
+ *
+ * Accessibility: Respects prefers-reduced-motion for users who prefer minimal animation.
  */
 
 import type { Variants } from "framer-motion";
+
+/**
+ * Check if user prefers reduced motion
+ * Returns true if the user has requested reduced motion via system settings
+ */
+export const prefersReducedMotion = (): boolean => {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+};
+
+/**
+ * Get animation transition with reduced motion support
+ * If user prefers reduced motion, returns a minimal/instant transition
+ */
+export const getAccessibleTransition = (duration: number = 0.3) => {
+  if (prefersReducedMotion()) {
+    return { duration: 0 };
+  }
+  return { duration };
+};
 
 /**
  * Easing curve used across the app for consistent motion feel
