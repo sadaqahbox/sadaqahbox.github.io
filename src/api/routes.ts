@@ -5,82 +5,134 @@
  * Endpoints are grouped by resource for better organization.
  */
 
-import type { fromHono } from "chanfana";
-import type { Hono } from "hono";
+import type { OpenAPIHono } from "@hono/zod-openapi";
+import { registerRoutes as registerRouteGroup } from "./shared/route-builder";
 
 // Box endpoints
 import {
-	BoxList,
-	BoxCreate,
-	BoxGet,
-	BoxUpdate,
-	BoxDelete,
-	BoxEmpty,
-	BoxCollections,
-	BoxAddTag,
-	BoxRemoveTag,
-	BoxSetTags,
+	listRoute as boxListRoute,
+	listHandler as boxListHandler,
+	createRoute as boxCreateRoute,
+	createHandler as boxCreateHandler,
+	getRoute as boxGetRoute,
+	getHandler as boxGetHandler,
+	updateRoute as boxUpdateRoute,
+	updateHandler as boxUpdateHandler,
+	deleteRoute as boxDeleteRoute,
+	deleteHandler as boxDeleteHandler,
+	emptyRoute,
+	emptyHandler,
+	collectionsRoute,
+	collectionsHandler,
+	addTagRoute,
+	addTagHandler,
+	removeTagRoute,
+	removeTagHandler,
+	setTagsRoute,
+	setTagsHandler,
 } from "./endpoints/boxes";
 
 // Sadaqah endpoints
-import { SadaqahList, SadaqahAdd, SadaqahGet, SadaqahDelete } from "./endpoints/sadaqahs";
+import {
+	listRoute as sadaqahListRoute,
+	listHandler as sadaqahListHandler,
+	addRoute as sadaqahAddRoute,
+	addHandler as sadaqahAddHandler,
+	getRoute as sadaqahGetRoute,
+	getHandler as sadaqahGetHandler,
+	deleteRoute as sadaqahDeleteRoute,
+	deleteHandler as sadaqahDeleteHandler,
+} from "./endpoints/sadaqahs";
 
 // Currency endpoints
-import { CurrencyList, CurrencyCreate, CurrencyGet, CurrencyDelete } from "./endpoints/currencies";
+import {
+	listRoute as currencyListRoute,
+	listHandler as currencyListHandler,
+	createRoute as currencyCreateRoute,
+	createHandler as currencyCreateHandler,
+	getRoute as currencyGetRoute,
+	getHandler as currencyGetHandler,
+	deleteRoute as currencyDeleteRoute,
+	deleteHandler as currencyDeleteHandler,
+} from "./endpoints/currencies";
 
 // Currency Type endpoints
 import {
-	CurrencyTypeList,
-	CurrencyTypeCreate,
-	CurrencyTypeGet,
-	CurrencyTypeDelete,
-	CurrencyTypeInitialize,
+	listRoute as currencyTypeListRoute,
+	listHandler as currencyTypeListHandler,
+	createRoute as currencyTypeCreateRoute,
+	createHandler as currencyTypeCreateHandler,
+	getRoute as currencyTypeGetRoute,
+	getHandler as currencyTypeGetHandler,
+	deleteRoute as currencyTypeDeleteRoute,
+	deleteHandler as currencyTypeDeleteHandler,
+	initializeRoute as currencyTypeInitializeRoute,
+	initializeHandler as currencyTypeInitializeHandler,
 } from "./endpoints/currency-types";
 
 // Tag endpoints
-import { TagList, TagCreate, TagGet, TagDelete, TagBoxes } from "./endpoints/tags";
-
-type OpenAPIInstance = ReturnType<typeof fromHono<Hono<{ Bindings: Env }>>>;
+import {
+	listRoute as tagListRoute,
+	listHandler as tagListHandler,
+	createRoute as tagCreateRoute,
+	createHandler as tagCreateHandler,
+	getRoute as tagGetRoute,
+	getHandler as tagGetHandler,
+	deleteRoute as tagDeleteRoute,
+	deleteHandler as tagDeleteHandler,
+	boxesRoute as tagBoxesRoute,
+	boxesHandler as tagBoxesHandler,
+} from "./endpoints/tags";
 
 /**
- * Registers all API routes
+ * Registers all API routes with the OpenAPIHono app
  */
-export function createRoutes(openapi: OpenAPIInstance): void {
+export function registerRoutes(app: OpenAPIHono<{ Bindings: Env }>): void {
 	// ============== Box Routes ==============
-	openapi.get("/api/boxes", BoxList);
-	openapi.post("/api/boxes", BoxCreate);
-	openapi.get("/api/boxes/:boxId", BoxGet);
-	openapi.patch("/api/boxes/:boxId", BoxUpdate);
-	openapi.delete("/api/boxes/:boxId", BoxDelete);
-	openapi.post("/api/boxes/:boxId/empty", BoxEmpty);
-	openapi.get("/api/boxes/:boxId/collections", BoxCollections);
-	openapi.post("/api/boxes/:boxId/tags", BoxAddTag);
-	openapi.delete("/api/boxes/:boxId/tags/:tagId", BoxRemoveTag);
-	openapi.put("/api/boxes/:boxId/tags", BoxSetTags);
+	registerRouteGroup(app, [
+		{ route: boxListRoute, handler: boxListHandler },
+		{ route: boxCreateRoute, handler: boxCreateHandler },
+		{ route: boxGetRoute, handler: boxGetHandler },
+		{ route: boxUpdateRoute, handler: boxUpdateHandler },
+		{ route: boxDeleteRoute, handler: boxDeleteHandler },
+		{ route: emptyRoute, handler: emptyHandler },
+		{ route: collectionsRoute, handler: collectionsHandler },
+		{ route: addTagRoute, handler: addTagHandler },
+		{ route: removeTagRoute, handler: removeTagHandler },
+		{ route: setTagsRoute, handler: setTagsHandler },
+	]);
 
 	// ============== Sadaqah Routes ==============
-	openapi.get("/api/boxes/:boxId/sadaqahs", SadaqahList);
-	openapi.post("/api/boxes/:boxId/sadaqahs", SadaqahAdd);
-	openapi.get("/api/boxes/:boxId/sadaqahs/:sadaqahId", SadaqahGet);
-	openapi.delete("/api/boxes/:boxId/sadaqahs/:sadaqahId", SadaqahDelete);
+	registerRouteGroup(app, [
+		{ route: sadaqahListRoute, handler: sadaqahListHandler },
+		{ route: sadaqahAddRoute, handler: sadaqahAddHandler },
+		{ route: sadaqahGetRoute, handler: sadaqahGetHandler },
+		{ route: sadaqahDeleteRoute, handler: sadaqahDeleteHandler },
+	]);
 
 	// ============== Currency Type Routes ==============
-	openapi.get("/api/currency-types", CurrencyTypeList);
-	openapi.post("/api/currency-types", CurrencyTypeCreate);
-	openapi.get("/api/currency-types/:currencyTypeId", CurrencyTypeGet);
-	openapi.delete("/api/currency-types/:currencyTypeId", CurrencyTypeDelete);
-	openapi.post("/api/currency-types/initialize", CurrencyTypeInitialize);
+	registerRouteGroup(app, [
+		{ route: currencyTypeListRoute, handler: currencyTypeListHandler },
+		{ route: currencyTypeCreateRoute, handler: currencyTypeCreateHandler },
+		{ route: currencyTypeGetRoute, handler: currencyTypeGetHandler },
+		{ route: currencyTypeDeleteRoute, handler: currencyTypeDeleteHandler },
+		{ route: currencyTypeInitializeRoute, handler: currencyTypeInitializeHandler },
+	]);
 
 	// ============== Currency Routes ==============
-	openapi.get("/api/currencies", CurrencyList);
-	openapi.post("/api/currencies", CurrencyCreate);
-	openapi.get("/api/currencies/:currencyId", CurrencyGet);
-	openapi.delete("/api/currencies/:currencyId", CurrencyDelete);
+	registerRouteGroup(app, [
+		{ route: currencyListRoute, handler: currencyListHandler },
+		{ route: currencyCreateRoute, handler: currencyCreateHandler },
+		{ route: currencyGetRoute, handler: currencyGetHandler },
+		{ route: currencyDeleteRoute, handler: currencyDeleteHandler },
+	]);
 
 	// ============== Tag Routes ==============
-	openapi.get("/api/tags", TagList);
-	openapi.post("/api/tags", TagCreate);
-	openapi.get("/api/tags/:tagId", TagGet);
-	openapi.delete("/api/tags/:tagId", TagDelete);
-	openapi.get("/api/tags/:tagId/boxes", TagBoxes);
+	registerRouteGroup(app, [
+		{ route: tagListRoute, handler: tagListHandler },
+		{ route: tagCreateRoute, handler: tagCreateHandler },
+		{ route: tagGetRoute, handler: tagGetHandler },
+		{ route: tagDeleteRoute, handler: tagDeleteHandler },
+		{ route: tagBoxesRoute, handler: tagBoxesHandler },
+	]);
 }

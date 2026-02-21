@@ -7,23 +7,32 @@
     "dev": "bunx vite dev",
     "preview": "bun run build && bunx wrangler dev",
     "build": "bunx vite build",
-    
     "deploy": "bun run build && bunx wrangler deploy",
     "cf-typegen": "bunx wrangler types",
     "db:generate": "bunx drizzle-kit generate",
     "migrate:local": "bunx wrangler d1 migrations apply sadakabox --local",
-    "migrate:remote": "bunx wrangler d1 migrations apply sadakabox --remote"
+    "migrate:remote": "bunx wrangler d1 migrations apply sadakabox --remote",
+    "auth:generate": "bunx @better-auth/cli generate --config src/auth/index.ts --output src/db/auth.schema.ts -y",
+    "auth:format": "bunx prettier --write src/db/auth.schema.ts",
+    "auth:update": "npm run auth:generate && npm run auth:format"
   },
   "dependencies": {
-    "chanfana": "^2.6.3",
+    "@better-auth/passkey": "^1.4.18",
+    "@hono/zod-openapi": "^1.2.1",
+    "@scalar/hono-api-reference": "^0.9.40",
+    "@scalar/openapi-to-markdown": "^0.3.40",
+    "better-auth": "^1.4.18",
+    "better-auth-cloudflare": "^0.2.9",
     "drizzle-orm": "^0.45.1",
-    "hono": "^4.6.20",
+    "hono": "^4.11.8",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "zod": "^3.24.1"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@better-auth/cli": "^1.4.18",
     "@cloudflare/vite-plugin": "^1.23.0",
+    "@cloudflare/workers-types": "^4.20260207.0",
     "@types/node": "22.13.0",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",

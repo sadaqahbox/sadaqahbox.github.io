@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/d1";
 import type { Context } from "hono";
-import * as schema from "./schema";
+import { schema } from "./schema";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Database = ReturnType<typeof drizzle<any>>;

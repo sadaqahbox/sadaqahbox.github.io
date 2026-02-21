@@ -2,7 +2,7 @@
  * Validation utilities
  */
 
-import { z } from "zod";
+import { z } from "@hono/zod-openapi";
 import { 
 	MAX_BOX_NAME_LENGTH, 
 	MAX_BOX_DESCRIPTION_LENGTH, 

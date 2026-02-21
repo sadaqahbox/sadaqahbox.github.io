@@ -47,3 +47,30 @@ export {
 	normalizePagination,
 	getOffset,
 } from "./response";
+
+// Route builder utilities
+export {
+	// Schemas
+	SuccessResponseSchema,
+	ErrorResponseSchema,
+	NotFoundResponseSchema,
+	PaginationQuerySchema,
+	PaginationSchema,
+	// Helpers
+	create200Response,
+	create201Response,
+	create404Response,
+	create400Response,
+	create409Response,
+	createPaginatedResponse,
+	createIdParamSchema,
+	buildRoute,
+	// Type-safe extractors
+	getParams,
+	getQuery,
+	getBody,
+	jsonSuccess,
+	// Registration
+	registerRoute,
+	registerRoutes,
+} from "./route-builder";

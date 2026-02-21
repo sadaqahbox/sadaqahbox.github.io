@@ -2,158 +2,134 @@
  * Currency endpoints
  */
 
-import { Bool, OpenAPIRoute, Str } from "chanfana";
-import { z } from "zod";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import { CurrencySchema, CreateCurrencyBodySchema } from "../domain/schemas";
+import { CurrencySchema, CreateCurrencyBodySchema, createItemResponseSchema } from "../domain/schemas";
 import { getCurrencyEntity } from "../entities";
 import { success, notFound, conflict } from "../shared/response";
+import {
+	buildRoute,
+	getParams,
+	getBody,
+	jsonSuccess,
+	createIdParamSchema,
+	createPaginatedResponse,
+	create200Response,
+	create201Response,
+	create404Response,
+	create409Response,
+} from "../shared/route-builder";
 
 // ============== List Currencies ==============
 
-export class CurrencyList extends OpenAPIRoute {
-	schema = {
-		tags: ["Currencies"],
-		summary: "List all currencies",
-		responses: {
-			"200": {
-				description: "Returns all currencies",
-				content: {
-					"application/json": {
-						schema: z.object({
-							success: Bool(),
-							currencies: CurrencySchema.array(),
-						}),
-					},
-				},
-			},
-		},
-	};
+const ListResponseSchema = createPaginatedResponse(CurrencySchema, "currencies");
 
-	async handle(c: Context<{ Bindings: Env }>) {
-		const currencies = await getCurrencyEntity(c).list();
-		return success({ currencies });
-	}
-}
+export const listRoute = buildRoute({
+	method: "get",
+	path: "/api/currencies",
+	tags: ["Currencies"],
+	summary: "List all currencies",
+	responses: create200Response(ListResponseSchema, "Returns all currencies"),
+});
+
+export const listHandler = async (c: Context<{ Bindings: Env }>) => {
+	const currencies = await getCurrencyEntity(c).list();
+	return c.json(success({ currencies, total: currencies.length }));
+};
 
 // ============== Create Currency ==============
 
-export class CurrencyCreate extends OpenAPIRoute {
-	schema = {
-		tags: ["Currencies"],
-		summary: "Create a new currency",
-		request: {
-			body: {
-				content: {
-					"application/json": { schema: CreateCurrencyBodySchema },
-				},
-			},
-		},
-		responses: {
-			"201": {
-				description: "Returns the created currency",
-				content: {
-					"application/json": {
-						schema: z.object({ success: Bool(), currency: CurrencySchema }),
-					},
-				},
-			},
-			"409": { description: "Currency already exists" },
-		},
-	};
+const CreateResponseSchema = createItemResponseSchema(CurrencySchema, "currency");
 
-	async handle(c: Context<{ Bindings: Env }>) {
-		const data = await this.getValidatedData<typeof this.schema>();
-		const { code, name, symbol, currencyTypeId } = data.body;
+export const createRoute = buildRoute({
+	method: "post",
+	path: "/api/currencies",
+	tags: ["Currencies"],
+	summary: "Create a new currency",
+	body: CreateCurrencyBodySchema,
+	responses: {
+		...create201Response(CreateResponseSchema, "Returns the created currency"),
+		...create409Response("Currency already exists"),
+	},
+});
 
-		const currencyEntity = getCurrencyEntity(c);
+export const createHandler = async (c: Context<{ Bindings: Env }>) => {
+	const { code, name, symbol, currencyTypeId } = getBody<{
+		code: string;
+		name: string;
+		symbol?: string;
+		currencyTypeId?: string;
+	}>(c);
 
-		// Check if currency already exists
-		const existing = await currencyEntity.getByCode(code);
-		if (existing) {
-			return conflict("Currency with this code already exists");
-		}
+	const currencyEntity = getCurrencyEntity(c);
 
-		const currency = await currencyEntity.create({
-			code,
-			name,
-			symbol,
-			currencyTypeId,
-		});
-
-		c.status(201);
-		return success({ currency });
+	const existing = await currencyEntity.getByCode(code);
+	if (existing) {
+		return conflict("Currency with this code already exists");
 	}
-}
+
+	const currency = await currencyEntity.create({
+		code,
+		name,
+		symbol,
+		currencyTypeId,
+	});
+
+	return jsonSuccess(c, { currency }, 201);
+};
 
 // ============== Get Currency ==============
 
-export class CurrencyGet extends OpenAPIRoute {
-	schema = {
-		tags: ["Currencies"],
-		summary: "Get a currency",
-		request: {
-			params: z.object({ currencyId: Str() }),
-		},
-		responses: {
-			"200": {
-				description: "Returns the currency",
-				content: {
-					"application/json": {
-						schema: z.object({ success: Bool(), currency: CurrencySchema }),
-					},
-				},
-			},
-			"404": { description: "Currency not found" },
-		},
-	};
+const CurrencyIdParamSchema = createIdParamSchema("currencyId");
 
-	async handle(c: Context<{ Bindings: Env }>) {
-		const data = await this.getValidatedData<typeof this.schema>();
-		const { currencyId } = data.params;
+const GetResponseSchema = createItemResponseSchema(CurrencySchema, "currency");
 
-		const currency = await getCurrencyEntity(c).get(currencyId);
+export const getRoute = buildRoute({
+	method: "get",
+	path: "/api/currencies/{currencyId}",
+	tags: ["Currencies"],
+	summary: "Get a currency",
+	params: CurrencyIdParamSchema,
+	responses: {
+		...create200Response(GetResponseSchema, "Returns the currency"),
+		...create404Response("Currency not found"),
+	},
+});
 
-		if (!currency) {
-			return notFound("Currency", currencyId);
-		}
+export const getHandler = async (c: Context<{ Bindings: Env }>) => {
+	const { currencyId } = getParams<{ currencyId: string }>(c);
 
-		return success({ currency });
+	const currency = await getCurrencyEntity(c).get(currencyId);
+	if (!currency) {
+		return notFound("Currency", currencyId);
 	}
-}
+
+	return c.json(success({ currency }));
+};
 
 // ============== Delete Currency ==============
 
-export class CurrencyDelete extends OpenAPIRoute {
-	schema = {
-		tags: ["Currencies"],
-		summary: "Delete a currency",
-		request: {
-			params: z.object({ currencyId: Str() }),
-		},
-		responses: {
-			"200": {
-				description: "Currency deleted",
-				content: {
-					"application/json": {
-						schema: z.object({ success: Bool(), deleted: Bool() }),
-					},
-				},
-			},
-			"404": { description: "Currency not found" },
-		},
-	};
+const DeleteResponseSchema = createItemResponseSchema(z.object({ deleted: z.boolean() }), "data");
 
-	async handle(c: Context<{ Bindings: Env }>) {
-		const data = await this.getValidatedData<typeof this.schema>();
-		const { currencyId } = data.params;
+export const deleteRoute = buildRoute({
+	method: "delete",
+	path: "/api/currencies/{currencyId}",
+	tags: ["Currencies"],
+	summary: "Delete a currency",
+	params: CurrencyIdParamSchema,
+	responses: {
+		...create200Response(DeleteResponseSchema, "Currency deleted"),
+		...create404Response("Currency not found"),
+	},
+});
 
-		const deleted = await getCurrencyEntity(c).delete(currencyId);
+export const deleteHandler = async (c: Context<{ Bindings: Env }>) => {
+	const { currencyId } = getParams<{ currencyId: string }>(c);
 
-		if (!deleted) {
-			return notFound("Currency", currencyId);
-		}
-
-		return success({ deleted: true });
+	const deleted = await getCurrencyEntity(c).delete(currencyId);
+	if (!deleted) {
+		return notFound("Currency", currencyId);
 	}
-}
+
+	return c.json(success({ deleted: true }));
+};

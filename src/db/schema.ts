@@ -1,5 +1,14 @@
 import { sqliteTable, text, integer, real, index } from "drizzle-orm/sqlite-core";
 import { relations } from "drizzle-orm";
+import * as authSchema from "./auth.schema";
+
+// Re-export auth tables for drizzle-kit migrations
+export const { users, sessions, accounts, verifications, passkeys } = authSchema;
+
+// Combine all schemas for drizzle-orm
+export const schema = {
+    ...authSchema,
+} as const;
 
 // ============== Currency Type Table ==============
 export const currencyTypes = sqliteTable(

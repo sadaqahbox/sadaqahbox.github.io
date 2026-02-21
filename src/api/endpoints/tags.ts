@@ -2,195 +2,157 @@
  * Tag endpoints
  */
 
-import { Bool, OpenAPIRoute, Str } from "chanfana";
-import { z } from "zod";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import { TagSchema, BoxSchema, CreateTagBodySchema } from "../domain/schemas";
+import { TagSchema, BoxSchema, CreateTagBodySchema, createItemResponseSchema } from "../domain/schemas";
 import { getTagEntity } from "../entities";
 import { success, notFound, conflict } from "../shared/response";
+import {
+	buildRoute,
+	getParams,
+	getBody,
+	jsonSuccess,
+	createIdParamSchema,
+	createPaginatedResponse,
+	create200Response,
+	create201Response,
+	create404Response,
+	create409Response,
+} from "../shared/route-builder";
 
 // ============== List Tags ==============
 
-export class TagList extends OpenAPIRoute {
-	schema = {
-		tags: ["Tags"],
-		summary: "List all tags",
-		responses: {
-			"200": {
-				description: "Returns all tags",
-				content: {
-					"application/json": {
-						schema: z.object({
-							success: Bool(),
-							tags: TagSchema.array(),
-						}),
-					},
-				},
-			},
-		},
-	};
+const ListResponseSchema = createPaginatedResponse(TagSchema, "tags");
 
-	async handle(c: Context<{ Bindings: Env }>) {
-		const tags = await getTagEntity(c).list();
-		return success({ tags });
-	}
-}
+export const listRoute = buildRoute({
+	method: "get",
+	path: "/api/tags",
+	tags: ["Tags"],
+	summary: "List all tags",
+	responses: create200Response(ListResponseSchema, "Returns all tags"),
+});
+
+export const listHandler = async (c: Context<{ Bindings: Env }>) => {
+	const tags = await getTagEntity(c).list();
+	return c.json(success({ tags, total: tags.length }));
+};
 
 // ============== Create Tag ==============
 
-export class TagCreate extends OpenAPIRoute {
-	schema = {
-		tags: ["Tags"],
-		summary: "Create a new tag",
-		request: {
-			body: {
-				content: {
-					"application/json": { schema: CreateTagBodySchema },
-				},
-			},
-		},
-		responses: {
-			"201": {
-				description: "Returns the created tag",
-				content: {
-					"application/json": {
-						schema: z.object({ success: Bool(), tag: TagSchema }),
-					},
-				},
-			},
-			"409": { description: "Tag already exists" },
-		},
-	};
+const CreateResponseSchema = createItemResponseSchema(TagSchema, "tag");
 
-	async handle(c: Context<{ Bindings: Env }>) {
-		const data = await this.getValidatedData<typeof this.schema>();
-		const { name, color } = data.body;
+export const createRoute = buildRoute({
+	method: "post",
+	path: "/api/tags",
+	tags: ["Tags"],
+	summary: "Create a new tag",
+	body: CreateTagBodySchema,
+	responses: {
+		...create201Response(CreateResponseSchema, "Returns the created tag"),
+		...create409Response("Tag already exists"),
+	},
+});
 
-		const tagEntity = getTagEntity(c);
+export const createHandler = async (c: Context<{ Bindings: Env }>) => {
+	const { name, color } = getBody<{ name: string; color?: string }>(c);
 
-		// Check if tag already exists
-		const existing = await tagEntity.getByName(name);
-		if (existing) {
-			return conflict("Tag with this name already exists");
-		}
+	const tagEntity = getTagEntity(c);
 
-		const tag = await tagEntity.create({ name, color });
-
-		c.status(201);
-		return success({ tag });
+	const existing = await tagEntity.getByName(name);
+	if (existing) {
+		return conflict("Tag with this name already exists");
 	}
-}
+
+	const tag = await tagEntity.create({ name, color });
+	return jsonSuccess(c, { tag }, 201);
+};
 
 // ============== Get Tag ==============
 
-export class TagGet extends OpenAPIRoute {
-	schema = {
-		tags: ["Tags"],
-		summary: "Get a tag",
-		request: {
-			params: z.object({ tagId: Str() }),
-		},
-		responses: {
-			"200": {
-				description: "Returns the tag",
-				content: {
-					"application/json": {
-						schema: z.object({ success: Bool(), tag: TagSchema }),
-					},
-				},
-			},
-			"404": { description: "Tag not found" },
-		},
-	};
+const TagIdParamSchema = createIdParamSchema("tagId");
 
-	async handle(c: Context<{ Bindings: Env }>) {
-		const data = await this.getValidatedData<typeof this.schema>();
-		const { tagId } = data.params;
+const GetResponseSchema = createItemResponseSchema(TagSchema, "tag");
 
-		const tag = await getTagEntity(c).get(tagId);
+export const getRoute = buildRoute({
+	method: "get",
+	path: "/api/tags/{tagId}",
+	tags: ["Tags"],
+	summary: "Get a tag",
+	params: TagIdParamSchema,
+	responses: {
+		...create200Response(GetResponseSchema, "Returns the tag"),
+		...create404Response("Tag not found"),
+	},
+});
 
-		if (!tag) {
-			return notFound("Tag", tagId);
-		}
+export const getHandler = async (c: Context<{ Bindings: Env }>) => {
+	const { tagId } = getParams<{ tagId: string }>(c);
 
-		return success({ tag });
+	const tag = await getTagEntity(c).get(tagId);
+	if (!tag) {
+		return notFound("Tag", tagId);
 	}
-}
+
+	return c.json(success({ tag }));
+};
 
 // ============== Delete Tag ==============
 
-export class TagDelete extends OpenAPIRoute {
-	schema = {
-		tags: ["Tags"],
-		summary: "Delete a tag",
-		request: {
-			params: z.object({ tagId: Str() }),
-		},
-		responses: {
-			"200": {
-				description: "Tag deleted",
-				content: {
-					"application/json": {
-						schema: z.object({ success: Bool(), deleted: Bool() }),
-					},
-				},
-			},
-			"404": { description: "Tag not found" },
-		},
-	};
+const DeleteResponseSchema = createItemResponseSchema(z.object({ deleted: z.boolean() }), "data");
 
-	async handle(c: Context<{ Bindings: Env }>) {
-		const data = await this.getValidatedData<typeof this.schema>();
-		const { tagId } = data.params;
+export const deleteRoute = buildRoute({
+	method: "delete",
+	path: "/api/tags/{tagId}",
+	tags: ["Tags"],
+	summary: "Delete a tag",
+	params: TagIdParamSchema,
+	responses: {
+		...create200Response(DeleteResponseSchema, "Tag deleted"),
+		...create404Response("Tag not found"),
+	},
+});
 
-		const deleted = await getTagEntity(c).delete(tagId);
+export const deleteHandler = async (c: Context<{ Bindings: Env }>) => {
+	const { tagId } = getParams<{ tagId: string }>(c);
 
-		if (!deleted) {
-			return notFound("Tag", tagId);
-		}
-
-		return success({ deleted: true });
+	const deleted = await getTagEntity(c).delete(tagId);
+	if (!deleted) {
+		return notFound("Tag", tagId);
 	}
-}
+
+	return c.json(success({ deleted: true }));
+};
 
 // ============== Get Boxes with Tag ==============
 
-export class TagBoxes extends OpenAPIRoute {
-	schema = {
-		tags: ["Tags"],
-		summary: "Get all boxes with a specific tag",
-		request: {
-			params: z.object({ tagId: Str() }),
-		},
-		responses: {
-			"200": {
-				description: "Returns boxes",
-				content: {
-					"application/json": {
-						schema: z.object({
-							success: Bool(),
-							tag: TagSchema,
-							boxes: BoxSchema.array(),
-						}),
-					},
-				},
-			},
-			"404": { description: "Tag not found" },
-		},
-	};
+const BoxesResponseSchema = z.object({
+	success: z.boolean(),
+	tag: TagSchema,
+	boxes: BoxSchema.array(),
+});
 
-	async handle(c: Context<{ Bindings: Env }>) {
-		const data = await this.getValidatedData<typeof this.schema>();
-		const { tagId } = data.params;
+export const boxesRoute = buildRoute({
+	method: "get",
+	path: "/api/tags/{tagId}/boxes",
+	tags: ["Tags"],
+	summary: "Get all boxes with a specific tag",
+	params: TagIdParamSchema,
+	responses: {
+		...create200Response(BoxesResponseSchema, "Returns boxes"),
+		...create404Response("Tag not found"),
+	},
+});
 
-		const tagEntity = getTagEntity(c);
+export const boxesHandler = async (c: Context<{ Bindings: Env }>) => {
+	const { tagId } = getParams<{ tagId: string }>(c);
 
-		const tag = await tagEntity.get(tagId);
-		if (!tag) {
-			return notFound("Tag", tagId);
-		}
+	const tagEntity = getTagEntity(c);
 
-		const boxes = await tagEntity.getBoxes(tagId);
-		return success({ tag, boxes });
+	const tag = await tagEntity.get(tagId);
+	if (!tag) {
+		return notFound("Tag", tagId);
 	}
-}
+
+	const boxes = await tagEntity.getBoxes(tagId);
+	return c.json(success({ tag, boxes }));
+};

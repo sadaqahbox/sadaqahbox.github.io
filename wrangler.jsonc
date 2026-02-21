@@ -10,13 +10,21 @@
 	"observability": {
 		"enabled": true
 	},
-	"compatibility_flags": ["nodejs_compat"],
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
 	"d1_databases": [
 		{
 			"binding": "DB",
 			"database_name": "sadakabox",
 			"database_id": "1f576fe8-5d56-4bd0-87bc-4c65848a6651",
 			"migrations_dir": "./migrations"
+		}
+	],
+	"kv_namespaces": [
+		{
+			"binding": "AUTH_KV",
+			"id": "68745232d3d94d84b6d45133021a3ad0"
 		}
 	],
 	"assets": {
