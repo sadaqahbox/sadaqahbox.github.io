@@ -69,7 +69,6 @@ export function useSadaqahs(boxId: string | null) {
 /**
  * Hook to create a new sadaqah
  * Uses boxesApi.addSadaqah since that's the endpoint
- * Includes optimistic updates for better UX
  */
 export function useCreateSadaqah() {
     const queryClient = useQueryClient();
@@ -80,49 +79,19 @@ export function useCreateSadaqah() {
                 value: data.value,
                 currencyId: data.currencyId,
             }),
-        onMutate: async (data) => {
-            // Cancel outgoing refetches
-            await queryClient.cancelQueries({
-                queryKey: queryKeys.sadaqahs.list(data.boxId),
-            });
-
-            // Snapshot previous value
-            const previousSadaqahs = queryClient.getQueryData<Sadaqah[]>(
-                queryKeys.sadaqahs.list(data.boxId)
-            );
-
-            // Optimistically add a pending sadaqah
-            const optimisticSadaqah: Sadaqah = {
-                id: `temp-${Date.now()}`,
-                boxId: data.boxId,
-                value: data.value,
-                currencyId: data.currencyId || "default",
-                createdAt: new Date().toISOString(),
-            };
-
-            if (previousSadaqahs) {
+        onSuccess: (result, variables) => {
+            // Get current sadaqahs and prepend the new one
+            const currentSadaqahs = queryClient.getQueryData<Sadaqah[]>(
+                queryKeys.sadaqahs.list(variables.boxId)
+            ) || [];
+            
+            // API returns only the new sadaqah, prepend it to existing list
+            if (result.sadaqahs && result.sadaqahs.length > 0) {
                 queryClient.setQueryData(
-                    queryKeys.sadaqahs.list(data.boxId),
-                    [optimisticSadaqah, ...previousSadaqahs]
+                    queryKeys.sadaqahs.list(variables.boxId),
+                    [...result.sadaqahs, ...currentSadaqahs]
                 );
             }
-
-            return { previousSadaqahs, boxId: data.boxId };
-        },
-        onError: (_err, _variables, context) => {
-            // Rollback on error
-            if (context?.previousSadaqahs) {
-                queryClient.setQueryData(
-                    queryKeys.sadaqahs.list(context.boxId),
-                    context.previousSadaqahs
-                );
-            }
-        },
-        onSettled: (_data, _error, variables) => {
-            // Always refetch after error or success
-            queryClient.invalidateQueries({
-                queryKey: queryKeys.sadaqahs.list(variables.boxId),
-            });
             // Invalidate dashboard stats
             queryClient.invalidateQueries({ queryKey: queryKeys.stats.dashboard });
             // Invalidate boxes list (counts changed)

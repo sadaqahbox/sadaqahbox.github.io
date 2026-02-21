@@ -152,7 +152,7 @@ export function SadaqahList({ sadaqahs, currency, onDelete, isDeleting }: Sadaqa
           className="p-4"
         >
           {groupEntries.map(([group, items], groupIndex) => (
-            <motion.div key={group} variants={groupHeaderVariants}>
+            <motion.div key={group} variants={groupHeaderVariants} initial="hidden" animate="visible">
               <div className="flex items-center gap-2 py-2 first:pt-0">
                 <Calendar className="text-primary h-3.5 w-3.5" />
                 <span className="text-xs font-semibold uppercase tracking-wider text-primary">

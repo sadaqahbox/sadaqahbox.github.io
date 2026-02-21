@@ -34,14 +34,19 @@ const SadaqahIdParamSchema = createIdParamSchema("sadaqahId");
 
 const AddSadaqahResponseSchema = z.object({
 	success: z.boolean(),
-	sadaqah: SadaqahSchema,
-	updatedBox: z.object({
+	sadaqahs: SadaqahSchema.array(),
+	box: z.object({
 		id: z.string(),
 		name: z.string(),
+		description: z.string().optional(),
 		count: z.number(),
 		totalValue: z.number(),
 		currencyId: z.string().optional(),
+		currency: z.any().nullable(),
+		createdAt: z.string(),
+		updatedAt: z.string(),
 	}),
+	message: z.string(),
 });
 
 const DeleteSadaqahResponseSchema = z.object({
@@ -118,14 +123,19 @@ export const createHandler = async (c: Context<{ Bindings: Env }>) => {
 	}
 
 	return jsonSuccess(c, {
-		sadaqah: result.sadaqah,
-		updatedBox: {
+		sadaqahs: [result.sadaqah],
+		box: {
 			id: result.updatedBox.id,
 			name: result.updatedBox.name,
+			description: result.updatedBox.description,
 			count: result.updatedBox.count,
 			totalValue: result.updatedBox.totalValue,
 			currencyId: result.updatedBox.currencyId,
+			currency: result.updatedBox.currency ?? null,
+			createdAt: result.updatedBox.createdAt,
+			updatedAt: result.updatedBox.updatedAt,
 		},
+		message: "Sadaqah added successfully",
 	}, 201);
 };
 

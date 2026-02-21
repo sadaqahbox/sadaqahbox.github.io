@@ -73,7 +73,7 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
                 if (result.box) {
                     onBoxUpdated(result.box);
                 }
-                setShowAddForm(false);
+                // Keep the form open for adding more sadaqahs
             },
         }
     );

@@ -55,7 +55,11 @@ async function request<T extends z.ZodType>(
     options?: RequestInit,
     _errorMessage?: string
 ): Promise<z.infer<T>> {
-    // Use retry logic for all requests
+    // Only retry GET requests (idempotent)
+    // POST, PUT, PATCH, DELETE should not be retried automatically
+    const isIdempotent = !options?.method || options.method === "GET";
+    const maxRetries = isIdempotent ? 3 : 0;
+
     const response = await withRetry(
         async () => {
             const res = await fetch(`${API_BASE}${endpoint}`, {
@@ -79,7 +83,7 @@ async function request<T extends z.ZodType>(
             return res;
         },
         {
-            maxRetries: 3,
+            maxRetries,
             baseDelay: 1000,
             maxDelay: 10000,
         }
