@@ -4,7 +4,7 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "sadakabox",
+	"name": "sadaqahbox",
 	"main": "src/api/index.ts",
 	"compatibility_date": "2026-01-31",
 	"observability": {
@@ -16,7 +16,7 @@
 	"d1_databases": [
 		{
 			"binding": "DB",
-			"database_name": "sadakabox",
+			"database_name": "sadaqahbox",
 			"database_id": "1f576fe8-5d56-4bd0-87bc-4c65848a6651",
 			"migrations_dir": "./migrations"
 		}

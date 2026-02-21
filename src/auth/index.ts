@@ -23,12 +23,12 @@ function createAuth(env?: AuthEnv, cf?: IncomingRequestCfProperties) {
                 cf: cf || {},
                 d1: env
                     ? {
-                          db,
-                          options: {
-                              usePlural: true,
-                              debugLogs: true,
-                          },
-                      }
+                        db,
+                        options: {
+                            usePlural: true,
+                            debugLogs: true,
+                        },
+                    }
                     : undefined,
                 kv: env?.AUTH_KV,
             },
@@ -37,7 +37,7 @@ function createAuth(env?: AuthEnv, cf?: IncomingRequestCfProperties) {
                     enabled: true,
                 },
                 advanced: {
-                    cookiePrefix: "sadakabox",
+                    cookiePrefix: "sadaqahbox",
                     useSecureCookies: false,
                     defaultCookieAttributes: {
                         secure: false,
@@ -80,12 +80,12 @@ function createAuth(env?: AuthEnv, cf?: IncomingRequestCfProperties) {
         ...(env
             ? {}
             : {
-                  database: drizzleAdapter({} as D1Database, {
-                      provider: "sqlite",
-                      usePlural: true,
-                      debugLogs: true,
-                  }),
-              }),
+                database: drizzleAdapter({} as D1Database, {
+                    provider: "sqlite",
+                    usePlural: true,
+                    debugLogs: true,
+                }),
+            }),
     });
 }
 
