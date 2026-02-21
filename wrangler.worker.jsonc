@@ -1,0 +1,37 @@
+/**
+ * Wrangler Configuration for Worker-Only Deployment
+ * 
+ * This configuration is used when deploying only the API Worker
+ * without static assets. Use this when the frontend is hosted
+ * separately (e.g., on GitHub Pages).
+ * 
+ * For combined deployment (frontend + worker together), use wrangler.jsonc instead.
+ */
+
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "sadaqahbox-api",
+	"main": "src/api/index.ts",
+	"compatibility_date": "2026-01-31",
+	"observability": {
+		"enabled": true
+	},
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "sadaqahbox",
+			"database_id": "1f576fe8-5d56-4bd0-87bc-4c65848a6651",
+			"migrations_dir": "./migrations"
+		}
+	],
+	"kv_namespaces": [
+		{
+			"binding": "AUTH_KV",
+			"id": "68745232d3d94d84b6d45133021a3ad0"
+		}
+	]
+	// Note: No "assets" section here - static files are hosted separately
+}

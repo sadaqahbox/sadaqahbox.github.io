@@ -4,10 +4,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ModeToggle } from "./ModeToggle";
 import { Logo } from "./Logo";
 import { SignedIn, SignedOut, AuthLoading, UserButton } from "@daveyplate/better-auth-ui";
-import { GithubIcon, MenuIcon, XIcon, LayoutDashboardIcon } from "lucide-react";
+import { GithubIcon, MenuIcon, XIcon, LayoutDashboardIcon, ServerIcon, Loader2Icon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
+import { ServerUrlDialog } from "@/components/settings";
+import { useServerConnection } from "@/components/providers";
 
 const userMenuLinks = [
   {
@@ -24,6 +26,7 @@ export function Header() {
   const isLanding = location.pathname === "/";
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { isConnected, isChecking } = useServerConnection();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -62,33 +65,45 @@ export function Header() {
             </div>
           </AuthLoading>
 
-          <SignedIn>
-            {!isDashboard && (
-              <Link to="/dashboard">
-                <Button variant="ghost" size="sm" className="gap-2">
-                  Dashboard
-                </Button>
-              </Link>
-            )}
-            <UserButton
-              size="icon"
-              className="h-9 w-9 rounded-full"
-              additionalLinks={userMenuLinks}
-            />
-          </SignedIn>
-          <SignedOut>
-            <Link to="/auth/sign-in">
-              <Button variant="ghost" size="sm">
-                Sign In
-              </Button>
-            </Link>
-            <Link to="/auth/sign-up">
-              <Button size="sm" className="gap-1.5">
-                Get Started
-              </Button>
-            </Link>
-          </SignedOut>
+          {isChecking ? (
+            <Button variant="ghost" size="sm" disabled>
+              <Loader2Icon className="size-4 animate-spin mr-2" />
+              Checking...
+            </Button>
+          ) : !isConnected ? (
+            <ServerUrlDialog />
+          ) : (
+            <>
+              <SignedIn>
+                {!isDashboard && (
+                  <Link to="/dashboard">
+                    <Button variant="ghost" size="sm" className="gap-2">
+                      Dashboard
+                    </Button>
+                  </Link>
+                )}
+                <UserButton
+                  size="icon"
+                  className="h-9 w-9 rounded-full"
+                  additionalLinks={userMenuLinks}
+                />
+              </SignedIn>
+              <SignedOut>
+                <Link to="/auth/sign-in">
+                  <Button variant="ghost" size="sm">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link to="/auth/sign-up">
+                  <Button size="sm" className="gap-1.5">
+                    Get Started
+                  </Button>
+                </Link>
+              </SignedOut>
+            </>
+          )}
           <div className="w-px h-4 bg-border mx-1" />
+          {isConnected && <ServerUrlDialog />}
           <ModeToggle />
           <a
             href="https://github.com/sadaqahbox"
@@ -132,43 +147,61 @@ export function Header() {
           >
             <div className="container mx-auto px-4 py-4 space-y-4">
               <div className="flex flex-col gap-2">
-                <AuthLoading>
-                  <div className="flex flex-col gap-2">
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
+                {isChecking ? (
+                  <Button variant="outline" className="w-full" disabled>
+                    <Loader2Icon className="size-4 animate-spin mr-2" />
+                    Checking connection...
+                  </Button>
+                ) : !isConnected ? (
+                  <div className="space-y-2">
+                    <div className="p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md">
+                      <p className="text-sm text-amber-800 dark:text-amber-200">
+                        Connect to a server to access the app.
+                      </p>
+                    </div>
+                    <ServerUrlDialog />
                   </div>
-                </AuthLoading>
+                ) : (
+                  <>
+                    <AuthLoading>
+                      <div className="flex flex-col gap-2">
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                      </div>
+                    </AuthLoading>
 
-                <SignedIn>
-                  {!isDashboard && (
-                    <Link to="/dashboard">
-                      <Button variant="outline" className="w-full justify-start gap-2">
-                        <LayoutDashboardIcon className="size-4" />
-                        Dashboard
-                      </Button>
-                    </Link>
-                  )}
-                  <Link to="/account">
-                    <Button variant="outline" className="w-full justify-start gap-2">
-                      Account
-                    </Button>
-                  </Link>
-                  <Link to="/account/settings">
-                    <Button variant="outline" className="w-full justify-start gap-2">
-                      Settings
-                    </Button>
-                  </Link>
-                </SignedIn>
-                <SignedOut>
-                  <Link to="/auth/sign-in">
-                    <Button variant="outline" className="w-full">
-                      Sign In
-                    </Button>
-                  </Link>
-                  <Link to="/auth/sign-up">
-                    <Button className="w-full">Get Started</Button>
-                  </Link>
-                </SignedOut>
+                    <SignedIn>
+                      {!isDashboard && (
+                        <Link to="/dashboard">
+                          <Button variant="outline" className="w-full justify-start gap-2">
+                            <LayoutDashboardIcon className="size-4" />
+                            Dashboard
+                          </Button>
+                        </Link>
+                      )}
+                      <Link to="/account">
+                        <Button variant="outline" className="w-full justify-start gap-2">
+                          Account
+                        </Button>
+                      </Link>
+                      <Link to="/account/settings">
+                        <Button variant="outline" className="w-full justify-start gap-2">
+                          Settings
+                        </Button>
+                      </Link>
+                    </SignedIn>
+                    <SignedOut>
+                      <Link to="/auth/sign-in">
+                        <Button variant="outline" className="w-full">
+                          Sign In
+                        </Button>
+                      </Link>
+                      <Link to="/auth/sign-up">
+                        <Button className="w-full">Get Started</Button>
+                      </Link>
+                    </SignedOut>
+                  </>
+                )}
               </div>
 
               <div className="flex items-center justify-between pt-2">

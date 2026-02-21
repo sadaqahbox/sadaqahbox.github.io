@@ -1,14 +1,23 @@
+/**
+ * Vite Configuration for Static Build
+ *
+ * This configuration is used when building the frontend for static hosting
+ * (e.g., GitHub Pages, Netlify, Vercel as static, etc.)
+ *
+ * The backend API is expected to be hosted separately (e.g., Cloudflare Worker).
+ * Set VITE_API_URL environment variable to point to your Worker URL.
+ */
+
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { resolve } from "path";
 import tailwindcss from "@tailwindcss/vite";
-import { cloudflare } from "@cloudflare/vite-plugin";
 import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   plugins: [
-    cloudflare(),
+    // Note: No cloudflare() plugin here - this is for static hosting only
     react(),
     tailwindcss(),
     VitePWA({
@@ -44,8 +53,16 @@ export default defineConfig(({ mode }) => ({
               },
             },
           },
+          // Note: API caching is configured based on the API URL
+          // When using a custom VITE_API_URL, you may want to update this pattern
           {
-            urlPattern: /^https:\/\/api\.sadaqahbox\.com\/api\/.*/i,
+            urlPattern: ({ url }) => {
+              const apiUrl = process.env.VITE_API_URL || "";
+              if (apiUrl) {
+                return url.href.startsWith(apiUrl);
+              }
+              return url.pathname.startsWith("/api/");
+            },
             handler: "NetworkFirst",
             options: {
               cacheName: "api-cache",
@@ -130,21 +147,18 @@ export default defineConfig(({ mode }) => ({
     }),
   ],
   build: {
-    outDir: "dist",
+    outDir: "dist/static",
     emptyOutDir: true,
-  },
-  server: {
-    // Vite's dev server CORS middleware intercepts OPTIONS preflight before the Cloudflare Worker.
-    // We need credentials: true + reflect-origin so cross-origin dev (e.g. :5173 → :5174) works.
-    cors: {
-      origin: true,       // reflect the request origin (required for credentials mode)
-      credentials: true,  // Access-Control-Allow-Credentials: true
-    },
   },
   resolve: {
     alias: {
       "@": resolve(__dirname, "./src"),
       "@api": resolve(__dirname, "./src/api"),
     },
+  },
+  // Define environment variables that should be exposed to the client
+  define: {
+    // Vite automatically exposes env vars prefixed with VITE_
+    "import.meta.env.VITE_IS_STATIC_BUILD": JSON.stringify(true),
   },
 }));

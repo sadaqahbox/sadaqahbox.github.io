@@ -10,6 +10,8 @@ import { containerVariants } from "@/lib/animations";
 import { DashboardSkeleton } from "./DashboardSkeleton";
 import { BoxListSection } from "./BoxListSection";
 import { BoxDetailSection } from "./BoxDetailSection";
+import { useServerConnection } from "@/components/providers";
+import { Navigate } from "react-router-dom";
 
 // Inner component that uses the dashboard data - wrapped in React.memo
 const DashboardContent = React.memo(function DashboardContent() {
@@ -101,6 +103,25 @@ const DashboardContent = React.memo(function DashboardContent() {
 });
 
 export function ProtectedDashboard() {
+    const { isConnected, isChecking } = useServerConnection();
+
+    // If still checking connection, show loading
+    if (isChecking) {
+        return (
+            <div className="flex min-h-screen flex-col">
+                <Header />
+                <main className="flex-1 p-4 md:p-6 lg:p-8">
+                    <DashboardSkeleton />
+                </main>
+            </div>
+        );
+    }
+
+    // If not connected to server, redirect to home
+    if (!isConnected) {
+        return <Navigate to="/" replace />;
+    }
+
     return (
         <>
             <SignedOut>

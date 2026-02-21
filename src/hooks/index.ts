@@ -4,6 +4,9 @@
  * All server state management hooks are exported from here.
  */
 
+// Server URL Configuration
+export { useServerUrl, getApiBaseUrl, getAuthBaseUrl, buildApiUrl } from "./useServerUrl";
+
 // Boxes
 export {
     useBoxes,

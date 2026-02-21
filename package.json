@@ -5,10 +5,16 @@
   "type": "module",
   "scripts": {
     "dev": "bunx vite",
+    "dev:static": "bunx vite --config vite.static.config.ts",
     "preview": "bun run build && bunx wrangler dev",
     "build": "bunx vite build",
     "deploy": "bun run build && bunx wrangler deploy",
     "cf-typegen": "bunx wrangler types",
+    
+    "build:static": "bunx vite build --config vite.static.config.ts",
+    "build:worker": "bunx wrangler deploy --config wrangler.worker.jsonc --dry-run --outdir=dist/worker",
+    "deploy:worker": "bunx wrangler deploy --config wrangler.worker.jsonc",
+    "deploy:static": "echo 'Deploy dist/static to your static host (e.g., GitHub Pages)'",
     "db:generate": "bunx drizzle-kit generate",
     "migrate:local": "bunx wrangler d1 migrations apply sadaqahbox --local",
     "migrate:remote": "bunx wrangler d1 migrations apply sadaqahbox --remote",

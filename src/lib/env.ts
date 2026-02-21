@@ -31,8 +31,9 @@ const serverEnvSchema = z.object({
  * These must be prefixed with VITE_ to be exposed to the client
  */
 const clientEnvSchema = z.object({
-    VITE_API_BASE_URL: z.string().url().default("/api"),
-    VITE_AUTH_BASE_URL: z.string().url().default("/api/auth"),
+    // API URL - can be absolute (https://...) for separated deployments
+    // or relative (/api) for combined deployments
+    VITE_API_URL: z.string().default("/api"),
 });
 
 /**

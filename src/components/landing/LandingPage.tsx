@@ -6,6 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Header, Logo } from "@/components/layout";
 import { SignedIn, SignedOut } from "@daveyplate/better-auth-ui";
+import { useServerConnection } from "@/components/providers";
+import { ServerUrlDialog } from "@/components/settings";
 import {
   Heart,
   ArrowRight,
@@ -25,6 +27,8 @@ import {
   Gift,
   Clock,
   Shield,
+  ServerIcon,
+  Loader2Icon,
 } from "lucide-react";
 import quotesData from "@/data/quotes.json";
 
@@ -172,11 +176,10 @@ function QuoteCarousel() {
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ delay: 0.1 }}
-                    className={`p-3 rounded-full mb-5 ${
-                      currentQuote.type === "ayah"
+                    className={`p-3 rounded-full mb-5 ${currentQuote.type === "ayah"
                         ? "bg-primary/10 text-primary"
                         : "bg-amber-500/10 text-amber-600"
-                    }`}
+                      }`}
                   >
                     {currentQuote.type === "ayah" ? (
                       <BookOpen className="h-5 w-5" />
@@ -250,11 +253,10 @@ function QuoteCarousel() {
                 setDirection(index > currentIndex ? 1 : -1);
                 setCurrentIndex(index);
               }}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                index === currentIndex
+              className={`h-1.5 rounded-full transition-all duration-300 ${index === currentIndex
                   ? "bg-primary w-5"
                   : "bg-primary/20 w-1.5 hover:bg-primary/40"
-              }`}
+                }`}
               aria-label={`Go to quote ${index + 1}`}
             />
           ))}
@@ -270,6 +272,108 @@ function QuoteCarousel() {
         </Button>
       </div>
     </div>
+  );
+}
+
+function HeroButtons() {
+  const { isConnected, isChecking } = useServerConnection();
+
+  if (isChecking) {
+    return (
+      <Button size="lg" disabled className="gap-2 px-6">
+        <Loader2Icon className="h-4 w-4 animate-spin" />
+        Checking connection...
+      </Button>
+    );
+  }
+
+  if (!isConnected) {
+    return (
+      <>
+        <ServerUrlDialog>
+          <Button size="lg" className="gap-2 px-6">
+            Start Tracking Free
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </ServerUrlDialog>
+        <ServerUrlDialog>
+          <Button variant="outline" size="lg" className="px-6">
+            Sign In
+          </Button>
+        </ServerUrlDialog>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <SignedOut>
+        <Link to="/auth/sign-up">
+          <Button size="lg" className="gap-2 px-6">
+            Start Tracking Free
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </Link>
+        <Link to="/auth/sign-in">
+          <Button variant="outline" size="lg" className="px-6">
+            Sign In
+          </Button>
+        </Link>
+      </SignedOut>
+      <SignedIn>
+        <Link to="/dashboard">
+          <Button size="lg" className="gap-2 px-6">
+            Go to Dashboard
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </Link>
+      </SignedIn>
+    </>
+  );
+}
+
+function CTAButtons() {
+  const { isConnected, isChecking } = useServerConnection();
+
+  if (isChecking) {
+    return (
+      <Button size="lg" disabled className="gap-2 px-6">
+        <Loader2Icon className="h-4 w-4 animate-spin" />
+        Checking connection...
+      </Button>
+    );
+  }
+
+  if (!isConnected) {
+    return (
+      <ServerUrlDialog>
+        <Button size="lg" className="gap-2 px-6">
+          Get Started Free
+          <ArrowRight className="h-4 w-4" />
+        </Button>
+      </ServerUrlDialog>
+    );
+  }
+
+  return (
+    <>
+      <SignedOut>
+        <Link to="/auth/sign-up">
+          <Button size="lg" className="gap-2 px-6">
+            Get Started Free
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </Link>
+      </SignedOut>
+      <SignedIn>
+        <Link to="/dashboard">
+          <Button size="lg" className="gap-2 px-6">
+            Go to Dashboard
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </Link>
+      </SignedIn>
+    </>
   );
 }
 
@@ -350,27 +454,7 @@ export function LandingPage() {
               </motion.p>
 
               <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-3">
-                <SignedOut>
-                  <Link to="/auth/sign-up">
-                    <Button size="lg" className="gap-2 px-6">
-                      Start Tracking Free
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                  <Link to="/auth/sign-in">
-                    <Button variant="outline" size="lg" className="px-6">
-                      Sign In
-                    </Button>
-                  </Link>
-                </SignedOut>
-                <SignedIn>
-                  <Link to="/dashboard">
-                    <Button size="lg" className="gap-2 px-6">
-                      Go to Dashboard
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                </SignedIn>
+                <HeroButtons />
               </motion.div>
             </motion.div>
           </div>
@@ -660,22 +744,7 @@ export function LandingPage() {
               </motion.p>
 
               <motion.div variants={fadeInUp}>
-                <SignedOut>
-                  <Link to="/auth/sign-up">
-                    <Button size="lg" className="gap-2 px-6">
-                      Get Started Free
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                </SignedOut>
-                <SignedIn>
-                  <Link to="/dashboard">
-                    <Button size="lg" className="gap-2 px-6">
-                      Go to Dashboard
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                </SignedIn>
+                <CTAButtons />
               </motion.div>
             </motion.div>
           </div>

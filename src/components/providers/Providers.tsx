@@ -5,6 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { authClient, LinkComponent } from "@/lib/auth";
 import { queryClient } from "@/lib/query-client";
 import { useNavigate } from "react-router-dom";
+import { ServerConnectionProvider } from "./ServerConnectionProvider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
@@ -16,16 +17,18 @@ export function Providers({ children }: { children: React.ReactNode }) {
         enableSystem
         disableTransitionOnChange
       >
-        <AuthUIProvider
-          authClient={authClient}
-          navigate={navigate}
-          Link={LinkComponent}
-          apiKey={true}
-          passkey={true}
-        >
-          {children}
-          <Toaster />
-        </AuthUIProvider>
+        <ServerConnectionProvider>
+          <AuthUIProvider
+            authClient={authClient}
+            navigate={navigate}
+            Link={LinkComponent}
+            apiKey={true}
+            passkey={true}
+          >
+            {children}
+            <Toaster />
+          </AuthUIProvider>
+        </ServerConnectionProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

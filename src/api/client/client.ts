@@ -1,7 +1,6 @@
 import type { z } from "zod";
 import { withRetry } from "./retry";
-
-const API_BASE = "/api";
+import { buildApiUrl as buildDynamicApiUrl } from "@/hooks/useServerUrl";
 
 export class ApiError extends Error {
     constructor(
@@ -62,7 +61,7 @@ async function request<T extends z.ZodType>(
 
     const response = await withRetry(
         async () => {
-            const res = await fetch(`${API_BASE}${endpoint}`, {
+            const res = await fetch(buildDynamicApiUrl(endpoint), {
                 credentials: "include",
                 ...options,
                 headers: {
