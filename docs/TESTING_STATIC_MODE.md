@@ -13,7 +13,7 @@ This guide explains how to test the separated deployment mode where the frontend
 
 ```bash
 # Terminal 1: Run the worker with wrangler
-bunx wrangler dev --config wrangler.worker.jsonc
+bunx wrangler dev --config wrangler.jsonc
 ```
 
 The Worker will start on `http://localhost:8787` (or similar).
@@ -89,14 +89,14 @@ ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174,http://127.0.0.1:517
 Or set it when running wrangler:
 
 ```bash
-ALLOWED_ORIGINS=http://localhost:5173 bunx wrangler dev --config wrangler.worker.jsonc
+ALLOWED_ORIGINS=http://localhost:5173 bunx wrangler dev --config wrangler.jsonc
 ```
 
 ### For Deployed Worker
 
 ```bash
 # Set the secret on your deployed worker
-bunx wrangler secret put ALLOWED_ORIGINS --config wrangler.worker.jsonc
+bunx wrangler secret put ALLOWED_ORIGINS --config wrangler.jsonc
 # Enter: http://localhost:5173
 ```
 
@@ -133,7 +133,7 @@ After saving the server URL, the page **must reload** for changes to take effect
 ├── vite.config.ts              # Combined mode (dev with Cloudflare plugin)
 ├── vite.static.config.ts       # Static mode (frontend only)
 ├── wrangler.jsonc              # Combined deployment config
-├── wrangler.worker.jsonc       # Worker-only config (for separated mode)
+├── wrangler.jsonc       # Worker-only config (for separated mode)
 └── dist/
     ├── static/                 # Static build output (for GitHub Pages)
     └── worker/                 # Worker build output
@@ -148,5 +148,3 @@ After saving the server URL, the page **must reload** for changes to take effect
 | `bun run dev` | Combined mode - frontend + worker together via Cloudflare plugin |
 | `bun run dev:static` | Static mode - frontend only, connect to external worker |
 | `bun run build:static` | Build static frontend for deployment |
-| `bun run build:worker` | Build worker for deployment |
-| `bun run deploy:worker` | Deploy worker to Cloudflare |

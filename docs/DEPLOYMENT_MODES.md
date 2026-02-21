@@ -35,25 +35,20 @@ No additional environment variables needed. The API is served at relative `/api`
 
 ---
 
-## Separated Mode (Static Frontend + Worker API)
+## Static Frontend Mode
 
 In this mode:
 - **Frontend**: Built as static files and deployed to GitHub Pages (or similar)
-- **API**: Deployed separately as a Cloudflare Worker
 
 ### Configuration
 
 - **Frontend**: Uses [`vite.static.config.ts`](vite.static.config.ts) - no Cloudflare plugin
-- **API**: Uses [`wrangler.worker.jsonc`](wrangler.worker.jsonc) - no assets binding
 
 ### Scripts
 
 ```bash
 # Build frontend for static hosting
 bun run build:static
-
-# Deploy only the Worker
-bun run deploy:worker
 
 # Deploy frontend (manually upload dist/static to GitHub Pages)
 bun run deploy:static  # Shows instructions
@@ -84,11 +79,11 @@ When deploying the Worker separately, you MUST configure `ALLOWED_ORIGINS` to al
 
 ```bash
 # Set the secret using Wrangler
-bunx wrangler secret put ALLOWED_ORIGINS --config wrangler.worker.jsonc
+bunx wrangler secret put ALLOWED_ORIGINS --config wrangler.jsonc
 # Enter: https://yourusername.github.io
 ```
 
-Or add to `wrangler.worker.jsonc`:
+Or add to `wrangler.jsonc`:
 
 ```jsonc
 {
@@ -108,8 +103,8 @@ Or add to `wrangler.worker.jsonc`:
 
 Go to Settings → Secrets and variables → Actions, and add:
 
-- `CLOUDFLARE_API_TOKEN`: Your Cloudflare API token
-- `CLOUDFLARE_ACCOUNT_ID`: Your Cloudflare account ID
+- `CLOUDFLARE_API_TOKEN`: Your Cloudflare API token. Create this in **User Profile** > **API Tokens** > **Create Token** > **Edit Cloudflare Workers**.
+- `CLOUDFLARE_ACCOUNT_ID`: Your Cloudflare Account ID. Found on the **Workers & Pages** overview page in the Cloudflare dashboard.
 
 ### 2. Update the Workflow
 
@@ -128,13 +123,12 @@ Push to the `main` branch, and both the frontend (GitHub Pages) and Worker will 
 ### From Combined to Separated
 
 1. Build the frontend: `bun run build:static`
-2. Deploy the Worker: `bun run deploy:worker`
-3. Set `ALLOWED_ORIGINS` on the Worker
-4. Upload `dist/static` to your static host
+2. Set `ALLOWED_ORIGINS` on the Worker
+3. Upload `dist/static` to your static host
 
 ### From Separated to Combined
 
-1. Use `wrangler.jsonc` instead of `wrangler.worker.jsonc`
+1. Use `wrangler.jsonc` instead of `wrangler.jsonc`
 2. Run `bun run deploy` (which uses the combined config)
 
 ---

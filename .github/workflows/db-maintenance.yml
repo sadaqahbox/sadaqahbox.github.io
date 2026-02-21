@@ -1,0 +1,61 @@
+name: Database Maintenance
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 'Operation to perform'
+        required: true
+        default: 'migrate'
+        type: choice
+        options:
+          - migrate
+          - create-db
+          - list-dbs
+      db_name:
+        description: 'Database name (for create-db)'
+        required: false
+        default: 'sadaqahbox'
+
+jobs:
+  db-task:
+    name: Run D1 Task
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run Migration
+        if: github.event.inputs.operation == 'migrate'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: d1 migrations apply sadaqahbox --remote --config wrangler.jsonc
+          packageManager: bun
+
+      - name: Create Database
+        if: github.event.inputs.operation == 'create-db'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: d1 create ${{ github.event.inputs.db_name }}
+          packageManager: bun
+
+      - name: List Databases
+        if: github.event.inputs.operation == 'list-dbs'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: d1 list
+          packageManager: bun

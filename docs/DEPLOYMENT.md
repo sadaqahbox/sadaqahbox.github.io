@@ -450,28 +450,30 @@ name: Deploy
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
-  deploy:
+  deploy-worker:
+    name: Deploy Worker
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - uses: oven-sh/setup-bun@v1
-      
+      - uses: oven-sh/setup-bun@v2
       - run: bun install
-      
-      - run: bun run build
-      
-      - run: bunx wrangler deploy
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      - name: Deploy Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --config wrangler.jsonc
+          packageManager: bun
 ```
 
 ### Required Secrets
 
 Add these secrets to your GitHub repository:
 - `CLOUDFLARE_API_TOKEN` - Create in Cloudflare dashboard
+- `CLOUDFLARE_ACCOUNT_ID` - Found in Cloudflare dashboard (Account > Workers & Pages)
 
 ### Creating API Token
 

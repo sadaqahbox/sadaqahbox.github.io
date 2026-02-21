@@ -11,8 +11,6 @@
     "generate:llms": "bun scripts/generate-llms.ts",
     "build": "bun run generate:llms && bunx vite build",
     "build:static": "bun run generate:llms && bunx vite build --config vite.static.config.ts",
-    "build:worker": "bunx wrangler deploy --config wrangler.worker.jsonc --dry-run --outdir=dist/worker",
-    "deploy:worker": "bunx wrangler deploy --config wrangler.worker.jsonc",
     "deploy:static": "echo 'Deploy dist/static to your static host (e.g., GitHub Pages)'",
     "db:generate": "bunx drizzle-kit generate",
     "migrate:local": "bunx wrangler d1 migrations apply sadaqahbox --local",

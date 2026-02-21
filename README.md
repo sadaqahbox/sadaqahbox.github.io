@@ -2,7 +2,7 @@
 
 <div align="center">
   <img src="public/logo.svg" alt="Sadaqah Box Logo" width="120" height="120">
-  
+
   **Track Your Charity & Sadaqah Contributions**
 
   A modern, privacy-focused Progressive Web App for tracking your charitable giving (Sadaqah) with multi-currency support and gold value conversion.
@@ -11,6 +11,8 @@
   [![React](https://img.shields.io/badge/React-19-61dafb.svg)](https://reactjs.org/)
   [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-f38020.svg)](https://workers.cloudflare.com/)
   [![License](https://img.shields.io/badge/License-Private-red.svg)](LICENSE)
+
+  [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/sadaqahbox/sadaqahbox)
 </div>
 
 ---
@@ -40,7 +42,7 @@ The reward for sadaqah comes when it actually reaches those in need. This tool h
 
 - 📦 **Multiple Charity Boxes** - Create separate boxes for different causes, family members, or categories
 - 💰 **Multi-Currency Support** - Track donations in any currency (fiat, crypto, or commodities)
-- 🥇 **Gold Value Tracking** - All donations are converted to gold grams for consistent comparison
+- 🥇 **Gold Value Tracking** - All donations are converted to gold grams for consistent comparison and protection against inflation
 - 📊 **Visual Analytics** - See your giving history with beautiful charts and statistics
 - 🔒 **Privacy First** - Your data is encrypted and secure
 - 📱 **Progressive Web App** - Install on any device, works offline
@@ -141,6 +143,25 @@ Detailed documentation is available in the [`docs/`](docs/) directory:
 - **[Database Schema](docs/DATABASE.md)** - Database models and relationships
 - **[Development Guide](docs/DEVELOPMENT.md)** - Local development setup and workflows
 - **[Deployment Guide](docs/DEPLOYMENT.md)** - Production deployment instructions
+- **[Deployment Modes](docs/DEPLOYMENT_MODES.md)** - Combined vs. Separated deployment options
+
+---
+
+## 🚀 Deployment
+
+This project is configured for automated deployment via GitHub Actions:
+
+1. **GitHub Pages**: Hosts the static frontend client
+2. **Cloudflare Workers**: Hosts the API and D1 database
+
+### GitHub Secrets Required
+
+To enable automated deployment, set the following in your GitHub Repository Settings (**Settings > Secrets and variables > Actions**):
+
+- `CLOUDFLARE_API_TOKEN`: Your Cloudflare API token (with Workers edit permissions)
+- `CLOUDFLARE_ACCOUNT_ID`: Your Cloudflare Account ID
+
+For detailed instructions, see the **[Deployment Guide](docs/DEPLOYMENT.md)**.
 
 ---
 

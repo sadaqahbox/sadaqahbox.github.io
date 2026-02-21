@@ -13,6 +13,16 @@
 	"compatibility_flags": [
 		"nodejs_compat"
 	],
+	"routes": [
+		{
+			"pattern": "sadaqahbox.apps.erklab.com",
+			"custom_domain": true
+		}
+	],
+	"workers_dev": false,
+	"vars": {
+		"ALLOWED_ORIGINS": "https://sadaqahbox.github.io"
+	},
 	"d1_databases": [
 		{
 			"binding": "DB",
