@@ -34,12 +34,19 @@ export const TagSchema = z.object({
   createdAt: z.string(),
 });
 
+const TotalValueExtraEntrySchema = z.object({
+  total: z.number(),
+  code: z.string(),
+  name: z.string(),
+});
+
 export const BoxSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string().optional(),
   count: z.number(),
   totalValue: z.number(),
+  totalValueExtra: z.record(z.string(), TotalValueExtraEntrySchema).nullable().optional(),
   currencyId: z.string().optional(),
   currency: CurrencySchema.optional(),
   baseCurrencyId: z.string().optional(),
@@ -72,6 +79,16 @@ export const StatsSchema = z.object({
   totalBoxes: z.number(),
   totalSadaqahs: z.number(),
   totalValue: z.number(),
+  totalValueExtra: z.record(z.string(), TotalValueExtraEntrySchema).nullable().optional(),
+  uniqueCurrencies: z.number().optional(),
+  primaryCurrency: z.object({
+    id: z.string(),
+    code: z.string(),
+    name: z.string(),
+    symbol: z.string().optional(),
+    currencyTypeId: z.string().optional(),
+    currencyTypeName: z.string().optional(),
+  }).nullable().optional(),
 });
 
 // ============== Request Body Schemas ==============

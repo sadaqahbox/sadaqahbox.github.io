@@ -172,6 +172,14 @@ const PrimaryCurrencySchema = z.object({
   code: z.string(),
   name: z.string(),
   symbol: z.string().optional(),
+  currencyTypeId: z.string().optional(),
+  currencyTypeName: z.string().optional(),
+});
+
+const TotalValueExtraEntrySchema = z.object({
+  total: z.number().nonnegative(),
+  code: z.string(),
+  name: z.string(),
 });
 
 export const StatsResponseSchema = z.object({
@@ -179,6 +187,7 @@ export const StatsResponseSchema = z.object({
   totalBoxes: z.number().int().nonnegative(),
   totalSadaqahs: z.number().int().nonnegative(),
   totalValue: z.number().nonnegative(),
+  totalValueExtra: z.record(z.string(), TotalValueExtraEntrySchema).nullable().optional(),
   uniqueCurrencies: z.number().int().nonnegative(),
   primaryCurrency: PrimaryCurrencySchema.nullable(),
 });

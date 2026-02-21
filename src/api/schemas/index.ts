@@ -89,6 +89,12 @@ export type CreateTagInput = z.infer<typeof CreateTagSchema>;
 
 // ============== Box Schema ==============
 
+const TotalValueExtraEntrySchema = z.object({
+  total: z.number().nonnegative(),
+  code: z.string(),
+  name: z.string(),
+});
+
 export const BoxSchema = z.object({
   id: z.string().openapi({ example: "box_abc123" }),
   name: z.string().openapi({ example: "Ramadan Charity" }),
@@ -97,6 +103,9 @@ export const BoxSchema = z.object({
   count: z.number().int().nonnegative().openapi({ description: "Total sadaqahs in box" }),
   totalValue: z.number().nonnegative().openapi({ 
     description: "Total value in base currency" 
+  }),
+  totalValueExtra: z.record(z.string(), TotalValueExtraEntrySchema).nullable().optional().openapi({
+    description: "Values that couldn't be converted to base currency, keyed by currencyId"
   }),
   currencyId: z.string().optional(),
   currency: CurrencySchema.optional(),

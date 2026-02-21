@@ -46,6 +46,9 @@ export const boxes = sqliteTable(
     metadata: text("metadata", { mode: "json" }), // JSON metadata for flexible key-value storage
     count: integer("count").notNull().default(0),
     totalValue: real("totalValue").notNull().default(0),
+    totalValueExtra: text("totalValueExtra", { mode: "json" }).$type<{
+      [currencyId: string]: { total: number; code: string; name: string };
+    }>(), // Values that couldn't be converted to base currency, keyed by currencyId
     currencyId: text("currencyId").references(() => currencies.id),
     baseCurrencyId: text("baseCurrencyId").references(() => currencies.id),
     userId: text("userId")

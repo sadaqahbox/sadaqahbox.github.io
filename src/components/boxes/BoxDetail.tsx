@@ -17,6 +17,14 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -25,7 +33,7 @@ import {
 import { SadaqahList } from "@/components/sadaqah/SadaqahList";
 import { CollectionHistory } from "@/components/sadaqah/CollectionHistory";
 import { AddSadaqah } from "@/components/sadaqah/AddSadaqah";
-import { Plus, Coins, MoreVertical } from "lucide-react";
+import { Plus, Coins, MoreVertical, AlertCircle, Gem, Wallet, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
     useSadaqahs,
@@ -131,12 +139,54 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
     return "";
   };
 
-  const getBaseCurrencyInfo = () => {
-    if (!box.baseCurrency) return null;
+  const getCurrencyIcon = () => {
+    // Get currency from baseCurrency or currency
+    const currency = box.baseCurrency || box.currency;
+    if (!currency) return <Wallet className="h-4 w-4" />;
+    
+    if (currency.currencyTypeId === "ctyp_3") {
+      return <Gem className="h-4 w-4 text-green-500" />;
+    }
+    
+    // Check by currencyTypeId for crypto (ctyp_2 is typically Crypto)
+    if (currency.currencyTypeId === "ctyp_2") {
+      return <Coins className="h-4 w-4 text-blue-500" />;
+    }
+    
+    // Default to wallet for Fiat or unknown types
+    return <Wallet className="h-4 w-4 text-muted-foreground" />;
+  };
+
+  const getExtraValuesButton = () => {
+    if (!box.totalValueExtra || Object.keys(box.totalValueExtra).length === 0) return null;
+    
     return (
-      <div className="text-xs text-muted-foreground mt-1">
-        Base: {box.baseCurrency.code}
-      </div>
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-6 w-6 text-amber-600 hover:text-amber-700 hover:bg-amber-100 dark:text-amber-500 dark:hover:bg-amber-950">
+            <Info className="h-4 w-4" />
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-amber-700 dark:text-amber-400">Unconverted Values</DialogTitle>
+            <DialogDescription>
+              Values that couldn't be converted due to missing exchange rates
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            {Object.entries(box.totalValueExtra).map(([currencyId, entry]) => (
+              <div key={currencyId} className="flex items-center justify-between p-3 rounded-lg bg-amber-50 dark:bg-amber-950/50">
+                <div>
+                  <p className="font-medium text-amber-800 dark:text-amber-300">{entry.code}</p>
+                  <p className="text-xs text-muted-foreground">{entry.name}</p>
+                </div>
+                <p className="font-bold text-amber-700 dark:text-amber-400">{entry.total.toFixed(2)}</p>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     );
   };
 
@@ -262,17 +312,22 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-3 gap-4">
-            <Card>
+            <Card >
               <CardContent className="p-4 text-center">
                 <div className="text-2xl font-bold">{box.count}</div>
                 <div className="text-muted-foreground text-xs">Sadaqahs</div>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold">{box.totalValue.toFixed(2)}</div>
+            <Card className="p-0">
+              <CardContent className="p-8 text-center relative">
+                <div className="flex items-center justify-center gap-2">
+                  <div className="text-2xl font-bold">{box.totalValue.toFixed(2)}</div>
+                  {getCurrencyIcon()}
+                </div>
                 <div className="text-muted-foreground text-xs">{getCurrencyDisplay() || "Value"}</div>
-                {getBaseCurrencyInfo()}
+                <div className="absolute top-2 right-2">
+                  {getExtraValuesButton()}
+                </div>
               </CardContent>
             </Card>
             <Card>

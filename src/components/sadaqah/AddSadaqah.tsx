@@ -39,6 +39,7 @@ export function AddSadaqah({ boxId, onAdded, onCancel, isLoading }: AddSadaqahPr
   const [amount, setAmount] = useState(1);
   const [value, setValue] = useState<number>(1);
   const [currencyId, setCurrencyId] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: currencies = [], isLoading: isLoadingCurrencies } = useCurrencies();
   const { data: currencyTypes = [] } = useCurrencyTypes();
@@ -91,6 +92,23 @@ export function AddSadaqah({ boxId, onAdded, onCancel, isLoading }: AddSadaqahPr
     }));
   }, [currencies, currencyTypeMap]);
 
+  // Filter currencies based on search query
+  const filteredCurrencies: CurrencyGroup[] = useMemo(() => {
+    if (!searchQuery) return groupedCurrencies;
+    
+    const lowerQuery = searchQuery.toLowerCase();
+    return groupedCurrencies
+      .map(group => ({
+        ...group,
+        items: group.items.filter(item => 
+          item.code.toLowerCase().includes(lowerQuery) ||
+          item.name.toLowerCase().includes(lowerQuery) ||
+          (item.symbol && item.symbol.toLowerCase().includes(lowerQuery))
+        ),
+      }))
+      .filter(group => group.items.length > 0);
+  }, [groupedCurrencies, searchQuery]);
+
   const selectedCurrency = useMemo(() =>
     currencies.find(c => c.id === currencyId),
     [currencies, currencyId]
@@ -136,15 +154,21 @@ export function AddSadaqah({ boxId, onAdded, onCancel, isLoading }: AddSadaqahPr
             <Field>
               <FieldLabel>Currency</FieldLabel>
               <Combobox
-                items={groupedCurrencies}
+                items={filteredCurrencies}
                 value={currencyId}
-                onValueChange={(val) => val && setCurrencyId(val)}
+                onValueChange={(val) => {
+                  if (val) {
+                    setCurrencyId(val);
+                    setSearchQuery(""); // Clear search on selection
+                  }
+                }}
                 disabled={isFetchingCurrencies}
                 itemToStringLabel={(v)=>selectedCurrency?.name + " ("+ selectedCurrency?.symbol+")"}
               >
                 <ComboboxInput
                   placeholder={isFetchingCurrencies ? "Loading..." : "Search by code or name..."}
                   showClear
+                  onChange={(e) => setSearchQuery(e.target.value)}
                 />
                 <ComboboxContent>
                   <ComboboxEmpty>No currencies found.</ComboboxEmpty>
@@ -163,7 +187,7 @@ export function AddSadaqah({ boxId, onAdded, onCancel, isLoading }: AddSadaqahPr
                             </ComboboxItem>
                           )}
                         </ComboboxCollection>
-                        {index < groupedCurrencies.length - 1 && <ComboboxSeparator />}
+                        {index < filteredCurrencies.length - 1 && <ComboboxSeparator />}
                       </ComboboxGroup>
                     )}
                   </ComboboxList>

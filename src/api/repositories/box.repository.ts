@@ -16,6 +16,16 @@ import { generateBoxId, generateCollectionId } from "../shared/id-generator";
 
 // ============== Types ==============
 
+export interface TotalValueExtraEntry {
+  total: number;
+  code: string;
+  name: string;
+}
+
+export interface TotalValueExtra {
+  [currencyId: string]: TotalValueExtraEntry;
+}
+
 export interface BoxRecord {
   id: string;
   name: string;
@@ -23,6 +33,7 @@ export interface BoxRecord {
   metadata: unknown;
   count: number;
   totalValue: number;
+  totalValueExtra: TotalValueExtra | null;
   currencyId: string | null;
   baseCurrencyId: string | null;
   userId: string;
@@ -43,12 +54,14 @@ export interface UpdateBoxData {
   description?: string | null;
   metadata?: Record<string, string> | null;
   baseCurrencyId?: string;
+  totalValueExtra?: TotalValueExtra | null;
 }
 
 export interface BoxWithRelations extends Box {
   currency?: Currency;
   baseCurrency?: Currency;
   tags?: Tag[];
+  totalValueExtra?: TotalValueExtra;
 }
 
 // ============== Repository ==============
@@ -86,6 +99,7 @@ export class BoxRepository {
       metadata: data.metadata,
       count: 0,
       totalValue: 0,
+      totalValueExtra: undefined,
       baseCurrencyId: data.baseCurrencyId,
       createdAt: timestamp.toISOString(),
       updatedAt: timestamp.toISOString(),
@@ -135,6 +149,7 @@ export class BoxRepository {
       metadata: result.metadata as Record<string, string> | undefined,
       count: result.count,
       totalValue: result.totalValue,
+      totalValueExtra: result.totalValueExtra as TotalValueExtra | undefined,
       currencyId: result.currencyId || undefined,
       baseCurrencyId: result.baseCurrencyId || undefined,
       createdAt: new Date(result.createdAt).toISOString(),
@@ -207,6 +222,7 @@ export class BoxRepository {
         metadata: result.metadata as Record<string, string> | undefined,
         count: result.count,
         totalValue: result.totalValue,
+        totalValueExtra: result.totalValueExtra as TotalValueExtra | undefined,
         currencyId: result.currencyId || undefined,
         baseCurrencyId: result.baseCurrencyId || undefined,
         createdAt: new Date(result.createdAt).toISOString(),
@@ -287,6 +303,9 @@ export class BoxRepository {
     if (data.baseCurrencyId !== undefined) {
       updateData.baseCurrencyId = data.baseCurrencyId || null;
     }
+    if (data.totalValueExtra !== undefined) {
+      updateData.totalValueExtra = data.totalValueExtra ? JSON.stringify(data.totalValueExtra) : null;
+    }
 
     await this.db.update(boxes).set(updateData).where(eq(boxes.id, id));
     return this.findById(id);
@@ -331,6 +350,7 @@ export class BoxRepository {
       .set({
         count: 0,
         totalValue: 0,
+        totalValueExtra: null,
         currencyId: null,
         updatedAt: new Date(),
       })

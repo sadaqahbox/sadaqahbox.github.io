@@ -5,13 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Header } from "@/components/layout";
 import { BoxList, BoxDetail, CreateBox } from "@/components/boxes";
-import { SignedIn, SignedOut, RedirectToSignIn, AuthLoading } from "@daveyplate/better-auth-ui";
+import { SignedIn, SignedOut, RedirectToSignIn } from "@daveyplate/better-auth-ui";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Mosque01Icon, Add01Icon } from "@hugeicons/core-free-icons";
 import { useDashboard } from "@/hooks";
 import { containerVariants, itemVariants, mainContentVariants } from "@/lib/animations";
-import { DashboardSkeleton } from "./DashboardSkeleton";
-import { LoadingFallback } from "./LoadingFallback";
 import { EmptyState } from "./EmptyState";
 import type { Box } from "@/types";
 
@@ -222,10 +220,6 @@ export function ProtectedDashboard() {
             <SignedIn>
                 <DashboardContent />
             </SignedIn>
-            {/* AuthLoading shows fallback only when auth is actually loading */}
-            <AuthLoading>
-                <LoadingFallback />
-            </AuthLoading>
         </>
     );
 }

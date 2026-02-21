@@ -16,6 +16,17 @@ export interface PrimaryCurrency {
     code: string;
     name: string;
     symbol?: string;
+    currencyTypeId?: string;
+    currencyTypeName?: string;
+}
+
+/**
+ * Total value extra entry type
+ */
+export interface TotalValueExtraEntry {
+    total: number;
+    code: string;
+    name: string;
 }
 
 /**
@@ -25,6 +36,7 @@ export interface DashboardStats {
     totalBoxes: number;
     totalSadaqahs: number;
     totalValue: number;
+    totalValueExtra?: Record<string, TotalValueExtraEntry> | null;
     uniqueCurrencies: number;
     primaryCurrency: PrimaryCurrency | null;
 }

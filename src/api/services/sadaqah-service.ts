@@ -8,6 +8,7 @@
 import { eq, sql } from "drizzle-orm";
 import { BaseService, createServiceFactory } from "./base-service";
 import { SadaqahRepository, BoxRepository, CurrencyRepository } from "../repositories";
+import type { TotalValueExtra } from "../repositories/box.repository";
 import { GoldRateService } from "./gold-rate-service";
 import { sadaqahs, boxes, currencies } from "../../db/schema";
 import type { Sadaqah, Box, Currency } from "../schemas";
@@ -91,7 +92,7 @@ export class SadaqahService extends BaseService {
   /**
    * Get currency with usdValue, fetching rates if needed
    * Bypasses cache to ensure fresh data after rate updates
-   * @throws ValidationError if currency has no usdValue and rate cannot be fetched
+   * @returns Currency with usdValue, or currency without usdValue if rate is not available
    */
   private async getCurrencyWithRate(currencyId: string): Promise<{ id: string; code: string; name: string; usdValue?: number | null }> {
     // First check if currency exists
@@ -142,22 +143,21 @@ export class SadaqahService extends BaseService {
         };
       }
       
-      // Rate not available from APIs
-      logger.warn("Currency rate not available from APIs", { code: currency.code, currencyId });
-      throw new ValidationError(`Exchange rate not available for currency: ${currency.code} (${currency.name}). Please try a different currency.`);
+      // Rate not available from APIs - return currency without usdValue
+      // The caller will handle storing in totalValueExtra
+      logger.warn("Currency rate not available from APIs, value will be stored in totalValueExtra", { code: currency.code, currencyId });
+      return currency;
       
     } catch (error) {
-      if (error instanceof ValidationError) {
-        throw error;
-      }
-      logger.error("Failed to fetch rates", { currencyId }, error instanceof Error ? error : new Error(String(error)));
-      throw new ValidationError(`Failed to fetch exchange rate for ${currency.code}. Please try again or use a different currency.`);
+      // Log error but return currency without usdValue
+      logger.error("Failed to fetch rates, value will be stored in totalValueExtra", { currencyId }, error instanceof Error ? error : new Error(String(error)));
+      return currency;
     }
   }
 
   /**
    * Add a single sadaqah to a box
-   * @throws ValidationError if currency conversion is not possible
+   * If conversion is not possible, stores value in totalValueExtra
    */
   async addSadaqah(
     boxId: string,
@@ -175,7 +175,6 @@ export class SadaqahService extends BaseService {
     const currencyId = input.currencyId || box.baseCurrencyId || "cur_default";
 
     // Get currencies for conversion (with rate fetching if needed)
-    // This will throw ValidationError if rate is not available
     const sadaqahCurrency = await this.getCurrencyWithRate(currencyId);
     
     // Get base currency with rate
@@ -188,7 +187,7 @@ export class SadaqahService extends BaseService {
         name: box.baseCurrency.name,
         usdValue: box.baseCurrency.usdValue ?? null,
       };
-      // If usdValue is missing, fetch it (this will throw if not available)
+      // If usdValue is missing, try to fetch it
       if (baseCurrency.usdValue === null && box.baseCurrencyId) {
         baseCurrency = await this.getCurrencyWithRate(box.baseCurrencyId);
       }
@@ -198,35 +197,44 @@ export class SadaqahService extends BaseService {
       throw new ValidationError("Box has no base currency set");
     }
     
-    // Verify base currency has usdValue
-    if (!baseCurrency.usdValue) {
-      throw new ValidationError(`Base currency ${baseCurrency.code} has no exchange rate available`);
-    }
+    // Determine if we can convert
+    let valueInBaseCurrency: number | null = null;
+    let shouldStoreInExtra = false;
     
-    // Verify sadaqah currency has usdValue
-    if (!sadaqahCurrency.usdValue) {
-      throw new ValidationError(`Currency ${sadaqahCurrency.code} has no exchange rate available`);
-    }
-    
-    // Calculate the value in base currency
-    let valueInBaseCurrency: number;
     if (currencyId === box.baseCurrencyId) {
       // Same currency, no conversion needed
       valueInBaseCurrency = value;
+    } else if (!sadaqahCurrency.usdValue || !baseCurrency.usdValue) {
+      // Cannot convert - store in totalValueExtra
+      shouldStoreInExtra = true;
+      logger.info("Cannot convert currency, storing in totalValueExtra", {
+        sadaqahCurrency: sadaqahCurrency.code,
+        sadaqahUsdValue: sadaqahCurrency.usdValue,
+        baseCurrency: baseCurrency.code,
+        baseUsdValue: baseCurrency.usdValue,
+        value,
+      });
     } else {
+      // Can convert
       const converted = convertCurrency(value, sadaqahCurrency, baseCurrency);
       if (converted === null) {
-        throw new ValidationError(`Cannot convert from ${sadaqahCurrency.code} to ${baseCurrency.code}: missing exchange rate`);
+        shouldStoreInExtra = true;
+        logger.info("Conversion returned null, storing in totalValueExtra", {
+          sadaqahCurrency: sadaqahCurrency.code,
+          baseCurrency: baseCurrency.code,
+          value,
+        });
+      } else {
+        valueInBaseCurrency = converted;
+        logger.info("Converted sadaqah value", {
+          originalValue: value,
+          originalCurrency: sadaqahCurrency.code,
+          convertedValue: valueInBaseCurrency,
+          baseCurrency: baseCurrency.code,
+          sadaqahUsdValue: sadaqahCurrency.usdValue,
+          baseUsdValue: baseCurrency.usdValue,
+        });
       }
-      valueInBaseCurrency = converted;
-      logger.info("Converted sadaqah value", {
-        originalValue: value,
-        originalCurrency: sadaqahCurrency.code,
-        convertedValue: valueInBaseCurrency,
-        baseCurrency: baseCurrency.code,
-        sadaqahUsdValue: sadaqahCurrency.usdValue,
-        baseUsdValue: baseCurrency.usdValue,
-      });
     }
 
     const timestamp = new Date();
@@ -244,15 +252,39 @@ export class SadaqahService extends BaseService {
       }));
 
       const newCount = box.count + 1;
-      const newTotalValue = box.totalValue + valueInBaseCurrency;
       const boxCurrencyId = box.currencyId || currencyId;
 
-      b.add(this.db.update(boxes).set({
-        count: newCount,
-        totalValue: newTotalValue,
-        currencyId: boxCurrencyId,
-        updatedAt: timestamp,
-      }).where(eq(boxes.id, boxId)));
+      if (shouldStoreInExtra) {
+        // Store in totalValueExtra
+        const currentExtra = box.totalValueExtra || {};
+        const existingEntry = currentExtra[currencyId];
+        const newTotal = (existingEntry?.total || 0) + value;
+        
+        const newTotalValueExtra: TotalValueExtra = {
+          ...currentExtra,
+          [currencyId]: {
+            total: newTotal,
+            code: sadaqahCurrency.code,
+            name: sadaqahCurrency.name,
+          },
+        };
+
+        b.add(this.db.update(boxes).set({
+          count: newCount,
+          totalValueExtra: newTotalValueExtra,
+          currencyId: boxCurrencyId,
+          updatedAt: timestamp,
+        }).where(eq(boxes.id, boxId)));
+      } else {
+        // Normal update with converted value
+        const newTotalValue = box.totalValue + (valueInBaseCurrency || 0);
+        b.add(this.db.update(boxes).set({
+          count: newCount,
+          totalValue: newTotalValue,
+          currencyId: boxCurrencyId,
+          updatedAt: timestamp,
+        }).where(eq(boxes.id, boxId)));
+      }
     });
 
     // Get updated box
@@ -273,6 +305,7 @@ export class SadaqahService extends BaseService {
 
   /**
    * Add multiple sadaqahs at once (batch operation)
+   * If conversion is not possible, stores value in totalValueExtra
    */
   async addMultiple(
     boxId: string,
@@ -313,22 +346,42 @@ export class SadaqahService extends BaseService {
       throw new ValidationError("Box has no base currency set");
     }
     
-    // Calculate the value in base currency
-    let totalValueInBaseCurrency: number;
+    // Determine if we can convert
+    let totalValueInBaseCurrency: number | null = null;
+    let shouldStoreInExtra = false;
+    
     if (currencyId === box.baseCurrencyId) {
+      // Same currency, no conversion needed
       totalValueInBaseCurrency = totalValue;
+    } else if (!sadaqahCurrency.usdValue || !baseCurrency.usdValue) {
+      // Cannot convert - store in totalValueExtra
+      shouldStoreInExtra = true;
+      logger.info("Cannot convert currency (batch), storing in totalValueExtra", {
+        sadaqahCurrency: sadaqahCurrency.code,
+        sadaqahUsdValue: sadaqahCurrency.usdValue,
+        baseCurrency: baseCurrency.code,
+        baseUsdValue: baseCurrency.usdValue,
+        totalValue,
+      });
     } else {
+      // Can convert
       const converted = convertCurrency(totalValue, sadaqahCurrency, baseCurrency);
       if (converted === null) {
-        throw new ValidationError(`Cannot convert from ${sadaqahCurrency.code} to ${baseCurrency.code}: missing exchange rate`);
+        shouldStoreInExtra = true;
+        logger.info("Conversion returned null (batch), storing in totalValueExtra", {
+          sadaqahCurrency: sadaqahCurrency.code,
+          baseCurrency: baseCurrency.code,
+          totalValue,
+        });
+      } else {
+        totalValueInBaseCurrency = converted;
+        logger.info("Converted sadaqah value (batch)", {
+          originalValue: totalValue,
+          originalCurrency: sadaqahCurrency.code,
+          convertedValue: totalValueInBaseCurrency,
+          baseCurrency: baseCurrency.code,
+        });
       }
-      totalValueInBaseCurrency = converted;
-      logger.info("Converted sadaqah value (batch)", {
-        originalValue: totalValue,
-        originalCurrency: sadaqahCurrency.code,
-        convertedValue: totalValueInBaseCurrency,
-        baseCurrency: baseCurrency.code,
-      });
     }
 
     const timestamp = new Date();
@@ -346,15 +399,39 @@ export class SadaqahService extends BaseService {
       }));
 
       const newCount = box.count + 1;
-      const newTotalValue = box.totalValue + totalValueInBaseCurrency;
       const boxCurrencyId = box.currencyId || currencyId;
 
-      b.add(this.db.update(boxes).set({
-        count: newCount,
-        totalValue: newTotalValue,
-        currencyId: boxCurrencyId,
-        updatedAt: timestamp,
-      }).where(eq(boxes.id, boxId)));
+      if (shouldStoreInExtra) {
+        // Store in totalValueExtra
+        const currentExtra = box.totalValueExtra || {};
+        const existingEntry = currentExtra[currencyId];
+        const newTotal = (existingEntry?.total || 0) + totalValue;
+        
+        const newTotalValueExtra: TotalValueExtra = {
+          ...currentExtra,
+          [currencyId]: {
+            total: newTotal,
+            code: sadaqahCurrency.code,
+            name: sadaqahCurrency.name,
+          },
+        };
+
+        b.add(this.db.update(boxes).set({
+          count: newCount,
+          totalValueExtra: newTotalValueExtra,
+          currencyId: boxCurrencyId,
+          updatedAt: timestamp,
+        }).where(eq(boxes.id, boxId)));
+      } else {
+        // Normal update with converted value
+        const newTotalValue = box.totalValue + (totalValueInBaseCurrency || 0);
+        b.add(this.db.update(boxes).set({
+          count: newCount,
+          totalValue: newTotalValue,
+          currencyId: boxCurrencyId,
+          updatedAt: timestamp,
+        }).where(eq(boxes.id, boxId)));
+      }
     });
 
     // Get updated box
@@ -400,6 +477,7 @@ export class SadaqahService extends BaseService {
 
   /**
    * Delete a sadaqah
+   * Handles both totalValue and totalValueExtra
    */
   async deleteSadaqah(
     sadaqahId: string,
@@ -416,6 +494,10 @@ export class SadaqahService extends BaseService {
     if (!box) {
       return { deleted: false };
     }
+
+    // Check if this sadaqah was stored in totalValueExtra
+    const extraEntry = box.totalValueExtra?.[sadaqah.currencyId];
+    const wasStoredInExtra = extraEntry !== undefined;
 
     // Get currencies for conversion (with rate fetching if needed)
     const sadaqahCurrency = await this.getCurrencyWithRate(sadaqah.currencyId).catch(() => null);
@@ -436,12 +518,26 @@ export class SadaqahService extends BaseService {
       baseCurrency = await this.getCurrencyWithRate(box.baseCurrencyId).catch(() => null);
     }
     
-    // Calculate the value in base currency to subtract
-    let valueInBaseCurrency = sadaqah.value;
-    if (sadaqahCurrency && baseCurrency && sadaqah.currencyId !== box.baseCurrencyId) {
-      const converted = convertCurrency(sadaqah.value, sadaqahCurrency, baseCurrency);
-      if (converted !== null) {
-        valueInBaseCurrency = converted;
+    // Determine if we should subtract from totalValueExtra or totalValue
+    let shouldSubtractFromExtra = wasStoredInExtra;
+    
+    // If not in extra, check if conversion is possible
+    let valueInBaseCurrency: number | null = null;
+    if (!shouldSubtractFromExtra) {
+      if (sadaqah.currencyId === box.baseCurrencyId) {
+        valueInBaseCurrency = sadaqah.value;
+      } else if (sadaqahCurrency && baseCurrency && sadaqahCurrency.usdValue && baseCurrency.usdValue) {
+        const converted = convertCurrency(sadaqah.value, sadaqahCurrency, baseCurrency);
+        if (converted !== null) {
+          valueInBaseCurrency = converted;
+        } else {
+          // Conversion not possible now, but might have been when added
+          // Check if it's in extra
+          shouldSubtractFromExtra = true;
+        }
+      } else {
+        // No conversion possible, check if it's in extra
+        shouldSubtractFromExtra = true;
       }
     }
 
@@ -450,13 +546,41 @@ export class SadaqahService extends BaseService {
       b.add(this.db.delete(sadaqahs).where(eq(sadaqahs.id, sadaqahId)));
 
       const newCount = Math.max(0, box.count - 1);
-      const newTotalValue = Math.max(0, box.totalValue - valueInBaseCurrency);
 
-      b.add(this.db.update(boxes).set({
-        count: newCount,
-        totalValue: newTotalValue,
-        updatedAt: new Date(),
-      }).where(eq(boxes.id, sadaqah.boxId)));
+      if (shouldSubtractFromExtra && box.totalValueExtra) {
+        // Subtract from totalValueExtra
+        const currentExtra = { ...box.totalValueExtra };
+        const currentEntry = currentExtra[sadaqah.currencyId];
+        
+        if (currentEntry) {
+          const newTotal = currentEntry.total - sadaqah.value;
+          if (newTotal <= 0) {
+            delete currentExtra[sadaqah.currencyId];
+          } else {
+            currentExtra[sadaqah.currencyId] = {
+              ...currentEntry,
+              total: newTotal,
+            };
+          }
+        }
+        
+        const newTotalValueExtra = Object.keys(currentExtra).length > 0 ? currentExtra : null;
+        
+        b.add(this.db.update(boxes).set({
+          count: newCount,
+          totalValueExtra: newTotalValueExtra,
+          updatedAt: new Date(),
+        }).where(eq(boxes.id, sadaqah.boxId)));
+      } else {
+        // Subtract from totalValue
+        const newTotalValue = Math.max(0, box.totalValue - (valueInBaseCurrency || 0));
+
+        b.add(this.db.update(boxes).set({
+          count: newCount,
+          totalValue: newTotalValue,
+          updatedAt: new Date(),
+        }).where(eq(boxes.id, sadaqah.boxId)));
+      }
     });
 
     // Get updated box
