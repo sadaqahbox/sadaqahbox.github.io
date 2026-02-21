@@ -8,7 +8,7 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { Scalar } from "@scalar/hono-api-reference";
 
-import { requestLogger, errorHandler } from "./middleware";
+import { requestLogger, errorHandler, securityHeaders } from "./middleware";
 import { registerRoutes } from "./routes";
 
 import { openApiConfig, scalarConfig } from "./config/openapi";
@@ -26,6 +26,7 @@ app.use("/api/auth/**", authCors);
 app.use("/api/*", authCors);
 
 // Global middleware
+app.use("*", securityHeaders());
 app.use("*", requestLogger);
 app.use("*", errorHandler);
 

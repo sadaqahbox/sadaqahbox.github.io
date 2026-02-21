@@ -1,74 +1,133 @@
-import { toast } from "sonner";
 import type { z } from "zod";
+import { withRetry } from "./retry";
 
 const API_BASE = "/api";
 
-class ApiError extends Error {
-  constructor(
-    message: string,
-    public status?: number
-  ) {
-    super(message);
-    this.name = "ApiError";
-  }
+export class ApiError extends Error {
+    constructor(
+        message: string,
+        public status?: number,
+        public code?: string
+    ) {
+        super(message);
+        this.name = "ApiError";
+    }
+}
+
+/**
+ * Type guard for ApiError
+ */
+export function isApiError(error: unknown): error is ApiError {
+    return error instanceof ApiError ||
+        (typeof error === "object" &&
+            error !== null &&
+            "name" in error &&
+            error.name === "ApiError" &&
+            "message" in error);
+}
+
+/**
+ * Type guard for network errors
+ */
+export function isNetworkError(error: unknown): error is TypeError {
+    return error instanceof TypeError &&
+        (error.message.includes("fetch") ||
+            error.message.includes("network") ||
+            error.message.includes("Failed to fetch"));
+}
+
+/**
+ * Safely extract error message from unknown error
+ */
+export function getErrorMessage(error: unknown, defaultMessage = "An unexpected error occurred"): string {
+    if (error instanceof Error) {
+        return error.message;
+    }
+    if (typeof error === "string") {
+        return error;
+    }
+    return defaultMessage;
 }
 
 async function handleResponse<T>(response: Response): Promise<unknown> {
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ error: "Unknown error" })) as { error?: string };
-    throw new ApiError(errorData.error || `HTTP ${response.status}`, response.status);
-  }
-  return response.json();
-}
-
-function handleError(error: unknown, defaultMessage: string): never {
-  const message = error instanceof Error ? error.message : defaultMessage;
-  toast.error(message);
-  throw error;
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" })) as { error?: string };
+        throw new ApiError(errorData.error || `HTTP ${response.status}`, response.status);
+    }
+    return response.json();
 }
 
 async function request<T extends z.ZodType>(
-  endpoint: string,
-  schema: T,
-  options?: RequestInit,
-  errorMessage?: string
+    endpoint: string,
+    schema: T,
+    options?: RequestInit,
+    _errorMessage?: string
 ): Promise<z.infer<T>> {
-  try {
-    const response = await fetch(`${API_BASE}${endpoint}`, {
-      credentials: "include",
-      ...options,
-      headers: {
-        ...options?.headers,
-      },
-    });
-    const data = await handleResponse(response);
+    // Use retry logic for all requests
+    const response = await withRetry(
+        async () => {
+            const res = await fetch(`${API_BASE}${endpoint}`, {
+                credentials: "include",
+                ...options,
+                headers: {
+                    ...options?.headers,
+                },
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({ error: "Unknown error" })) as {
+                    error?: string;
+                };
+                throw new ApiError(
+                    errorData.error || `HTTP ${res.status}`,
+                    res.status
+                );
+            }
+
+            return res;
+        },
+        {
+            maxRetries: 3,
+            baseDelay: 1000,
+            maxDelay: 10000,
+        }
+    );
+
+    const data = await response.json();
     return schema.parse(data);
-  } catch (error) {
-    return handleError(error, errorMessage || `Failed to request ${endpoint}`);
-  }
 }
 
 function createRequestInit(method: string, body?: unknown): RequestInit {
-  const init: RequestInit = { method };
-  if (body !== undefined) {
-    init.headers = { "Content-Type": "application/json" };
-    init.body = JSON.stringify(body);
-  }
-  return init;
+    const init: RequestInit = { method };
+    if (body !== undefined) {
+        init.headers = { "Content-Type": "application/json" };
+        init.body = JSON.stringify(body);
+    }
+    return init;
 }
 
 export const api = {
-  get: <T extends z.ZodType>(endpoint: string, schema: T) =>
-    request(endpoint, schema, undefined, `Failed to fetch ${endpoint}`),
+    get: <T extends z.ZodType>(endpoint: string, schema: T) =>
+        request(endpoint, schema, undefined, `Failed to fetch ${endpoint}`),
 
-  post: <T extends z.ZodType>(endpoint: string, schema: T, body?: unknown) =>
-    request(endpoint, schema, createRequestInit("POST", body), `Failed to post to ${endpoint}`),
+    post: <T extends z.ZodType>(endpoint: string, schema: T, body?: unknown) =>
+        request(endpoint, schema, createRequestInit("POST", body), `Failed to post to ${endpoint}`),
 
-  put: <T extends z.ZodType>(endpoint: string, schema: T, body?: unknown) =>
-    request(endpoint, schema, createRequestInit("PUT", body), `Failed to update ${endpoint}`),
+    put: <T extends z.ZodType>(endpoint: string, schema: T, body?: unknown) =>
+        request(endpoint, schema, createRequestInit("PUT", body), `Failed to update ${endpoint}`),
 
-  del: <T extends z.ZodType>(endpoint: string, schema: T) =>
-    request(endpoint, schema, { method: "DELETE" }, `Failed to delete ${endpoint}`),
+    del: <T extends z.ZodType>(endpoint: string, schema: T) =>
+        request(endpoint, schema, { method: "DELETE" }, `Failed to delete ${endpoint}`),
 };
 
-export type { ApiError };
+/**
+ * Type-safe wrapper for API responses
+ */
+export function createApiResponse<T>(data: T, success = true, message?: string) {
+    return {
+        success,
+        data,
+        message,
+        timestamp: new Date().toISOString(),
+    };
+}

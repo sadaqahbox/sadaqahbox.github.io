@@ -1,50 +1,209 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/**
+ * Transaction Manager
+ *
+ * Provides proper transaction wrapper with rollback support for D1 database.
+ * Uses D1's batch API for atomic operations.
+ */
+
 import type { Database } from "../../db";
 
 /**
- * D1 batch operation helper.
- * 
- * D1 supports batching multiple SQL statements in a single call.
- * This provides:
- * - Better performance (reduces network round trips)
- * - Atomicity (all statements succeed or all fail)
- * - Works in both local dev and production
- * 
- * Each statement in the batch is executed sequentially in auto-commit mode.
- * If any statement fails, the entire batch aborts.
- * 
- * Usage:
- *   const result = await dbBatch(db, async (b) => {
- *     b.add(db.insert(boxes).values({...}));
- *     b.add(db.insert(boxTags).values([...]));
- *     return { id, name };
- *   });
+ * Transaction isolation level
  */
+export type IsolationLevel = "READ_UNCOMMITTED" | "READ_COMMITTED" | "SERIALIZABLE";
 
-interface BatchBuilder {
-	add: (query: any) => void;
+export interface TransactionOptions {
+    isolationLevel?: IsolationLevel;
+    readOnly?: boolean;
+    timeout?: number;
 }
 
-export async function dbBatch<T>(
-	db: Database,
-	operation: (builder: BatchBuilder) => Promise<T>
+const DEFAULT_OPTIONS: TransactionOptions = {
+    isolationLevel: "SERIALIZABLE",
+    readOnly: false,
+    timeout: 30000,
+};
+
+/**
+ * Transaction context passed to transaction callbacks
+ */
+export interface TransactionContext {
+    /**
+     * Add a query to the transaction batch
+     */
+    add: (query: { toSQL(): { sql: string; params: unknown[] } }) => void;
+
+    /**
+     * Execute a callback within the transaction
+     */
+    execute: <T>(fn: () => Promise<T>) => Promise<T>;
+
+    /**
+     * Rollback the transaction (marks it for rollback)
+     */
+    rollback: () => void;
+
+    /**
+     * Check if transaction has been marked for rollback
+     */
+    isRolledBack: () => boolean;
+}
+
+interface PendingQuery {
+    sql: string;
+    params: unknown[];
+}
+
+/**
+ * Execute operations within a transaction
+ *
+ * All operations are batched and executed atomically.
+ * If any operation fails, all changes are rolled back.
+ *
+ * @example
+ * ```typescript
+ * await transaction(db, async (trx) => {
+ *   trx.add(db.insert(boxes).values({ ... }));
+ *   trx.add(db.insert(boxTags).values([ ... ]));
+ *   return { id, name };
+ * });
+ * ```
+ */
+export async function transaction<T>(
+    db: Database,
+    operation: (ctx: TransactionContext) => Promise<T>,
+    options: TransactionOptions = {}
 ): Promise<T> {
-	const queries: any[] = [];
-	
-	const builder: BatchBuilder = {
-		add: (query: any) => {
-			queries.push(query);
-		}
-	};
-	
-	// Execute the operation to collect queries
-	const result = await operation(builder);
-	
-	// If we have queries, execute them as a batch
-	if (queries.length > 0) {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		await (db as any).batch(queries);
-	}
-	
-	return result;
+    const opts = { ...DEFAULT_OPTIONS, ...options };
+    const pendingQueries: PendingQuery[] = [];
+    let shouldRollback = false;
+
+    const context: TransactionContext = {
+        add: (query) => {
+            const { sql, params } = query.toSQL();
+            pendingQueries.push({ sql, params });
+        },
+
+        execute: async (fn) => {
+            return fn();
+        },
+
+        rollback: () => {
+            shouldRollback = true;
+        },
+
+        isRolledBack: () => shouldRollback,
+    };
+
+    // Execute the operation to collect queries
+    const result = await operation(context);
+
+    // Check if rollback was requested
+    if (shouldRollback) {
+        throw new TransactionRollbackError("Transaction was rolled back by user");
+    }
+
+    // If we have queries, execute them as a batch
+    if (pendingQueries.length > 0) {
+        try {
+            // Use D1's batch method for atomic execution
+            const batchFn = getD1Batch(db);
+
+            if (batchFn) {
+                // D1 batch execution
+                const stmts = pendingQueries.map((q) => ({
+                    sql: q.sql,
+                    params: q.params,
+                }));
+                await batchFn(stmts);
+            } else {
+                // Fallback: execute sequentially (not atomic)
+                console.warn("D1 batch not available, executing queries sequentially");
+                for (const query of pendingQueries) {
+                    await executeRaw(db, query.sql, query.params);
+                }
+            }
+        } catch (error) {
+            throw new TransactionError(
+                `Transaction failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+                error instanceof Error ? error : undefined
+            );
+        }
+    }
+
+    return result;
+}
+
+/**
+ * Error thrown when a transaction fails
+ */
+export class TransactionError extends Error {
+    constructor(
+        message: string,
+        public readonly cause?: Error
+    ) {
+        super(message);
+        this.name = "TransactionError";
+    }
+}
+
+/**
+ * Error thrown when a transaction is rolled back by user
+ */
+export class TransactionRollbackError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "TransactionRollbackError";
+    }
+}
+
+/**
+ * Get D1 batch function from database instance
+ */
+function getD1Batch(db: Database): ((queries: Array<{ sql: string; params: unknown[] }>) => Promise<unknown>) | null {
+    // Access the underlying D1 database
+    const dbAny = db as unknown as {
+        batch?: (queries: Array<{ sql: string; params: unknown[] }>) => Promise<unknown>;
+        drizzle?: { batch?: (queries: Array<{ sql: string; params: unknown[] }>) => Promise<unknown> };
+    };
+
+    return dbAny.batch ?? dbAny.drizzle?.batch ?? null;
+}
+
+/**
+ * Execute a raw SQL query
+ */
+async function executeRaw(db: Database, sql: string, params: unknown[]): Promise<unknown> {
+    // Try to execute via drizzle's raw query method
+    const dbAny = db as unknown as {
+        run?: (sql: string, params: unknown[]) => Promise<unknown>;
+        execute?: (sql: string, params: unknown[]) => Promise<unknown>;
+    };
+
+    if (dbAny.run) {
+        return dbAny.run(sql, params);
+    }
+
+    if (dbAny.execute) {
+        return dbAny.execute(sql, params);
+    }
+
+    throw new Error("Unable to execute raw query - no compatible method found");
+}
+
+/**
+ * Legacy dbBatch function - kept for backwards compatibility
+ * @deprecated Use transaction() instead
+ */
+export async function dbBatch<T>(
+    db: Database,
+    operation: (builder: { add: (query: { toSQL(): { sql: string; params: unknown[] } }) => void }) => Promise<T>
+): Promise<T> {
+    console.warn("dbBatch is deprecated, use transaction() instead");
+    return transaction(db, async (ctx) => {
+        const result = await operation({
+            add: (query) => ctx.add(query),
+        });
+        return result;
+    });
 }

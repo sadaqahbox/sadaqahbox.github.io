@@ -2,8 +2,8 @@ import { drizzle } from "drizzle-orm/d1";
 import type { Context } from "hono";
 import { schema } from "./schema";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Database = ReturnType<typeof drizzle<any>>;
+type Schema = typeof schema;
+export type Database = ReturnType<typeof drizzle<Schema>>;
 
 declare module "hono" {
   interface ContextVariableMap {

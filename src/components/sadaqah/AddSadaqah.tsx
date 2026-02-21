@@ -34,7 +34,7 @@ export function AddSadaqah({ boxId, onAdded, onCancel }: AddSadaqahProps) {
         const currencies = await currenciesApi.getAll();
         if (currencies.length > 0) {
           setCurrencies(currencies);
-          setCurrencyCode(currencies[0].code);
+          setCurrencyCode(currencies[0]!.code);
         }
       } catch {
         // Error handled by api.ts

@@ -145,8 +145,7 @@ export interface RouteConfig<
 	params?: P;
 	query?: Q;
 	body?: B;
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	responses: Record<string, any>;
+	responses: Record<string, unknown>;
 	/** Whether this route requires authentication (adds security to OpenAPI docs) */
 	requireAuth?: boolean;
 }
@@ -175,7 +174,8 @@ export function buildRoute<
 		tags: config.tags,
 		summary: config.summary,
 		request: Object.keys(request).length > 0 ? request : undefined,
-		responses: config.responses,
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		responses: config.responses as Record<string, any>,
 		...(config.requireAuth ? {
 			security: [
 				{ apiKeyCookie: [] },
@@ -193,8 +193,7 @@ export function buildRoute<
 export function getParams<T extends Record<string, string>>(
 	c: Context
 ): T {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	return (c.req.valid as any)("param") as T;
+	return (c.req.valid as (type: string) => T)("param");
 }
 
 /**
@@ -203,8 +202,7 @@ export function getParams<T extends Record<string, string>>(
 export function getQuery<T extends Record<string, unknown>>(
 	c: Context
 ): T {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	return (c.req.valid as any)("query") as T;
+	return (c.req.valid as (type: string) => T)("query");
 }
 
 /**
@@ -213,8 +211,7 @@ export function getQuery<T extends Record<string, unknown>>(
 export function getBody<T extends Record<string, unknown>>(
 	c: Context
 ): T {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	return (c.req.valid as any)("json") as T;
+	return (c.req.valid as (type: string) => T)("json");
 }
 
 /**
@@ -233,8 +230,7 @@ export function jsonSuccess<T extends Record<string, unknown>>(
 
 export interface RouteDefinition {
 	route: ReturnType<typeof createRoute>;
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	handler: (c: Context<any>) => Promise<Response | void>;
+	handler: (c: Context) => Promise<Response | void>;
 	middleware?: MiddlewareHandler<{ Bindings: Env }>[];
 }
 

@@ -87,7 +87,7 @@ export async function errorHandler(c: Context, next: Next) {
 		if (err instanceof AppError) {
 			const statusCode = err.status as 200 | 400 | 401 | 403 | 404 | 409 | 500;
 			return c.json(
-				{ ...error(err.message, err.code), ...(err.details && { details: err.details }) },
+				{ ...error(err.message, err.code), ...(err.details ? { details: err.details } : {}) },
 				statusCode
 			);
 		}

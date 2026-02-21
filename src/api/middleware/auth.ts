@@ -42,6 +42,13 @@ export async function requireAuth(c: Context<{ Bindings: Env }>, next: Next) {
   // Only the token part (before the dot) is stored in the database
   const sessionToken = cookieValue.split('.')[0];
 
+  if (!sessionToken) {
+    return c.json(
+      { success: false, error: "Unauthorized - Invalid session token format" },
+      401
+    );
+  }
+
   const db = getDbFromContext(c);
 
   // Look up session

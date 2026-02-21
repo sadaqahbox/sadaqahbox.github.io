@@ -18,13 +18,13 @@ export class CurrencyTypeEntity {
 
 	async create(data: CreateCurrencyTypeOptions): Promise<CurrencyType> {
 		const id = generateCurrencyTypeId();
-		const name = sanitizeString(data.name);
+		const name = sanitizeString(data.name) || "";
 		const description = sanitizeString(data.description);
 
 		await this.db.insert(currencyTypes).values({
 			id,
 			name,
-			description: description || null,
+			description: description ?? null,
 		});
 
 		const currencyType: CurrencyType = { id, name, description };

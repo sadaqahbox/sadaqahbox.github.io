@@ -55,8 +55,7 @@ export interface CrudConfig<T, CreateInput, EntityContext> {
         update?: ZodType;
     };
     /** Function to get entity instance from context */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    getEntity: (c: Context<{ Bindings: Env }>) => any;
+    getEntity: (c: Context<{ Bindings: Env }>) => CrudEntity<T, CreateInput, EntityContext>;
     /** Function to extract create input from request body (can use context for user info) */
     getCreateInput: (body: Record<string, unknown>, c: Context<{ Bindings: Env }>) => CreateInput | Promise<CreateInput>;
     /** Check for duplicates on create */
@@ -212,10 +211,12 @@ export function createCrud<T, CreateInput = Record<string, unknown>, EntityConte
                 : config.checkDuplicate;
 
             const value = (body[checkConfig.field] as string)?.trim();
-            const checkMethod = entity[checkConfig.method];
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const checkMethod = (entity as unknown as Record<string, unknown>)[checkConfig.method];
 
             if (value && typeof checkMethod === "function") {
-                const existing = await (checkMethod as (value: string) => Promise<T | null>)(value);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const existing = await (checkMethod as (value: string) => Promise<any>)(value);
                 if (existing) {
                     return conflict(`${resourceName} with this ${checkConfig.field} already exists`);
                 }
@@ -228,6 +229,9 @@ export function createCrud<T, CreateInput = Record<string, unknown>, EntityConte
 
     const getHandler = overrides.get ?? (async (c: Context<{ Bindings: Env }>) => {
         const { [idParam]: id } = getParams<Record<string, string>>(c);
+        if (!id) {
+            return notFound(resourceName, "unknown");
+        }
         const item = await getEntity(c).get(id);
 
         if (!item) {
@@ -242,11 +246,16 @@ export function createCrud<T, CreateInput = Record<string, unknown>, EntityConte
         const body = getBody<Record<string, unknown>>(c);
         const entity = getEntity(c);
 
+        if (!id) {
+            return notFound(resourceName, "unknown");
+        }
+
         if (!entity.update) {
             return notFound(resourceName, id);
         }
 
-        const item = await entity.update(id, body);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const item = await entity.update(id, body as unknown as Partial<T>);
 
         if (!item) {
             return notFound(resourceName, id);
@@ -257,6 +266,9 @@ export function createCrud<T, CreateInput = Record<string, unknown>, EntityConte
 
     const deleteHandler = overrides.delete ?? (async (c: Context<{ Bindings: Env }>) => {
         const { [idParam]: id } = getParams<Record<string, string>>(c);
+        if (!id) {
+            return notFound(resourceName, "unknown");
+        }
         const deleted = await getEntity(c).delete(id);
 
         if (!deleted) {

@@ -210,8 +210,8 @@ export class BoxEntity {
 		}
 
 		return {
-			firstSadaqahAt: new Date(sadaqahList[0].createdAt).toISOString(),
-			lastSadaqahAt: new Date(sadaqahList[sadaqahList.length - 1].createdAt).toISOString(),
+			firstSadaqahAt: new Date(sadaqahList[0]!.createdAt).toISOString(),
+			lastSadaqahAt: new Date(sadaqahList[sadaqahList.length - 1]!.createdAt).toISOString(),
 			totalSadaqahs: sadaqahList.length,
 		};
 	}
