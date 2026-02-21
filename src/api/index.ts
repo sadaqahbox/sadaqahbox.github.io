@@ -1,17 +1,18 @@
+/**
+ * Main API Application
+ * 
+ * Sets up the Hono app with OpenAPI documentation,
+ * middleware, and route registration.
+ */
+
 import { fromHono } from "chanfana";
 import { Hono } from "hono";
-
-// Middleware
 import { errorHandler, requestLogger } from "./middleware";
-
-// Entities
-import { getBoxEntity } from "./entities/box";
-import { successResponse } from "./lib/response";
-
-// Import routes
+import { getBoxEntity } from "./entities";
+import { success } from "./shared/response";
 import { createRoutes } from "./routes";
 
-// Start a Hono app
+// Initialize Hono app
 const app = new Hono<{ Bindings: Env }>();
 
 // Apply global middleware
@@ -26,46 +27,40 @@ const openapi = fromHono(app, {
 // Register all routes
 createRoutes(openapi);
 
-// ============== Global Stats ==============
+// ============== Stats Endpoints ==============
+
 app.get("/api/stats", async (c) => {
-	const boxEntity = getBoxEntity(c);
-	const boxes = await boxEntity.list();
+	const boxes = await getBoxEntity(c).list();
 
-	const totalSadaqahs = boxes.reduce((sum, b) => sum + b.count, 0);
-	const totalValue = boxes.reduce((sum, b) => sum + b.totalValue, 0);
-
-	return c.json(
-		successResponse({
-			stats: {
-				totalBoxes: boxes.length,
-				totalSadaqahs,
-				totalValue,
-			},
-		})
-	);
+	return c.json(success({
+		stats: {
+			totalBoxes: boxes.length,
+			totalSadaqahs: boxes.reduce((sum, b) => sum + b.count, 0),
+			totalValue: boxes.reduce((sum, b) => sum + b.totalValue, 0),
+		},
+	}));
 });
 
 // Legacy counter endpoint
 app.get("/api/count", async (c) => {
-	const boxEntity = getBoxEntity(c);
-	const boxes = await boxEntity.list();
-	const totalCount = boxes.reduce((sum, b) => sum + b.count, 0);
-	return c.json(successResponse({ count: totalCount }));
+	const boxes = await getBoxEntity(c).list();
+	return c.json(success({
+		count: boxes.reduce((sum, b) => sum + b.count, 0),
+	}));
 });
 
 // ============== Health Check ==============
+
 app.get("/api/health", (c) =>
-	c.json(
-		successResponse({
-			status: "ok",
-			timestamp: new Date().toISOString(),
-			requestId: c.get("requestId"),
-		})
-	)
+	c.json(success({
+		status: "ok",
+		timestamp: new Date().toISOString(),
+		requestId: c.get("requestId"),
+	}))
 );
 
 // ============== SPA Fallback ==============
-// Handle SPA routing - serve index.html for non-API, non-file routes
+
 app.get("/*", async (c) => {
 	const path = c.req.path;
 

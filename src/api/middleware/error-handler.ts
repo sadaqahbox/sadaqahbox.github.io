@@ -1,17 +1,11 @@
+/**
+ * Error handling middleware
+ */
+
 import type { Context, Next } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { ZodError } from "zod";
-import { errorResponse } from "../lib/response";
-
-/**
- * Structured error information
- */
-export interface ErrorInfo {
-	message: string;
-	code: string;
-	status: number;
-	details?: unknown;
-}
+import { error } from "../shared/response";
 
 /**
  * Custom application error class
@@ -27,7 +21,7 @@ export class AppError extends Error {
 		this.name = "AppError";
 	}
 
-	toJSON(): ErrorInfo {
+	toJSON() {
 		return {
 			message: this.message,
 			code: this.code,
@@ -38,35 +32,40 @@ export class AppError extends Error {
 }
 
 /**
- * Common error types
+ * Common error factory functions
  */
 export const Errors = {
-	NOT_FOUND: (resource: string, id?: string) =>
+	notFound: (resource: string, id?: string) =>
 		new AppError(
 			id ? `${resource} with id "${id}" not found` : `${resource} not found`,
 			"NOT_FOUND",
 			404
 		),
 
-	VALIDATION: (message: string, details?: unknown) =>
+	validation: (message: string, details?: unknown) =>
 		new AppError(message, "VALIDATION_ERROR", 400, details),
 
-	UNAUTHORIZED: (message = "Unauthorized") => new AppError(message, "UNAUTHORIZED", 401),
+	unauthorized: (message = "Unauthorized") =>
+		new AppError(message, "UNAUTHORIZED", 401),
 
-	FORBIDDEN: (message = "Forbidden") => new AppError(message, "FORBIDDEN", 403),
+	forbidden: (message = "Forbidden") =>
+		new AppError(message, "FORBIDDEN", 403),
 
-	CONFLICT: (message: string) => new AppError(message, "CONFLICT", 409),
+	conflict: (message: string) =>
+		new AppError(message, "CONFLICT", 409),
 
-	INTERNAL: (message = "Internal server error") => new AppError(message, "INTERNAL_ERROR", 500),
+	internal: (message = "Internal server error") =>
+		new AppError(message, "INTERNAL_ERROR", 500),
 
-	BAD_REQUEST: (message: string) => new AppError(message, "BAD_REQUEST", 400),
+	badRequest: (message: string) =>
+		new AppError(message, "BAD_REQUEST", 400),
 } as const;
 
 /**
- * Formats Zod validation errors into a readable format
+ * Formats Zod validation errors
  */
-function formatZodError(error: ZodError): string {
-	const issues = error.issues.map((issue) => {
+function formatZodError(zodError: ZodError): string {
+	const issues = zodError.issues.map((issue) => {
 		const path = issue.path.length > 0 ? issue.path.join(".") : "root";
 		return `${path}: ${issue.message}`;
 	});
@@ -82,77 +81,54 @@ export async function errorHandler(c: Context, next: Next) {
 	} catch (err) {
 		const requestId = c.get("requestId") || "unknown";
 		
-		// Log error with request context
 		console.error(`[Error] Request ${requestId}:`, err);
 
-		// Handle different error types
+		// AppError handling
 		if (err instanceof AppError) {
-			c.status(err.status as any);
-			return c.json({
-				...errorResponse(err.message),
-				code: err.code,
-				...(err.details && { details: err.details }),
-			});
+			const statusCode = err.status as 200 | 400 | 401 | 403 | 404 | 409 | 500;
+			return c.json(
+				{ ...error(err.message, err.code), ...(err.details && { details: err.details }) },
+				statusCode
+			);
 		}
 
-		// Handle Zod validation errors
+		// Zod validation errors
 		if (err instanceof ZodError) {
-			c.status(400);
-			return c.json({
-				...errorResponse(formatZodError(err)),
-				code: "VALIDATION_ERROR",
-				errors: err.issues,
-			});
+			return c.json(
+				{ ...error(formatZodError(err), "VALIDATION_ERROR"), errors: err.issues },
+				400
+			);
 		}
 
-		// Handle Hono HTTP exceptions
+		// Hono HTTP exceptions
 		if (err instanceof HTTPException) {
-			c.status(err.status);
-			return c.json({
-				...errorResponse(err.message),
-				code: "HTTP_ERROR",
-			});
+			return c.json(error(err.message, "HTTP_ERROR"), err.status);
 		}
 
-		// Handle Drizzle/Database errors
+		// Database errors
 		if (err instanceof Error && err.message?.includes("UNIQUE constraint failed")) {
-			c.status(409);
-			return c.json({
-				...errorResponse("Resource already exists"),
-				code: "DUPLICATE_ERROR",
-			});
+			return c.json(error("Resource already exists", "DUPLICATE_ERROR"), 409);
 		}
 
 		if (err instanceof Error && err.message?.includes("FOREIGN KEY constraint failed")) {
-			c.status(400);
-			return c.json({
-				...errorResponse("Referenced resource does not exist"),
-				code: "FOREIGN_KEY_ERROR",
-			});
+			return c.json(error("Referenced resource does not exist", "FOREIGN_KEY_ERROR"), 400);
 		}
 
-		// Generic error response
-		c.status(500);
-		return c.json({
-			...errorResponse("Internal server error"),
-			code: "INTERNAL_ERROR",
-			requestId,
-		});
+		// Generic error
+		return c.json(
+			{ ...error("Internal server error", "INTERNAL_ERROR"), requestId },
+			500
+		);
 	}
 }
 
 /**
- * Async handler wrapper for routes
- * Ensures errors are caught and passed to error handler
+ * Async handler wrapper - errors are caught by the middleware
  */
 export function asyncHandler<T extends Context>(
 	handler: (c: T) => Promise<Response | void>
 ): (c: T) => Promise<Response | void> {
 	return async (c: T) => {
-		try {
-			return await handler(c);
-		} catch (err) {
-			throw err; // Let the error handler middleware catch it
-		}
+		return handler(c);
 	};
 }

@@ -1,20 +1,16 @@
-import type { AppContext, Sadaqah, Box, Currency, AddSadaqahOptions, CreateSadaqahResult, ListSadaqahsResult, AddMultipleResult } from "./types";
-import { SadaqahSchema } from "./types";
-import { mapSadaqah } from "../lib/mappers";
-import type { Database } from "../../db";
-import { getDbFromContext } from "../../db";
-import { eq, desc, count, sql, and, gte, lte } from "drizzle-orm";
-import { boxes, sadaqahs } from "../../db/schema";
-import { CurrencyEntity } from "./currency";
-import { generateSadaqahId } from "../services/id-generator";
-import { DEFAULT_SADAQAH_VALUE, DEFAULT_SADAQAH_AMOUNT, MAX_SADAQAH_AMOUNT, DEFAULT_CURRENCY_CODE } from "../utils/constants";
-
-export { SadaqahSchema, type Sadaqah };
-
 /**
- * Entity class for managing sadaqahs (charity items)
- * Includes transaction support for data consistency
+ * Sadaqah entity - Database operations only
  */
+
+import { eq, desc, count, and, gte, lte, sql } from "drizzle-orm";
+import type { Database } from "../../db";
+import { boxes, sadaqahs } from "../../db/schema";
+import type { Sadaqah, Box, AddMultipleResult, ListSadaqahsResult } from "../domain/types";
+import { DEFAULT_SADAQAH_VALUE, DEFAULT_SADAQAH_AMOUNT, MAX_SADAQAH_AMOUNT } from "../domain/constants";
+import { generateSadaqahId } from "../shared/id-generator";
+import { mapSadaqah } from "./mappers";
+import { CurrencyEntity } from "./currency";
+
 export class SadaqahEntity {
 	constructor(private db: Database) {}
 
@@ -25,18 +21,15 @@ export class SadaqahEntity {
 		value: number;
 		currencyId: string;
 		metadata?: Record<string, string>;
-	}): Promise<CreateSadaqahResult | null> {
+	}): Promise<{ sadaqah: Sadaqah; updatedBox: Box } | null> {
 		return this.db.transaction(async (tx) => {
-			// Get box to verify it exists
 			const boxResult = await tx.select().from(boxes).where(eq(boxes.id, data.boxId)).limit(1);
 			const box = boxResult[0];
-
 			if (!box) return null;
 
 			const timestamp = new Date();
 			const id = generateSadaqahId();
 
-			// Create sadaqah
 			await tx.insert(sadaqahs).values({
 				id,
 				boxId: data.boxId,
@@ -45,20 +38,16 @@ export class SadaqahEntity {
 				createdAt: timestamp,
 			});
 
-			// Update box stats within same transaction
 			const newCount = box.count + 1;
 			const newTotalValue = box.totalValue + data.value;
 			const currencyId = box.currencyId || data.currencyId;
 
-			await tx
-				.update(boxes)
-				.set({
-					count: newCount,
-					totalValue: newTotalValue,
-					currencyId,
-					updatedAt: timestamp,
-				})
-				.where(eq(boxes.id, data.boxId));
+			await tx.update(boxes).set({
+				count: newCount,
+				totalValue: newTotalValue,
+				currencyId,
+				updatedAt: timestamp,
+			}).where(eq(boxes.id, data.boxId));
 
 			const updatedBox: Box = {
 				id: box.id,
@@ -95,22 +84,15 @@ export class SadaqahEntity {
 		if (!sadaqah || sadaqah.boxId !== boxId) return null;
 
 		const mapped = mapSadaqah(sadaqah);
-		
-		// Fetch currency if exists
 		if (mapped.currencyId) {
-			const currencyEntity = new CurrencyEntity(this.db);
-			const currency = await currencyEntity.get(mapped.currencyId);
-			if (currency) {
-				mapped.currency = currency;
-			}
+			const currency = await new CurrencyEntity(this.db).get(mapped.currencyId);
+			if (currency) mapped.currency = currency;
 		}
-
 		return mapped;
 	}
 
 	async delete(boxId: string, sadaqahId: string): Promise<boolean> {
 		return this.db.transaction(async (tx) => {
-			// Get sadaqah to verify it exists and get its value
 			const sadaqahResult = await tx
 				.select()
 				.from(sadaqahs)
@@ -120,26 +102,20 @@ export class SadaqahEntity {
 			const sadaqah = sadaqahResult[0];
 			if (!sadaqah || sadaqah.boxId !== boxId) return false;
 
-			// Get box to update stats
 			const boxResult = await tx.select().from(boxes).where(eq(boxes.id, boxId)).limit(1);
 			const box = boxResult[0];
 			if (!box) return false;
 
-			// Delete the sadaqah
 			await tx.delete(sadaqahs).where(eq(sadaqahs.id, sadaqahId));
 
-			// Update box stats
 			const newCount = Math.max(0, box.count - 1);
 			const newTotalValue = Math.max(0, box.totalValue - sadaqah.value);
 
-			await tx
-				.update(boxes)
-				.set({
-					count: newCount,
-					totalValue: newTotalValue,
-					updatedAt: new Date(),
-				})
-				.where(eq(boxes.id, boxId));
+			await tx.update(boxes).set({
+				count: newCount,
+				totalValue: newTotalValue,
+				updatedAt: new Date(),
+			}).where(eq(boxes.id, boxId));
 
 			return true;
 		});
@@ -150,25 +126,19 @@ export class SadaqahEntity {
 		options?: { page?: number; limit?: number; from?: string; to?: string }
 	): Promise<ListSadaqahsResult> {
 		const page = options?.page || 1;
-		const limit = Math.min(options?.limit || 50, 100); // Cap at 100
+		const limit = Math.min(options?.limit || 50, 100);
 		const from = options?.from;
 		const to = options?.to;
 
-		// Get box for currency info
 		const boxResult = await this.db.select().from(boxes).where(eq(boxes.id, boxId)).limit(1);
 		const box = boxResult[0];
 
 		// Build where conditions
 		const conditions: ReturnType<typeof eq>[] = [eq(sadaqahs.boxId, boxId)];
-		if (from) {
-			conditions.push(gte(sadaqahs.createdAt, new Date(from)));
-		}
-		if (to) {
-			conditions.push(lte(sadaqahs.createdAt, new Date(to)));
-		}
+		if (from) conditions.push(gte(sadaqahs.createdAt, new Date(from)));
+		if (to) conditions.push(lte(sadaqahs.createdAt, new Date(to)));
 		const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
 
-		// Fetch sadaqahs with pagination
 		const [sadaqahList, totalResult, totalValueResult] = await Promise.all([
 			this.db
 				.select()
@@ -185,34 +155,19 @@ export class SadaqahEntity {
 		]);
 
 		const total = totalResult[0]?.count ?? 0;
-
-		// Batch fetch currencies to avoid N+1
 		const currencyIds = [...new Set(sadaqahList.map((s) => s.currencyId))];
-		const currencyEntity = new CurrencyEntity(this.db);
-		const currencyMap = await currencyEntity.getMany(currencyIds);
+		const currencyMap = await new CurrencyEntity(this.db).getMany(currencyIds);
 
-		// Map sadaqahs with their currencies
 		const mappedSadaqahs = sadaqahList.map((s) => {
 			const sadaqah = mapSadaqah(s);
 			const currency = currencyMap.get(s.currencyId);
-			if (currency) {
-				sadaqah.currency = currency;
-			}
+			if (currency) sadaqah.currency = currency;
 			return sadaqah;
 		});
 
-		// Get summary currency (box's currency or default to USD)
-		let summaryCurrency: Currency;
-		if (box?.currencyId) {
-			const found = currencyMap.get(box.currencyId);
-			if (found) {
-				summaryCurrency = found;
-			} else {
-				summaryCurrency = await currencyEntity.getDefault();
-			}
-		} else {
-			summaryCurrency = await currencyEntity.getDefault();
-		}
+		const summaryCurrency = box?.currencyId 
+			? currencyMap.get(box.currencyId) || await new CurrencyEntity(this.db).getDefault()
+			: await new CurrencyEntity(this.db).getDefault();
 
 		return {
 			sadaqahs: mappedSadaqahs,
@@ -227,21 +182,27 @@ export class SadaqahEntity {
 
 	// ============== Batch Operations ==============
 
-	async addMultiple(options: AddSadaqahOptions): Promise<AddMultipleResult | null> {
-		// Validate amount
-		const amount = Math.min(Math.max(1, options.amount || DEFAULT_SADAQAH_AMOUNT), MAX_SADAQAH_AMOUNT);
+	async addMultiple(options: {
+		boxId: string;
+		amount?: number;
+		value?: number;
+		currencyId: string;
+		metadata?: Record<string, string>;
+	}): Promise<AddMultipleResult | null> {
+		const amount = Math.min(
+			Math.max(1, options.amount || DEFAULT_SADAQAH_AMOUNT),
+			MAX_SADAQAH_AMOUNT
+		);
 		const value = options.value || DEFAULT_SADAQAH_VALUE;
 
 		return this.db.transaction(async (tx) => {
 			const boxResult = await tx.select().from(boxes).where(eq(boxes.id, options.boxId)).limit(1);
 			const box = boxResult[0];
-
 			if (!box) return null;
 
 			const timestamp = new Date();
-
-			// Batch create sadaqahs
 			const createdSadaqahs: Sadaqah[] = [];
+
 			for (let i = 0; i < amount; i++) {
 				const id = generateSadaqahId(i);
 				await tx.insert(sadaqahs).values({
@@ -260,20 +221,16 @@ export class SadaqahEntity {
 				});
 			}
 
-			// Update box stats
 			const newCount = box.count + amount;
 			const newTotalValue = box.totalValue + value * amount;
 			const currencyId = box.currencyId || options.currencyId;
 
-			await tx
-				.update(boxes)
-				.set({
-					count: newCount,
-					totalValue: newTotalValue,
-					currencyId,
-					updatedAt: timestamp,
-				})
-				.where(eq(boxes.id, options.boxId));
+			await tx.update(boxes).set({
+				count: newCount,
+				totalValue: newTotalValue,
+				currencyId,
+				updatedAt: timestamp,
+			}).where(eq(boxes.id, options.boxId));
 
 			const updatedBox: Box = {
 				id: box.id,
@@ -289,9 +246,4 @@ export class SadaqahEntity {
 			return { sadaqahs: createdSadaqahs, box: updatedBox };
 		});
 	}
-}
-
-// Factory function
-export function getSadaqahEntity(c: AppContext): SadaqahEntity {
-	return new SadaqahEntity(getDbFromContext(c));
 }

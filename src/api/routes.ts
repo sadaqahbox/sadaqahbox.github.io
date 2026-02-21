@@ -1,45 +1,44 @@
+/**
+ * API Routes
+ * 
+ * All route registrations are centralized here.
+ * Endpoints are grouped by resource for better organization.
+ */
+
 import type { fromHono } from "chanfana";
 import type { Hono } from "hono";
 
 // Box endpoints
-import { BoxList } from "./endpoints/boxes/list";
-import { BoxCreate } from "./endpoints/boxes/create";
-import { BoxGet } from "./endpoints/boxes/get";
-import { BoxUpdate } from "./endpoints/boxes/update";
-import { BoxDelete } from "./endpoints/boxes/delete";
-import { BoxEmpty } from "./endpoints/boxes/empty";
-import { BoxCollections } from "./endpoints/boxes/collections";
+import {
+	BoxList,
+	BoxCreate,
+	BoxGet,
+	BoxUpdate,
+	BoxDelete,
+	BoxEmpty,
+	BoxCollections,
+	BoxAddTag,
+	BoxRemoveTag,
+	BoxSetTags,
+} from "./endpoints/boxes";
 
 // Sadaqah endpoints
-import { SadaqahList } from "./endpoints/sadaqahs/list";
-import { SadaqahAdd } from "./endpoints/sadaqahs/add";
-import { SadaqahGet } from "./endpoints/sadaqahs/get";
-import { SadaqahDelete } from "./endpoints/sadaqahs/delete";
+import { SadaqahList, SadaqahAdd, SadaqahGet, SadaqahDelete } from "./endpoints/sadaqahs";
 
 // Currency endpoints
-import { CurrencyList } from "./endpoints/currencies/list";
-import { CurrencyCreate } from "./endpoints/currencies/create";
-import { CurrencyGet } from "./endpoints/currencies/get";
-import { CurrencyDelete } from "./endpoints/currencies/delete";
+import { CurrencyList, CurrencyCreate, CurrencyGet, CurrencyDelete } from "./endpoints/currencies";
 
 // Currency Type endpoints
-import { CurrencyTypeList } from "./endpoints/currency-types/list";
-import { CurrencyTypeCreate } from "./endpoints/currency-types/create";
-import { CurrencyTypeGet } from "./endpoints/currency-types/get";
-import { CurrencyTypeDelete } from "./endpoints/currency-types/delete";
-import { CurrencyTypeInitialize } from "./endpoints/currency-types/initialize";
+import {
+	CurrencyTypeList,
+	CurrencyTypeCreate,
+	CurrencyTypeGet,
+	CurrencyTypeDelete,
+	CurrencyTypeInitialize,
+} from "./endpoints/currency-types";
 
 // Tag endpoints
-import { TagList } from "./endpoints/tags/list";
-import { TagCreate } from "./endpoints/tags/create";
-import { TagGet } from "./endpoints/tags/get";
-import { TagDelete } from "./endpoints/tags/delete";
-import { TagBoxes } from "./endpoints/tags/boxes";
-
-// Box tag endpoints
-import { BoxAddTag } from "./endpoints/boxes/add-tag";
-import { BoxRemoveTag } from "./endpoints/boxes/remove-tag";
-import { BoxSetTags } from "./endpoints/boxes/set-tags";
+import { TagList, TagCreate, TagGet, TagDelete, TagBoxes } from "./endpoints/tags";
 
 type OpenAPIInstance = ReturnType<typeof fromHono<Hono<{ Bindings: Env }>>>;
 

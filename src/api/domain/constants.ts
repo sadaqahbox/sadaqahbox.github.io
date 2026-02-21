@@ -1,5 +1,6 @@
 /**
- * Application-wide constants
+ * Domain constants
+ * Centralized configuration values
  */
 
 // ============== API Configuration ==============

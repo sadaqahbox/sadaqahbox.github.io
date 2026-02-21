@@ -1,6 +1,6 @@
 /**
- * Simple in-memory cache service with TTL support
- * Optimized for Cloudflare Workers environment
+ * Simple in-memory cache with TTL support
+ * Optimized for serverless environments
  */
 
 export interface CacheEntry<T> {
@@ -8,31 +8,17 @@ export interface CacheEntry<T> {
 	expiresAt: number;
 }
 
-export interface CacheOptions {
-	ttl: number; // Time to live in milliseconds
-}
-
-/**
- * Simple TTL cache implementation
- */
 export class Cache<T> {
 	private cache = new Map<string, CacheEntry<T>>();
-	private readonly defaultTtl: number;
 
-	constructor(defaultTtl: number = 60000) {
-		// 1 minute default
-		this.defaultTtl = defaultTtl;
-	}
+	constructor(private readonly defaultTtl: number = 60000) {}
 
 	/**
 	 * Gets a value from cache
 	 */
 	get(key: string): T | undefined {
 		const entry = this.cache.get(key);
-		
-		if (!entry) {
-			return undefined;
-		}
+		if (!entry) return undefined;
 		
 		// Check if expired
 		if (Date.now() > entry.expiresAt) {
@@ -113,7 +99,10 @@ export class Cache<T> {
 	}
 }
 
-// Global cache instances for different entity types
-export const currencyCache = new Cache<any>(5 * 60 * 1000); // 5 minutes
-export const currencyTypeCache = new Cache<any>(5 * 60 * 1000); // 5 minutes
-export const tagCache = new Cache<any>(5 * 60 * 1000); // 5 minutes
+// ============== Global Cache Instances ==============
+
+import { CACHE_TTL } from "../domain/constants";
+
+export const currencyCache = new Cache<unknown>(CACHE_TTL.CURRENCY);
+export const currencyTypeCache = new Cache<unknown>(CACHE_TTL.CURRENCY);
+export const tagCache = new Cache<unknown>(CACHE_TTL.TAG);
