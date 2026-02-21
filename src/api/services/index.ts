@@ -74,3 +74,9 @@ export {
 
 // Re-export CurrencyWithRates for convenience
 export type { CurrencyWithRates, CurrencyWithGold } from "../entities/currency";
+
+// Quote service
+export {
+  QuoteService,
+  getQuoteService,
+} from "./quote-service";

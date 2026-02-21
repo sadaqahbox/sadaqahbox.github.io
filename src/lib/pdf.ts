@@ -5,6 +5,8 @@
  */
 
 import { jsPDF } from "jspdf";
+import { getQuoteService } from "../api/services/quote-service";
+import { getTranslation } from "../data/quotes";
 
 /**
  * Preferred currency info for conversion display
@@ -61,7 +63,7 @@ export interface CollectionPDFData {
 const PAGE_WIDTH = 148;
 const PAGE_HEIGHT = 210;
 const MARGIN_TOP = 15;
-const MARGIN_BOTTOM = 20;
+const MARGIN_BOTTOM = 35;
 const CONTENT_END = PAGE_HEIGHT - MARGIN_BOTTOM;
 const CONTENT_START = MARGIN_TOP + 42;
 
@@ -311,6 +313,25 @@ async function addHeaderToAllPages(doc: jsPDF, title: string): Promise<void> {
 }
 
 /**
+ * Get a random quote for the footer
+ */
+function getRandomQuoteForFooter(lang: string = 'en'): string {
+  const quoteService = getQuoteService();
+  const result = quoteService.getRandomQuote('any');
+  
+  if (result.type === 'ayah') {
+    const ayah = result.data as { surah: string; verse: string; translation: { en: string; [key: string]: string } };
+    const text = getTranslation(ayah.translation, lang);
+    return `"${text}" — Quran ${ayah.verse}`;
+  } else {
+    const hadith = result.data as { translation: { en: string; [key: string]: string }; source: string };
+    const text = getTranslation(hadith.translation, lang);
+    const shortSource = hadith.source.split('(')[0]?.trim() || hadith.source;
+    return `"${text}" — ${shortSource}`;
+  }
+}
+
+/**
  * Add footer to all pages
  */
 function addFooterToAllPages(doc: jsPDF, collectionId?: string): void {
@@ -321,36 +342,39 @@ function addFooterToAllPages(doc: jsPDF, collectionId?: string): void {
     doc.setPage(i);
 
     // Elegant divider above footer
-    drawElegantLine(doc, PAGE_HEIGHT - 22);
+    drawElegantLine(doc, PAGE_HEIGHT - 30);
 
     // Bottom gold border
     doc.setFillColor(COLOR_GOLD[0], COLOR_GOLD[1], COLOR_GOLD[2]);
     doc.rect(0, PAGE_HEIGHT - 3, PAGE_WIDTH, 3, "F");
 
-    // Hadith quote
-    doc.setFontSize(9);
+    // Quote (ayah or hadith) - different quote for each page
+    const quote = getRandomQuoteForFooter();
+    doc.setFontSize(8);
     doc.setFont("helvetica", "italic");
     doc.setTextColor(COLOR_TEXT_LIGHT[0], COLOR_TEXT_LIGHT[1], COLOR_TEXT_LIGHT[2]);
-    const quote = '"The believer\'s shade on the Day of Resurrection will be his charity" — Tirmidhi';
-    doc.text(quote, PAGE_WIDTH / 2, PAGE_HEIGHT - 15, { align: "center" });
+    
+    // Wrap long quotes with more space
+    const maxWidth = PAGE_WIDTH - 30;
+    const lines = doc.splitTextToSize(quote, maxWidth);
+    const quoteY = PAGE_HEIGHT - 24;
+    doc.text(lines, PAGE_WIDTH / 2, quoteY, { align: "center" });
 
-    // Page number
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(COLOR_TEXT_MUTED[0], COLOR_TEXT_MUTED[1], COLOR_TEXT_MUTED[2]);
-    doc.text(`Page ${i} of ${pageCount}`, PAGE_WIDTH - 20, PAGE_HEIGHT - 7, { align: "right" });
-
-    // Collection ID if provided (only on last page)
-    if (collectionId) {
-      doc.setFontSize(8);
-      doc.text(`ID: ${collectionId.slice(-12)}`, 20, PAGE_HEIGHT - 7);
-    }
-
-    // GitHub link in gold footer area - small, centered
+    // Bottom line: ID (left), GitHub (center), Page (right) - all small and white
     doc.setFontSize(6);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(255, 255, 255);
+    
+    // Collection ID (left aligned)
+    if (collectionId) {
+      doc.text(`ID: ${collectionId.slice(-12)}`, 5, PAGE_HEIGHT - 1);
+    }
+    
+    // GitHub link (centered)
     doc.text(githubUrl, PAGE_WIDTH / 2, PAGE_HEIGHT - 1, { align: "center" });
+    
+    // Page number (right aligned)
+    doc.text(`Page ${i} of ${pageCount}`, PAGE_WIDTH - 5, PAGE_HEIGHT - 1, { align: "right" });
   }
 }
 
