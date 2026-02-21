@@ -115,4 +115,5 @@ export class Cache<T> {
 
 // Global cache instances for different entity types
 export const currencyCache = new Cache<any>(5 * 60 * 1000); // 5 minutes
+export const currencyTypeCache = new Cache<any>(5 * 60 * 1000); // 5 minutes
 export const tagCache = new Cache<any>(5 * 60 * 1000); // 5 minutes

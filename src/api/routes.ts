@@ -22,6 +22,13 @@ import { CurrencyCreate } from "./endpoints/currencies/create";
 import { CurrencyGet } from "./endpoints/currencies/get";
 import { CurrencyDelete } from "./endpoints/currencies/delete";
 
+// Currency Type endpoints
+import { CurrencyTypeList } from "./endpoints/currency-types/list";
+import { CurrencyTypeCreate } from "./endpoints/currency-types/create";
+import { CurrencyTypeGet } from "./endpoints/currency-types/get";
+import { CurrencyTypeDelete } from "./endpoints/currency-types/delete";
+import { CurrencyTypeInitialize } from "./endpoints/currency-types/initialize";
+
 // Tag endpoints
 import { TagList } from "./endpoints/tags/list";
 import { TagCreate } from "./endpoints/tags/create";
@@ -57,6 +64,13 @@ export function createRoutes(openapi: OpenAPIInstance): void {
 	openapi.post("/api/boxes/:boxId/sadaqahs", SadaqahAdd);
 	openapi.get("/api/boxes/:boxId/sadaqahs/:sadaqahId", SadaqahGet);
 	openapi.delete("/api/boxes/:boxId/sadaqahs/:sadaqahId", SadaqahDelete);
+
+	// ============== Currency Type Routes ==============
+	openapi.get("/api/currency-types", CurrencyTypeList);
+	openapi.post("/api/currency-types", CurrencyTypeCreate);
+	openapi.get("/api/currency-types/:currencyTypeId", CurrencyTypeGet);
+	openapi.delete("/api/currency-types/:currencyTypeId", CurrencyTypeDelete);
+	openapi.post("/api/currency-types/initialize", CurrencyTypeInitialize);
 
 	// ============== Currency Routes ==============
 	openapi.get("/api/currencies", CurrencyList);

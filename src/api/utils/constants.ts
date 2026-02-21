@@ -35,6 +35,7 @@ export const ID_PREFIXES = {
 	SADAQAH: "sadaqah",
 	COLLECTION: "col",
 	CURRENCY: "cur",
+	CURRENCY_TYPE: "ctyp",
 	TAG: "tag",
 } as const;
 
@@ -45,6 +46,13 @@ export const CACHE_TTL = {
 	BOX_LIST: 30 * 1000, // 30 seconds
 } as const;
 
+// ============== Default Currency Types ==============
+export const DEFAULT_CURRENCY_TYPES = {
+	FIAT: { name: "Fiat", description: "Government-issued physical currency" },
+	CRYPTO: { name: "Crypto", description: "Digital or cryptocurrency" },
+	COMMODITY: { name: "Commodity", description: "Commodity-backed currency (gold, silver, etc.)" },
+} as const;
+
 // ============== Validation Patterns ==============
 export const VALIDATION_PATTERNS = {
 	// Hex color code (#FFF or #FFFFFF)
@@ -52,5 +60,5 @@ export const VALIDATION_PATTERNS = {
 	// ISO 4217 currency code (3 uppercase letters)
 	CURRENCY_CODE: /^[A-Z]{3}$/,
 	// ID format (prefix_timestamp_random)
-	ID_FORMAT: /^(box|sadaqah|col|cur|tag)_[0-9]+_[a-z0-9]+$/,
+	ID_FORMAT: /^(box|sadaqah|col|cur|ctyp|tag)_[0-9]+_[a-z0-9]+$/,
 } as const;

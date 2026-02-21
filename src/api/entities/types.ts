@@ -8,6 +8,7 @@ export {
 	generateSadaqahId,
 	generateCollectionId,
 	generateCurrencyId,
+	generateCurrencyTypeId,
 	generateTagId,
 	isValidId,
 } from "../services/id-generator";
@@ -15,15 +16,23 @@ export {
 // Re-export AppContext from a central location
 export type AppContext = Context<{ Bindings: Env }>;
 
+// ============== Currency Type Entity ==============
+export const CurrencyTypeSchema = z.object({
+	id: Str({ example: "ctyp_abc123" }),
+	name: Str({ example: "Fiat", description: "Currency type name (e.g., Fiat, Crypto, Commodity)" }),
+	description: Str({ required: false, example: "Government-issued currency", description: "Description of the currency type" }),
+});
+
+export type CurrencyType = z.infer<typeof CurrencyTypeSchema>;
+
 // ============== Currency Entity ==============
 export const CurrencySchema = z.object({
 	id: Str({ example: "cur_abc123" }),
 	code: Str({ example: "USD", description: "ISO 4217 currency code" }),
 	name: Str({ example: "US Dollar", description: "Currency name" }),
 	symbol: Str({ required: false, example: "$", description: "Currency symbol" }),
-	createdAt: z.union([z.date(), z.string().datetime()]).transform((val) =>
-		val instanceof Date ? val.toISOString() : val
-	),
+	currencyTypeId: Str({ required: false, example: "ctyp_abc123", description: "ID of the currency type" }),
+	currencyType: CurrencyTypeSchema.optional().describe("Currency type details"),
 });
 
 export type Currency = z.infer<typeof CurrencySchema>;
@@ -159,10 +168,17 @@ export interface CreateCurrencyOptions {
 	code: string;
 	name: string;
 	symbol?: string;
+	currencyTypeId?: string;
 }
 
 export interface GetOrCreateOptions {
 	code: string;
 	name?: string;
 	symbol?: string;
+	currencyTypeId?: string;
+}
+
+export interface CreateCurrencyTypeOptions {
+	name: string;
+	description?: string;
 }

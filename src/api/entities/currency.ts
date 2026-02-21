@@ -1,13 +1,14 @@
-import type { AppContext, Currency, CreateCurrencyOptions, GetOrCreateOptions } from "./types";
+import type { AppContext, Currency, CreateCurrencyOptions, GetOrCreateOptions, CurrencyType } from "./types";
 import { CurrencySchema } from "./types";
 import type { Database } from "../../db";
 import { getDbFromContext } from "../../db";
 import { eq } from "drizzle-orm";
-import { currencies } from "../../db/schema";
+import { currencies, currencyTypes } from "../../db/schema";
 import { generateCurrencyId } from "../services/id-generator";
 import { currencyCache } from "../services/cache";
 import { DEFAULT_CURRENCY_CODE, DEFAULT_CURRENCY_NAME, DEFAULT_CURRENCY_SYMBOL } from "../utils/constants";
 import { sanitizeString } from "../utils/validators";
+import { getCurrencyTypeEntity } from "./currency-type";
 
 export { CurrencySchema, type Currency };
 
@@ -21,7 +22,6 @@ export class CurrencyEntity {
 	// ============== CRUD Operations ==============
 
 	async create(data: CreateCurrencyOptions): Promise<Currency> {
-		const timestamp = new Date();
 		const id = generateCurrencyId();
 		const code = data.code.toUpperCase();
 		const name = sanitizeString(data.name) || code;
@@ -32,7 +32,7 @@ export class CurrencyEntity {
 			code,
 			name,
 			symbol: symbol || null,
-			createdAt: timestamp,
+			currencyTypeId: data.currencyTypeId || null,
 		});
 
 		const currency: Currency = {
@@ -40,7 +40,7 @@ export class CurrencyEntity {
 			code,
 			name,
 			symbol,
-			createdAt: timestamp.toISOString(),
+			currencyTypeId: data.currencyTypeId,
 		};
 
 		// Cache the new currency
@@ -68,7 +68,7 @@ export class CurrencyEntity {
 			code: result[0].code,
 			name: result[0].name,
 			symbol: result[0].symbol || undefined,
-			createdAt: new Date(result[0].createdAt).toISOString(),
+			currencyTypeId: result[0].currencyTypeId || undefined,
 		};
 
 		// Cache the result
@@ -98,7 +98,7 @@ export class CurrencyEntity {
 			code: result[0].code,
 			name: result[0].name,
 			symbol: result[0].symbol || undefined,
-			createdAt: new Date(result[0].createdAt).toISOString(),
+			currencyTypeId: result[0].currencyTypeId || undefined,
 		};
 
 		// Cache the result
@@ -116,6 +116,7 @@ export class CurrencyEntity {
 			code: options.code,
 			name: options.name || options.code.toUpperCase(),
 			symbol: options.symbol,
+			currencyTypeId: options.currencyTypeId,
 		});
 	}
 
@@ -143,7 +144,7 @@ export class CurrencyEntity {
 			code: c.code,
 			name: c.name,
 			symbol: c.symbol || undefined,
-			createdAt: new Date(c.createdAt).toISOString(),
+			currencyTypeId: c.currencyTypeId || undefined,
 		}));
 
 		// Cache individual currencies and the list
@@ -201,6 +202,22 @@ export class CurrencyEntity {
 		}
 
 		return result;
+	}
+
+	/**
+	 * Get a currency with its currency type
+	 */
+	async getWithCurrencyType(id: string, c: AppContext): Promise<(Currency & { currencyType?: CurrencyType }) | null> {
+		const currency = await this.get(id);
+		if (!currency || !currency.currencyTypeId) return currency;
+
+		const currencyTypeEntity = getCurrencyTypeEntity(c);
+		const currencyType = await currencyTypeEntity.get(currency.currencyTypeId);
+
+		return {
+			...currency,
+			currencyType: currencyType || undefined,
+		};
 	}
 }
 

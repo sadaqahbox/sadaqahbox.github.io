@@ -65,6 +65,13 @@ export function generateCurrencyId(): string {
 }
 
 /**
+ * Generates a currency type ID
+ */
+export function generateCurrencyTypeId(): string {
+	return generateId(ID_PREFIXES.CURRENCY_TYPE, 6);
+}
+
+/**
  * Generates a tag ID
  */
 export function generateTagId(): string {

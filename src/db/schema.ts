@@ -1,6 +1,17 @@
 import { sqliteTable, text, integer, real, index } from "drizzle-orm/sqlite-core";
 import { relations } from "drizzle-orm";
 
+// ============== Currency Type Table ==============
+export const currencyTypes = sqliteTable(
+  "CurrencyType",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull().unique(),
+    description: text("description"),
+  },
+  (table) => [index("CurrencyType_name_idx").on(table.name)]
+);
+
 // ============== Currency Table ==============
 export const currencies = sqliteTable(
   "Currency",
@@ -9,9 +20,9 @@ export const currencies = sqliteTable(
     code: text("code").notNull().unique(),
     name: text("name").notNull(),
     symbol: text("symbol"),
-    createdAt: integer("createdAt", { mode: "timestamp" }).notNull(),
+    currencyTypeId: text("currencyTypeId").references(() => currencyTypes.id),
   },
-  (table) => [index("Currency_code_idx").on(table.code)]
+  (table) => [index("Currency_code_idx").on(table.code), index("Currency_currencyTypeId_idx").on(table.currencyTypeId)]
 );
 
 // ============== Box Table ==============
@@ -104,7 +115,15 @@ export const boxTags = sqliteTable(
 );
 
 // ============== Relations ==============
-export const currenciesRelations = relations(currencies, ({ many }) => ({
+export const currencyTypesRelations = relations(currencyTypes, ({ many }) => ({
+  currencies: many(currencies),
+}));
+
+export const currenciesRelations = relations(currencies, ({ one, many }) => ({
+  currencyType: one(currencyTypes, {
+    fields: [currencies.currencyTypeId],
+    references: [currencyTypes.id],
+  }),
   sadaqahs: many(sadaqahs),
   boxes: many(boxes),
   collections: many(collections),
@@ -158,6 +177,8 @@ export const collectionsRelations = relations(collections, ({ one }) => ({
 }));
 
 // ============== Types ==============
+export type CurrencyType = typeof currencyTypes.$inferSelect;
+export type NewCurrencyType = typeof currencyTypes.$inferInsert;
 export type Currency = typeof currencies.$inferSelect;
 export type NewCurrency = typeof currencies.$inferInsert;
 export type Box = typeof boxes.$inferSelect;
