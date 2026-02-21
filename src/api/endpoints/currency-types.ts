@@ -26,9 +26,9 @@ const currencyTypeCrud = createCrud<CurrencyTypeDto, CreateCurrencyTypeBodyDto>(
 	getCreateInput: (body) => body as CreateCurrencyTypeBodyDto,
 	checkDuplicate: { field: "name", method: "getByName" },
 	auth: {
-		list: false, // Public
+		list: true,
 		create: true,
-		get: false, // Public
+		get: true,
 		delete: true,
 	},
 });

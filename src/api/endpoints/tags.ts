@@ -26,9 +26,9 @@ const tagCrud = createCrud<TagDto, CreateTagBodyDto>({
 	getCreateInput: (body) => body as CreateTagBodyDto,
 	checkDuplicate: { field: "name", method: "getByName" },
 	auth: {
-		list: false, // Public - any user can view
+		list: true,
 		create: true,
-		get: false, // Public - any user can view
+		get: true,
 		delete: true,
 	},
 });
