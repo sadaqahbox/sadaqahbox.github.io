@@ -1,7 +1,7 @@
 import { Bool, DateTime, Num, OpenAPIRoute, Str } from "chanfana";
 import { z } from "zod";
 import type { AppContext } from "../../entities/types";
-import { SadaqahSchema } from "../../entities/types";
+import { SadaqahSchema, CurrencySchema } from "../../entities/types";
 import { getSadaqahEntity } from "../../entities/sadaqah";
 import { successResponse, createPagination } from "../../lib/response";
 
@@ -38,7 +38,7 @@ export class SadaqahList extends OpenAPIRoute {
 							summary: z.object({
 								totalSadaqahs: Num(),
 								totalValue: Num(),
-								currency: Str(),
+								currency: CurrencySchema,
 							}),
 						}),
 					},

@@ -50,9 +50,26 @@ export function BoxList({ boxes, selectedBoxId, onSelectBox, onBoxDeleted }: Box
             <div className="box-stats">
               <span className="box-count">{box.count} sadaqahs</span>
               <span className="box-value">
-                {box.totalValue} {box.currency}
+                {box.totalValue} {box.currency?.symbol || box.currency?.code || ''}
               </span>
             </div>
+            {box.tags && box.tags.length > 0 && (
+              <div className="box-tags">
+                {box.tags.map((tag) => (
+                  <span
+                    key={tag.id}
+                    className="box-tag"
+                    style={{ 
+                      backgroundColor: tag.color ? `${tag.color}20` : '#e0e7ff',
+                      color: tag.color || '#4f46e5',
+                      border: `1px solid ${tag.color || '#c7d2fe'}`,
+                    }}
+                  >
+                    {tag.name}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
           <button
             className="btn btn-sm btn-danger"

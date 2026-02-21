@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import type { Currency } from '../App';
 import './AddSadaqah.css';
 
 interface AddSadaqahProps {
@@ -10,9 +11,28 @@ interface AddSadaqahProps {
 export function AddSadaqah({ boxId, onAdded, onCancel }: AddSadaqahProps) {
   const [amount, setAmount] = useState(1);
   const [value, setValue] = useState<number>(1);
-  const [currency, setCurrency] = useState('USD');
-  const [location, setLocation] = useState('');
+  const [currencyCode, setCurrencyCode] = useState('USD');
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [loading, setLoading] = useState(false);
+  const [fetchingCurrencies, setFetchingCurrencies] = useState(true);
+
+  useEffect(() => {
+    const fetchCurrencies = async () => {
+      try {
+        const res = await fetch('/api/currencies');
+        const data = await res.json() as { success: boolean; currencies: Currency[] };
+        if (data.success && data.currencies.length > 0) {
+          setCurrencies(data.currencies);
+          setCurrencyCode(data.currencies[0].code);
+        }
+      } catch (error) {
+        console.error('Failed to fetch currencies:', error);
+      } finally {
+        setFetchingCurrencies(false);
+      }
+    };
+    fetchCurrencies();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,8 +46,7 @@ export function AddSadaqah({ boxId, onAdded, onCancel }: AddSadaqahProps) {
         body: JSON.stringify({
           amount,
           value,
-          currency,
-          location: location || undefined,
+          currencyCode,
         }),
       });
       const data = await res.json() as { success: boolean };
@@ -66,30 +85,24 @@ export function AddSadaqah({ boxId, onAdded, onCancel }: AddSadaqahProps) {
         </div>
         <div className="form-group">
           <label>Currency</label>
-          <select value={currency} onChange={(e) => setCurrency(e.target.value)}>
-            <option value="USD">USD ($)</option>
-            <option value="EUR">EUR (€)</option>
-            <option value="GBP">GBP (£)</option>
-            <option value="TRY">TRY (₺)</option>
-            <option value="SAR">SAR (﷼)</option>
-            <option value="AED">AED (د.إ)</option>
+          <select 
+            value={currencyCode} 
+            onChange={(e) => setCurrencyCode(e.target.value)}
+            disabled={fetchingCurrencies}
+          >
+            {currencies.map((c) => (
+              <option key={c.id} value={c.code}>
+                {c.code} {c.symbol ? `(${c.symbol})` : ''}
+              </option>
+            ))}
           </select>
         </div>
-      </div>
-      <div className="form-group">
-        <label>Location (optional)</label>
-        <input
-          type="text"
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          placeholder="e.g., Mosque, Home"
-        />
       </div>
       <div className="form-actions">
         <button type="button" className="btn btn-secondary" onClick={onCancel}>
           Cancel
         </button>
-        <button type="submit" className="btn btn-primary" disabled={loading}>
+        <button type="submit" className="btn btn-primary" disabled={loading || fetchingCurrencies}>
           {loading ? 'Adding...' : `Add ${amount} Sadaqah${amount > 1 ? 's' : ''}`}
         </button>
       </div>

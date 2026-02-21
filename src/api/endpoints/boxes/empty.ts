@@ -26,7 +26,7 @@ export class BoxEmpty extends OpenAPIRoute {
 								id: Str(),
 								sadaqahsCollected: Num(),
 								totalValue: Num(),
-								currency: Str(),
+								currencyId: Str(),
 								emptiedAt: Str(),
 							}),
 							message: Str(),
@@ -83,7 +83,7 @@ export class BoxEmpty extends OpenAPIRoute {
 		return successResponse({
 			box: result.box,
 			collection: result.collection,
-			message: `Collected ${result.collection.sadaqahsCollected} sadaqahs worth ${result.collection.totalValue} ${result.collection.currency}!`,
+			message: `Collected ${result.collection.sadaqahsCollected} sadaqahs worth ${result.collection.totalValue}!`,
 		});
 	}
 }

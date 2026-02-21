@@ -1,0 +1,56 @@
+/**
+ * Application-wide constants
+ */
+
+// ============== API Configuration ==============
+export const API_VERSION = "v1";
+export const API_PREFIX = `/api/${API_VERSION}`;
+
+// ============== Pagination Defaults ==============
+export const DEFAULT_PAGE = 1;
+export const DEFAULT_LIMIT = 20;
+export const MAX_LIMIT = 100;
+
+// ============== Currency Defaults ==============
+export const DEFAULT_CURRENCY_CODE = "USD";
+export const DEFAULT_CURRENCY_NAME = "US Dollar";
+export const DEFAULT_CURRENCY_SYMBOL = "$";
+
+// ============== Sadaqah Defaults ==============
+export const DEFAULT_SADAQAH_VALUE = 1;
+export const DEFAULT_SADAQAH_AMOUNT = 1;
+export const MAX_SADAQAH_AMOUNT = 1000;
+
+// ============== Box Defaults ==============
+export const MAX_BOX_NAME_LENGTH = 100;
+export const MAX_BOX_DESCRIPTION_LENGTH = 500;
+
+// ============== Tag Defaults ==============
+export const MAX_TAG_NAME_LENGTH = 50;
+export const DEFAULT_TAG_COLOR = "#6366F1";
+
+// ============== ID Prefixes ==============
+export const ID_PREFIXES = {
+	BOX: "box",
+	SADAQAH: "sadaqah",
+	COLLECTION: "col",
+	CURRENCY: "cur",
+	TAG: "tag",
+} as const;
+
+// ============== Cache TTLs (in milliseconds) ==============
+export const CACHE_TTL = {
+	CURRENCY: 5 * 60 * 1000, // 5 minutes
+	TAG: 5 * 60 * 1000, // 5 minutes
+	BOX_LIST: 30 * 1000, // 30 seconds
+} as const;
+
+// ============== Validation Patterns ==============
+export const VALIDATION_PATTERNS = {
+	// Hex color code (#FFF or #FFFFFF)
+	COLOR_HEX: /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/,
+	// ISO 4217 currency code (3 uppercase letters)
+	CURRENCY_CODE: /^[A-Z]{3}$/,
+	// ID format (prefix_timestamp_random)
+	ID_FORMAT: /^(box|sadaqah|col|cur|tag)_[0-9]+_[a-z0-9]+$/,
+} as const;

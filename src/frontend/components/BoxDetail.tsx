@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Box } from '../App';
+import type { Box, Currency, Tag } from '../App';
 import { SadaqahList } from './SadaqahList';
 import { AddSadaqah } from './AddSadaqah';
 import { CollectionHistory } from './CollectionHistory';
@@ -9,9 +9,9 @@ interface Sadaqah {
   id: string;
   boxId: string;
   value: number;
-  currency: string;
+  currencyId: string;
+  currency?: Currency;
   createdAt: string;
-  location?: string;
 }
 
 interface Collection {
@@ -20,7 +20,8 @@ interface Collection {
   emptiedAt: string;
   sadaqahsCollected: number;
   totalValue: number;
-  currency: string;
+  currencyId: string;
+  currency?: Currency;
 }
 
 interface BoxDetailProps {
@@ -34,6 +35,8 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
   const [activeTab, setActiveTab] = useState<'sadaqahs' | 'collections'>('sadaqahs');
   const [showAddForm, setShowAddForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+  const [showTagSelector, setShowTagSelector] = useState(false);
 
   const fetchSadaqahs = async () => {
     try {
@@ -59,10 +62,22 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
     }
   };
 
+  const fetchAvailableTags = async () => {
+    try {
+      const res = await fetch('/api/tags');
+      const data = await res.json() as { success: boolean; tags: Tag[] };
+      if (data.success) {
+        setAvailableTags(data.tags);
+      }
+    } catch (error) {
+      console.error('Failed to fetch tags:', error);
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      await Promise.all([fetchSadaqahs(), fetchCollections()]);
+      await Promise.all([fetchSadaqahs(), fetchCollections(), fetchAvailableTags()]);
       setLoading(false);
     };
     loadData();
@@ -101,6 +116,56 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
     }
   };
 
+  const handleAddTag = async (tagId: string) => {
+    try {
+      const res = await fetch(`/api/boxes/${box.id}/tags`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tagId }),
+      });
+      const data = await res.json() as { success: boolean };
+      if (data.success) {
+        // Refresh box to get updated tags
+        const boxRes = await fetch(`/api/boxes/${box.id}`);
+        const boxData = await boxRes.json() as { success: boolean; box: Box };
+        if (boxData.success) {
+          onBoxUpdated(boxData.box);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to add tag:', error);
+    }
+  };
+
+  const handleRemoveTag = async (tagId: string) => {
+    try {
+      const res = await fetch(`/api/boxes/${box.id}/tags/${tagId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json() as { success: boolean };
+      if (data.success) {
+        // Refresh box to get updated tags
+        const boxRes = await fetch(`/api/boxes/${box.id}`);
+        const boxData = await boxRes.json() as { success: boolean; box: Box };
+        if (boxData.success) {
+          onBoxUpdated(boxData.box);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to remove tag:', error);
+    }
+  };
+
+  const getCurrencyDisplay = () => {
+    if (!box.currency) return '';
+    return box.currency.symbol || box.currency.code;
+  };
+
+  // Filter out tags already assigned to the box
+  const unassignedTags = availableTags.filter(
+    (tag) => !box.tags?.some((t) => t.id === tag.id)
+  );
+
   if (loading) {
     return <div className="box-detail-loading">Loading...</div>;
   }
@@ -111,6 +176,66 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
         <div>
           <h2>{box.name}</h2>
           {box.description && <p className="box-description">{box.description}</p>}
+          
+          {/* Tags section */}
+          <div className="box-tags-section">
+            {box.tags && box.tags.length > 0 && (
+              <div className="box-tags-list">
+                {box.tags.map((tag) => (
+                  <span
+                    key={tag.id}
+                    className="box-tag-item"
+                    style={{ 
+                      backgroundColor: tag.color ? `${tag.color}30` : '#e0e7ff',
+                      color: tag.color || '#4f46e5',
+                      border: `1px solid ${tag.color || '#c7d2fe'}`,
+                    }}
+                  >
+                    {tag.name}
+                    <button 
+                      className="tag-remove-btn"
+                      onClick={() => handleRemoveTag(tag.id)}
+                      title="Remove tag"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            
+            {unassignedTags.length > 0 && (
+              <div className="tag-selector-wrapper">
+                <button 
+                  className="btn btn-sm btn-tag-add"
+                  onClick={() => setShowTagSelector(!showTagSelector)}
+                >
+                  {showTagSelector ? 'Cancel' : '+ Add Tag'}
+                </button>
+                
+                {showTagSelector && (
+                  <div className="tag-dropdown">
+                    {unassignedTags.map((tag) => (
+                      <button
+                        key={tag.id}
+                        className="tag-option"
+                        onClick={() => {
+                          handleAddTag(tag.id);
+                          setShowTagSelector(false);
+                        }}
+                        style={{ 
+                          backgroundColor: tag.color ? `${tag.color}20` : '#f3f4f6',
+                          color: tag.color || '#374151',
+                        }}
+                      >
+                        {tag.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
         <div className="box-detail-actions">
           {box.count > 0 && (
@@ -134,7 +259,7 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
         </div>
         <div className="stat">
           <span className="stat-number">{box.totalValue}</span>
-          <span className="stat-label">{box.currency || 'Value'}</span>
+          <span className="stat-label">{getCurrencyDisplay() || 'Value'}</span>
         </div>
         <div className="stat">
           <span className="stat-number">{collections.length}</span>

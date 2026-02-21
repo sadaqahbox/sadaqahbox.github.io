@@ -10,17 +10,19 @@
 	"observability": {
 		"enabled": true
 	},
+	"compatibility_flags": ["nodejs_compat"],
 	"d1_databases": [
 		{
 			"binding": "DB",
 			"database_name": "sadakabox",
-			"database_id": "1f576fe8-5d56-4bd0-87bc-4c65848a6651"
+			"database_id": "1f576fe8-5d56-4bd0-87bc-4c65848a6651",
+			"migrations_dir": "./migrations"
 		}
 	],
 	"assets": {
 		"directory": "./dist/",
 		"binding": "ASSETS",
 		"html_handling": "auto-trailing-slash",
-		"not_found_handling": "single-page-application"
+		"not_found_handling": "none"
 	}
 }

@@ -4,11 +4,10 @@ import type { AppContext } from "../../entities/types";
 import { SadaqahSchema } from "../../entities/types";
 import { getSadaqahEntity } from "../../entities/sadaqah";
 import { getBoxEntity } from "../../entities/box";
+import { getCurrencyEntity } from "../../entities/currency";
 import { successResponse, jsonError } from "../../lib/response";
-
-const DEFAULT_CURRENCY = "USD";
-const DEFAULT_VALUE = 1;
-const USER_AGENT_MAX_LENGTH = 200;
+import { CurrencyCodeSchema } from "../../utils/validators";
+import { DEFAULT_SADAQAH_VALUE, DEFAULT_CURRENCY_CODE, MAX_SADAQAH_AMOUNT } from "../../utils/constants";
 
 export class SadaqahAdd extends OpenAPIRoute {
 	schema = {
@@ -23,10 +22,18 @@ export class SadaqahAdd extends OpenAPIRoute {
 				content: {
 					"application/json": {
 						schema: z.object({
-							amount: Num({ default: 1, description: "Number of sadaqahs to add" }),
-							value: Num({ example: 1, description: "Value per sadaqah" }),
-							currency: Str({ default: "USD", description: "Currency code (USD, EUR, TRY, etc.)" }),
-							location: Str({ required: false, description: "Location where sadaqah was added" }),
+							amount: Num({ 
+								default: 1, 
+								description: `Number of sadaqahs to add (max ${MAX_SADAQAH_AMOUNT})`,
+							}).optional(),
+							value: Num({ 
+								example: 1, 
+								description: "Value per sadaqah (must be positive)",
+							}).optional(),
+							currencyCode: Str({ 
+								default: DEFAULT_CURRENCY_CODE, 
+								description: "Currency code (USD, EUR, TRY, etc.)" 
+							}).optional(),
 							metadata: z.record(z.string()).optional(),
 						}),
 					},
@@ -46,9 +53,20 @@ export class SadaqahAdd extends OpenAPIRoute {
 								name: Str(),
 								count: Num(),
 								totalValue: Num(),
-								currency: Str().nullable(),
+								currency: z.any().nullable(),
 							}),
 							message: Str(),
+						}),
+					},
+				},
+			},
+			"400": {
+				description: "Invalid input",
+				content: {
+					"application/json": {
+						schema: z.object({
+							success: Bool(),
+							error: Str(),
 						}),
 					},
 				},
@@ -67,39 +85,40 @@ export class SadaqahAdd extends OpenAPIRoute {
 		},
 	};
 
-	private getRequestInfo(c: AppContext) {
-		return {
-			ipAddress: c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || "unknown",
-			userAgent: (c.req.header("user-agent") || "unknown").slice(0, USER_AGENT_MAX_LENGTH),
-			country: c.req.header("cf-ipcountry") || "unknown",
-		};
-	}
-
 	async handle(c: AppContext) {
 		const data = await this.getValidatedData<typeof this.schema>();
 		const { boxId } = data.params;
-		const { amount, value, currency, location, metadata } = data.body;
+		const { amount, value, currencyCode, metadata } = data.body;
 
-		// Verify box exists
+		// Validate box exists
 		const boxEntity = getBoxEntity(c);
 		const box = await boxEntity.get(boxId);
 		if (!box) {
 			return jsonError("Box not found", 404);
 		}
 
-		// Get request info for tracking
-		const { ipAddress, userAgent, country } = this.getRequestInfo(c);
+		// Validate amount
+		const sadaqahAmount = Math.min(
+			Math.max(1, amount || 1),
+			MAX_SADAQAH_AMOUNT
+		);
+
+		// Validate value
+		const sadaqahValue = value !== undefined && value > 0 ? value : DEFAULT_SADAQAH_VALUE;
+
+		// Get or create currency
+		const currencyEntity = getCurrencyEntity(c);
+		const currency = await currencyEntity.getOrCreate({
+			code: (currencyCode || DEFAULT_CURRENCY_CODE).toUpperCase(),
+		});
 
 		// Add sadaqahs
 		const sadaqahEntity = getSadaqahEntity(c);
 		const result = await sadaqahEntity.addMultiple({
 			boxId,
-			amount: amount || 1,
-			value: value ?? DEFAULT_VALUE,
-			currency: currency ?? DEFAULT_CURRENCY,
-			location: location || country,
-			ipAddress,
-			userAgent,
+			amount: sadaqahAmount,
+			value: sadaqahValue,
+			currencyId: currency.id,
 			metadata,
 		});
 
@@ -108,8 +127,7 @@ export class SadaqahAdd extends OpenAPIRoute {
 		}
 
 		const sadaqahCount = result.sadaqahs.length;
-		const sadaqahValue = value ?? DEFAULT_VALUE;
-		const sadaqahCurrency = currency ?? DEFAULT_CURRENCY;
+		const sadaqahCurrencyCode = currencyCode || DEFAULT_CURRENCY_CODE;
 
 		return successResponse({
 			sadaqahs: result.sadaqahs,
@@ -118,9 +136,9 @@ export class SadaqahAdd extends OpenAPIRoute {
 				name: result.box.name,
 				count: result.box.count,
 				totalValue: result.box.totalValue,
-				currency: result.box.currency,
+				currency,
 			},
-			message: `Added ${sadaqahCount} sadaqah${sadaqahCount > 1 ? "s" : ""} (${sadaqahValue} ${sadaqahCurrency}) to "${box.name}"`,
+			message: `Added ${sadaqahCount} sadaqah${sadaqahCount > 1 ? "s" : ""} (${sadaqahValue} ${sadaqahCurrencyCode}) to "${box.name}"`,
 		});
 	}
 }

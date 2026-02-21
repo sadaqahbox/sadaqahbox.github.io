@@ -1,107 +1,148 @@
-import type { AppContext } from "./types";
-import { SadaqahSchema, type Sadaqah, type Box, generateSadaqahId } from "./types";
-import { mapSadaqah, mapBox } from "../lib/mappers";
-import type { PrismaClientType } from "../lib/prisma";
-import { getPrismaFromContext } from "../lib/prisma";
+import type { AppContext, Sadaqah, Box, Currency, AddSadaqahOptions, CreateSadaqahResult, ListSadaqahsResult, AddMultipleResult } from "./types";
+import { SadaqahSchema } from "./types";
+import { mapSadaqah } from "../lib/mappers";
+import type { Database } from "../../db";
+import { getDbFromContext } from "../../db";
+import { eq, desc, count, sql, and, gte, lte } from "drizzle-orm";
+import { boxes, sadaqahs } from "../../db/schema";
+import { CurrencyEntity } from "./currency";
+import { generateSadaqahId } from "../services/id-generator";
+import { DEFAULT_SADAQAH_VALUE, DEFAULT_SADAQAH_AMOUNT, MAX_SADAQAH_AMOUNT, DEFAULT_CURRENCY_CODE } from "../utils/constants";
 
 export { SadaqahSchema, type Sadaqah };
 
-export interface AddSadaqahOptions {
-	boxId: string;
-	value: number;
-	currency: string;
-	amount?: number;
-	location?: string;
-	metadata?: Record<string, string>;
-	ipAddress?: string;
-	userAgent?: string;
-}
-
-export interface CreateSadaqahResult {
-	sadaqah: Sadaqah;
-	updatedBox: Box;
-}
-
-export interface ListSadaqahsResult {
-	sadaqahs: Sadaqah[];
-	total: number;
-	summary: {
-		totalSadaqahs: number;
-		totalValue: number;
-		currency: string;
-	};
-}
-
-export interface AddMultipleResult {
-	sadaqahs: Sadaqah[];
-	box: Box;
-}
-
-interface SadaqahWhereClause {
-	boxId: string;
-	createdAt?: {
-		gte?: Date;
-		lte?: Date;
-	};
-}
-
 /**
  * Entity class for managing sadaqahs (charity items)
+ * Includes transaction support for data consistency
  */
 export class SadaqahEntity {
-	constructor(private prisma: PrismaClientType) {}
+	constructor(private db: Database) {}
 
 	// ============== CRUD Operations ==============
 
 	async create(data: {
 		boxId: string;
 		value: number;
-		currency: string;
-		location?: string;
-		ipAddress?: string;
-		userAgent?: string;
+		currencyId: string;
 		metadata?: Record<string, string>;
 	}): Promise<CreateSadaqahResult | null> {
-		// Get box to verify it exists
-		const box = await this.prisma.box.findUnique({
-			where: { id: data.boxId },
-		});
+		return this.db.transaction(async (tx) => {
+			// Get box to verify it exists
+			const boxResult = await tx.select().from(boxes).where(eq(boxes.id, data.boxId)).limit(1);
+			const box = boxResult[0];
 
-		if (!box) return null;
+			if (!box) return null;
 
-		const timestamp = new Date();
+			const timestamp = new Date();
+			const id = generateSadaqahId();
 
-		// Create sadaqah
-		const sadaqah = await this.prisma.sadaqah.create({
-			data: {
-				id: generateSadaqahId(),
+			// Create sadaqah
+			await tx.insert(sadaqahs).values({
+				id,
 				boxId: data.boxId,
 				value: data.value,
-				currency: data.currency,
+				currencyId: data.currencyId,
 				createdAt: timestamp,
-				location: data.location || null,
-				ipAddress: data.ipAddress || null,
-				userAgent: data.userAgent || null,
-			},
+			});
+
+			// Update box stats within same transaction
+			const newCount = box.count + 1;
+			const newTotalValue = box.totalValue + data.value;
+			const currencyId = box.currencyId || data.currencyId;
+
+			await tx
+				.update(boxes)
+				.set({
+					count: newCount,
+					totalValue: newTotalValue,
+					currencyId,
+					updatedAt: timestamp,
+				})
+				.where(eq(boxes.id, data.boxId));
+
+			const updatedBox: Box = {
+				id: box.id,
+				name: box.name,
+				description: box.description || undefined,
+				count: newCount,
+				totalValue: newTotalValue,
+				currencyId,
+				createdAt: new Date(box.createdAt).toISOString(),
+				updatedAt: timestamp.toISOString(),
+			};
+
+			return {
+				sadaqah: {
+					id,
+					boxId: data.boxId,
+					value: data.value,
+					currencyId: data.currencyId,
+					createdAt: timestamp.toISOString(),
+				},
+				updatedBox,
+			};
 		});
-
-		// Update box stats
-		const updatedBox = await this.updateBoxStats(data.boxId, box.count + 1, box.totalValue + data.value, box.currency || data.currency);
-
-		return {
-			sadaqah: mapSadaqah(sadaqah),
-			updatedBox,
-		};
 	}
 
 	async get(boxId: string, sadaqahId: string): Promise<Sadaqah | null> {
-		const sadaqah = await this.prisma.sadaqah.findUnique({
-			where: { id: sadaqahId },
-		});
+		const result = await this.db
+			.select()
+			.from(sadaqahs)
+			.where(eq(sadaqahs.id, sadaqahId))
+			.limit(1);
 
+		const sadaqah = result[0];
 		if (!sadaqah || sadaqah.boxId !== boxId) return null;
 
-		return mapSadaqah(sadaqah);
+		const mapped = mapSadaqah(sadaqah);
+		
+		// Fetch currency if exists
+		if (mapped.currencyId) {
+			const currencyEntity = new CurrencyEntity(this.db);
+			const currency = await currencyEntity.get(mapped.currencyId);
+			if (currency) {
+				mapped.currency = currency;
+			}
+		}
+
+		return mapped;
+	}
+
+	async delete(boxId: string, sadaqahId: string): Promise<boolean> {
+		return this.db.transaction(async (tx) => {
+			// Get sadaqah to verify it exists and get its value
+			const sadaqahResult = await tx
+				.select()
+				.from(sadaqahs)
+				.where(eq(sadaqahs.id, sadaqahId))
+				.limit(1);
+			
+			const sadaqah = sadaqahResult[0];
+			if (!sadaqah || sadaqah.boxId !== boxId) return false;
+
+			// Get box to update stats
+			const boxResult = await tx.select().from(boxes).where(eq(boxes.id, boxId)).limit(1);
+			const box = boxResult[0];
+			if (!box) return false;
+
+			// Delete the sadaqah
+			await tx.delete(sadaqahs).where(eq(sadaqahs.id, sadaqahId));
+
+			// Update box stats
+			const newCount = Math.max(0, box.count - 1);
+			const newTotalValue = Math.max(0, box.totalValue - sadaqah.value);
+
+			await tx
+				.update(boxes)
+				.set({
+					count: newCount,
+					totalValue: newTotalValue,
+					updatedAt: new Date(),
+				})
+				.where(eq(boxes.id, boxId));
+
+			return true;
+		});
 	}
 
 	async list(
@@ -109,47 +150,77 @@ export class SadaqahEntity {
 		options?: { page?: number; limit?: number; from?: string; to?: string }
 	): Promise<ListSadaqahsResult> {
 		const page = options?.page || 1;
-		const limit = options?.limit || 50;
+		const limit = Math.min(options?.limit || 50, 100); // Cap at 100
 		const from = options?.from;
 		const to = options?.to;
 
 		// Get box for currency info
-		const box = await this.prisma.box.findUnique({
-			where: { id: boxId },
-		});
+		const boxResult = await this.db.select().from(boxes).where(eq(boxes.id, boxId)).limit(1);
+		const box = boxResult[0];
 
-		const currency = box?.currency || "USD";
-
-		// Build where clause
-		const where: SadaqahWhereClause = { boxId };
-		if (from || to) {
-			where.createdAt = {};
-			if (from) where.createdAt.gte = new Date(from);
-			if (to) where.createdAt.lte = new Date(to);
+		// Build where conditions
+		const conditions: ReturnType<typeof eq>[] = [eq(sadaqahs.boxId, boxId)];
+		if (from) {
+			conditions.push(gte(sadaqahs.createdAt, new Date(from)));
 		}
+		if (to) {
+			conditions.push(lte(sadaqahs.createdAt, new Date(to)));
+		}
+		const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
 
 		// Fetch sadaqahs with pagination
-		const [sadaqahs, total, totalValueAgg] = await Promise.all([
-			this.prisma.sadaqah.findMany({
-				where,
-				orderBy: { createdAt: "desc" },
-				skip: (page - 1) * limit,
-				take: limit,
-			}),
-			this.prisma.sadaqah.count({ where }),
-			this.prisma.sadaqah.aggregate({
-				where: { boxId },
-				_sum: { value: true },
-			}),
+		const [sadaqahList, totalResult, totalValueResult] = await Promise.all([
+			this.db
+				.select()
+				.from(sadaqahs)
+				.where(whereClause)
+				.orderBy(desc(sadaqahs.createdAt))
+				.limit(limit)
+				.offset((page - 1) * limit),
+			this.db.select({ count: count() }).from(sadaqahs).where(whereClause),
+			this.db
+				.select({ total: sql<number>`COALESCE(SUM(${sadaqahs.value}), 0)` })
+				.from(sadaqahs)
+				.where(eq(sadaqahs.boxId, boxId)),
 		]);
 
+		const total = totalResult[0]?.count ?? 0;
+
+		// Batch fetch currencies to avoid N+1
+		const currencyIds = [...new Set(sadaqahList.map((s) => s.currencyId))];
+		const currencyEntity = new CurrencyEntity(this.db);
+		const currencyMap = await currencyEntity.getMany(currencyIds);
+
+		// Map sadaqahs with their currencies
+		const mappedSadaqahs = sadaqahList.map((s) => {
+			const sadaqah = mapSadaqah(s);
+			const currency = currencyMap.get(s.currencyId);
+			if (currency) {
+				sadaqah.currency = currency;
+			}
+			return sadaqah;
+		});
+
+		// Get summary currency (box's currency or default to USD)
+		let summaryCurrency: Currency;
+		if (box?.currencyId) {
+			const found = currencyMap.get(box.currencyId);
+			if (found) {
+				summaryCurrency = found;
+			} else {
+				summaryCurrency = await currencyEntity.getDefault();
+			}
+		} else {
+			summaryCurrency = await currencyEntity.getDefault();
+		}
+
 		return {
-			sadaqahs: sadaqahs.map(mapSadaqah),
+			sadaqahs: mappedSadaqahs,
 			total,
 			summary: {
 				totalSadaqahs: total,
-				totalValue: totalValueAgg._sum.value || 0,
-				currency,
+				totalValue: totalValueResult[0]?.total ?? 0,
+				currency: summaryCurrency,
 			},
 		};
 	}
@@ -157,66 +228,70 @@ export class SadaqahEntity {
 	// ============== Batch Operations ==============
 
 	async addMultiple(options: AddSadaqahOptions): Promise<AddMultipleResult | null> {
-		const box = await this.prisma.box.findUnique({
-			where: { id: options.boxId },
-		});
+		// Validate amount
+		const amount = Math.min(Math.max(1, options.amount || DEFAULT_SADAQAH_AMOUNT), MAX_SADAQAH_AMOUNT);
+		const value = options.value || DEFAULT_SADAQAH_VALUE;
 
-		if (!box) return null;
+		return this.db.transaction(async (tx) => {
+			const boxResult = await tx.select().from(boxes).where(eq(boxes.id, options.boxId)).limit(1);
+			const box = boxResult[0];
 
-		const amount = options.amount || 1;
-		const timestamp = new Date();
+			if (!box) return null;
 
-		// Batch create sadaqahs
-		const sadaqahs: Sadaqah[] = [];
-		for (let i = 0; i < amount; i++) {
-			const sadaqah = await this.prisma.sadaqah.create({
-				data: {
-					id: generateSadaqahId(i),
+			const timestamp = new Date();
+
+			// Batch create sadaqahs
+			const createdSadaqahs: Sadaqah[] = [];
+			for (let i = 0; i < amount; i++) {
+				const id = generateSadaqahId(i);
+				await tx.insert(sadaqahs).values({
+					id,
 					boxId: options.boxId,
-					value: options.value,
-					currency: options.currency,
+					value,
+					currencyId: options.currencyId,
 					createdAt: timestamp,
-					location: options.location || null,
-					ipAddress: options.ipAddress || null,
-					userAgent: options.userAgent || null,
-				},
-			});
-			sadaqahs.push(mapSadaqah(sadaqah));
-		}
+				});
+				createdSadaqahs.push({
+					id,
+					boxId: options.boxId,
+					value,
+					currencyId: options.currencyId,
+					createdAt: timestamp.toISOString(),
+				});
+			}
 
-		// Update box stats
-		const newCount = box.count + amount;
-		const newTotalValue = box.totalValue + options.value * amount;
-		const currency = box.currency || options.currency;
+			// Update box stats
+			const newCount = box.count + amount;
+			const newTotalValue = box.totalValue + value * amount;
+			const currencyId = box.currencyId || options.currencyId;
 
-		const updatedBox = await this.updateBoxStats(options.boxId, newCount, newTotalValue, currency);
+			await tx
+				.update(boxes)
+				.set({
+					count: newCount,
+					totalValue: newTotalValue,
+					currencyId,
+					updatedAt: timestamp,
+				})
+				.where(eq(boxes.id, options.boxId));
 
-		return { sadaqahs, box: updatedBox };
-	}
+			const updatedBox: Box = {
+				id: box.id,
+				name: box.name,
+				description: box.description || undefined,
+				count: newCount,
+				totalValue: newTotalValue,
+				currencyId,
+				createdAt: new Date(box.createdAt).toISOString(),
+				updatedAt: timestamp.toISOString(),
+			};
 
-	// ============== Private Helpers ==============
-
-	private async updateBoxStats(
-		boxId: string,
-		count: number,
-		totalValue: number,
-		currency: string
-	): Promise<Box> {
-		const updatedBox = await this.prisma.box.update({
-			where: { id: boxId },
-			data: {
-				count,
-				totalValue,
-				currency,
-				updatedAt: new Date(),
-			},
+			return { sadaqahs: createdSadaqahs, box: updatedBox };
 		});
-
-		return mapBox(updatedBox);
 	}
 }
 
 // Factory function
 export function getSadaqahEntity(c: AppContext): SadaqahEntity {
-	return new SadaqahEntity(getPrismaFromContext(c));
+	return new SadaqahEntity(getDbFromContext(c));
 }

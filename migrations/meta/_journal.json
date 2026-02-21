@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1770524885441,
+      "tag": "0000_furry_loners",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1770529508145,
+      "tag": "0001_clean_dust",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1770531104029,
+      "tag": "0002_gifted_silvermane",
+      "breakpoints": true
+    }
+  ]
+}

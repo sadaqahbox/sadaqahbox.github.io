@@ -44,3 +44,28 @@
   gap: 0.5rem;
   justify-content: flex-end;
 }
+
+.tag-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.tag-chip {
+  padding: 0.35rem 0.75rem;
+  border: 1.5px solid;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: transparent;
+}
+
+.tag-chip:hover {
+  opacity: 0.8;
+}
+
+.tag-chip.selected {
+  font-weight: 500;
+}

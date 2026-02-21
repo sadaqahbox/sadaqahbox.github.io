@@ -70,3 +70,17 @@
 .box-item:hover .btn-sm {
   opacity: 1;
 }
+
+.box-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+
+.box-tag {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  font-weight: 500;
+}

@@ -7,11 +7,11 @@
 help:
 	@echo "Available commands:"
 	@echo "  make install          - Install dependencies with bun"
-	@echo "  make dev              - Build and start wrangler dev (API + Frontend together)"
-	@echo "  make dev-watch        - Auto-rebuild on file changes + wrangler dev"
-	@echo "  make build            - Build the frontend to dist/"
+	@echo "  make dev              - Start Vite dev server with HMR (API + Frontend together)"
+	@echo "  make dev-watch        - Same as dev (HMR is built-in)"
+	@echo "  make build            - Build for production"
 	@echo "  make deploy           - Build and deploy to Cloudflare Workers"
-	@echo "  make generate         - Generate Prisma client"
+	@echo "  make db-generate      - Generate Drizzle migrations"
 	@echo "  make create-migration - Create a new D1 migration"
 	@echo "  make migrate-local    - Apply migrations to local D1"
 	@echo "  make migrate-remote   - Apply migrations to remote D1"
@@ -22,34 +22,30 @@ help:
 install:
 	bun install
 
-# Build frontend (required before wrangler dev)
+# Build for production
 build:
 	bunx vite build
 
-# Development - build then run wrangler dev (serves API + static assets together)
-dev: build
-	bunx wrangler dev
-
-# Development with watch - auto-rebuild on changes
-dev-watch:
-	bunx concurrently \"bunx vite build --watch\" \"bunx wrangler dev\"
+# Development - start Vite dev server with HMR (API + Frontend together via @cloudflare/vite-plugin)
+dev:
+	bunx vite dev
 
 # Deploy to production
 deploy: build
 	bunx wrangler deploy
 
-# Generate Prisma client
-generate:
-	bunx prisma generate
+# Generate Drizzle migrations
+db-generate:
+	bunx drizzle-kit generate
 
 # Create a new D1 migration
 create-migration:
 	@read -p "Enter migration name: " name; \
 	bunx wrangler d1 migrations create sadakabox $$name
 
-# Generate SQL from Prisma schema for a migration
-diff-migration:
-	bunx prisma migrate diff --from-local-d1 --to-schema ./prisma/schema.prisma --script
+# Push schema changes directly (for development)
+db-push:
+	bunx drizzle-kit push
 
 # Apply migrations locally
 migrate-local:
@@ -68,8 +64,8 @@ clean:
 	rm -rf node_modules dist .wrangler
 
 # Quick setup for new developers
-setup: install generate cf-typegen
+setup: install cf-typegen
 	@echo "Setup complete! Run 'make dev' to start development."
 
 # All-in-one: generate, typegen, build, and dev
-all: generate cf-typegen dev
+all: cf-typegen dev

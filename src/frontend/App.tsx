@@ -5,13 +5,30 @@ import { CreateBox } from './components/CreateBox';
 import { Stats } from './components/Stats';
 import './App.css';
 
+export interface Currency {
+  id: string;
+  code: string;
+  name: string;
+  symbol?: string;
+  createdAt: string;
+}
+
+export interface Tag {
+  id: string;
+  name: string;
+  color?: string;
+  createdAt: string;
+}
+
 export interface Box {
   id: string;
   name: string;
   description?: string;
   count: number;
   totalValue: number;
-  currency?: string;
+  currencyId?: string;
+  currency?: Currency;
+  tags?: Tag[];
   createdAt: string;
   updatedAt: string;
 }

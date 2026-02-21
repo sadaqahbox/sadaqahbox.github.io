@@ -1,0 +1,1 @@
+ALTER TABLE `Box` ADD `metadata` text;

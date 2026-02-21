@@ -23,9 +23,9 @@ export class BoxGet extends OpenAPIRoute {
 							success: Bool(),
 							box: BoxSchema,
 							stats: z.object({
-								firstCoinAt: Str().nullable(),
-								lastCoinAt: Str().nullable(),
-								uniqueLocations: Num(),
+								firstSadaqahAt: Str().nullable(),
+								lastSadaqahAt: Str().nullable(),
+								totalSadaqahs: Num(),
 							}),
 						}),
 					},

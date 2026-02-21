@@ -1,3 +1,4 @@
+import type { Currency } from '../App';
 import './CollectionHistory.css';
 
 interface Collection {
@@ -6,7 +7,8 @@ interface Collection {
   emptiedAt: string;
   sadaqahsCollected: number;
   totalValue: number;
-  currency: string;
+  currencyId: string;
+  currency?: Currency;
 }
 
 interface CollectionHistoryProps {
@@ -17,6 +19,11 @@ export function CollectionHistory({ collections }: CollectionHistoryProps) {
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+  };
+
+  const getCurrencyDisplay = (collection: Collection) => {
+    if (!collection.currency) return collection.currencyId;
+    return collection.currency.symbol || collection.currency.code;
   };
 
   if (collections.length === 0) {
@@ -36,7 +43,7 @@ export function CollectionHistory({ collections }: CollectionHistoryProps) {
           <div className="collection-info">
             <div className="collection-main">
               <span className="collection-value">
-                {collection.totalValue} {collection.currency}
+                {collection.totalValue} {getCurrencyDisplay(collection)}
               </span>
               <span className="collection-date">
                 {formatDate(collection.emptiedAt)}
