@@ -18,7 +18,8 @@
     "studio:dev": "drizzle-kit studio",
     "studio:prd": "cross-env NODE_ENV=production drizzle-kit studio",
     "test": "bun test",
-    "test:coverage": "bun test --coverage"
+    "test:coverage": "bun test --coverage",
+    "generate:favicons": "node scripts/generate-favicons.js"
   },
   "dependencies": {
     "@base-ui/react": "^1.1.0",
@@ -67,8 +68,10 @@
     "@vitejs/plugin-react": "^4.3.4",
     "concurrently": "^9.1.2",
     "drizzle-kit": "^0.31.8",
+    "favicons": "^7.2.0",
     "typescript": "^5.9.3",
     "vite": "^6.0.11",
+    "vite-plugin-pwa": "^1.2.0",
     "wrangler": "^4.62.0"
   }
 }

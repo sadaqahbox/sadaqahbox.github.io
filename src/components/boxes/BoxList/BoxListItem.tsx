@@ -14,10 +14,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Coins, MoreVertical, Star, Trash2 } from "lucide-react";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Mosque01Icon } from "@hugeicons/core-free-icons";
 import { cn, formatHighPrecision } from "@/lib/utils";
 import { listItemVariants, iconVariants, contentVariants, tagVariants } from "@/lib/animations";
+import { Logo } from "@/components/layout/Logo";
 import type { Box } from "@/types";
 
 interface BoxListItemProps {
@@ -71,15 +70,20 @@ export function BoxListItem({
           initial="initial"
           animate={isSelected ? "selected" : isHovered ? "hover" : "initial"}
           className={cn(
-            "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors ring-2",
+            "flex h-14 w-14 shrink-0 items-center justify-center rounded-xl transition-colors ring-2",
             isSelected
-              ? "bg-primary text-primary-foreground ring-primary"
+              ? "bg-primary ring-primary"
               : isDefault
-                ? "bg-muted group-hover:bg-background ring-primary"
-                : "bg-muted group-hover:bg-background ring-transparent"
+                ? "bg-white dark:bg-background ring-primary"
+                : "bg-white dark:bg-background ring-transparent"
           )}
         >
-          <HugeiconsIcon icon={Mosque01Icon} className="size-5" />
+          <Logo
+            className={cn(
+              "size-10",
+              isSelected && "brightness-0 invert"
+            )}
+          />
         </motion.div>
 
         {/* Content */}

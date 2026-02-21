@@ -2,10 +2,9 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ModeToggle } from "./ModeToggle";
+import { Logo } from "./Logo";
 import { SignedIn, SignedOut, AuthLoading, UserButton } from "@daveyplate/better-auth-ui";
 import { GithubIcon, MenuIcon, XIcon, LayoutDashboardIcon } from "lucide-react";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Mosque01Icon } from "@hugeicons/core-free-icons";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
@@ -54,10 +53,8 @@ export function Header() {
     >
       <div className="container flex h-16 items-center justify-between mx-auto px-4 md:px-6">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="bg-primary/10 flex h-9 w-9 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-105">
-            <HugeiconsIcon icon={Mosque01Icon} className="text-primary size-5" />
-          </div>
+        <Link to="/" className="flex items-center gap-3 group text-foreground">
+          <Logo className="h-16 w-16 transition-transform duration-300" />
           <span className="font-bold text-xl tracking-tight">Sadaqah Box</span>
         </Link>
 
@@ -113,7 +110,7 @@ export function Header() {
           <div className="w-px h-4 bg-border mx-1" />
           <ModeToggle />
           <a
-            href="https://github.com/sadaqah-box"
+            href="https://github.com/sadaqahbox"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors size-8"
@@ -211,7 +208,7 @@ export function Header() {
 
               <div className="flex items-center justify-between pt-2">
                 <a
-                  href="https://github.com/sadaqah-box"
+                  href="https://github.com/sadaqahbox"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"

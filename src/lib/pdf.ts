@@ -11,7 +11,7 @@ import { jsPDF } from "jspdf";
  */
 export interface PreferredCurrencyInfo {
   code: string;
- name: string;
+  name: string;
   symbol?: string | null;
   usdValue?: number | null;
 }
@@ -47,6 +47,7 @@ export interface CollectionPDFData {
   totalValueExtra?: Record<string, { total: number; code: string; name: string }> | null;
   currency?: {
     code: string;
+    name?: string | null;
     symbol?: string | null;
     usdValue?: number | null;
   } | null;
@@ -62,7 +63,7 @@ const PAGE_HEIGHT = 210;
 const MARGIN_TOP = 15;
 const MARGIN_BOTTOM = 20;
 const CONTENT_END = PAGE_HEIGHT - MARGIN_BOTTOM;
-const CONTENT_START = MARGIN_TOP + 32;
+const CONTENT_START = MARGIN_TOP + 42;
 
 // Refined color palette
 const COLOR_PRIMARY: [number, number, number] = [38, 84, 64]; // Deep elegant green
@@ -115,51 +116,75 @@ export function convertCurrency(
 }
 
 /**
- * Draw elegant crescent moon with star - Islamic symbol
+ * Add logo image to PDF
  */
-function drawCrescentMoon(
+async function addLogoToPDF(
   doc: jsPDF,
-  cx: number,
-  cy: number,
+  x: number,
+  y: number,
+  width: number,
+  _color: [number, number, number]
+): Promise<void> {
+  try {
+    // Fetch the logo image and convert to base64
+    const response = await fetch('/android-chrome-256x256.png');
+    const blob = await response.blob();
+    const base64 = await new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(blob);
+    });
+
+    const height = width * 1; // Maintain aspect ratio
+    doc.addImage(base64, 'PNG', x, y, width, height);
+  } catch {
+    // Fallback: draw simple crescent if image fails
+    drawLogoFallback(doc, x, y, width, _color);
+  }
+}
+
+/**
+ * Fallback logo drawing
+ */
+function drawLogoFallback(
+  doc: jsPDF,
+  x: number,
+  y: number,
   size: number,
   color: [number, number, number]
 ): void {
   doc.setFillColor(color[0], color[1], color[2]);
   doc.setDrawColor(color[0], color[1], color[2]);
-  
-  // Outer crescent (main moon shape)
-  const outerRadius = size;
-  const innerRadius = size * 0.75;
-  const offset = size * 0.35;
-  
-  // Draw crescent using arcs
-  doc.setLineWidth(0.5);
-  
-  // Outer arc
-  for (let angle = -Math.PI * 0.7; angle <= Math.PI * 0.7; angle += 0.1) {
-    const x1 = cx + outerRadius * Math.cos(angle);
-    const y1 = cy + outerRadius * Math.sin(angle) * 0.9; // Slight flattening
-    const x2 = cx + outerRadius * Math.cos(angle + 0.1);
-    const y2 = cy + outerRadius * Math.sin(angle + 0.1) * 0.9;
-    doc.line(x1, y1, x2, y2);
+  doc.setLineWidth(0.3);
+
+  const cx = x + size * 0.5;
+  const cy = y + size * 0.5;
+  const r = size * 0.35;
+
+  // Draw crescent moon
+  for (let angle = Math.PI * 0.3; angle <= Math.PI * 1.7; angle += 0.1) {
+    const px = cx + r * Math.cos(angle);
+    const py = cy + r * Math.sin(angle) * 0.9;
+    if (angle === Math.PI * 0.3) {
+      doc.moveTo(px, py);
+    } else {
+      doc.lineTo(px, py);
+    }
   }
-  
-  // Inner arc (to create crescent)
-  for (let angle = Math.PI * 0.6; angle >= -Math.PI * 0.6; angle -= 0.1) {
-    const x1 = cx + offset + innerRadius * Math.cos(angle);
-    const y1 = cy + innerRadius * Math.sin(angle) * 0.9;
-    const x2 = cx + offset + innerRadius * Math.cos(angle - 0.1);
-    const y2 = cy + innerRadius * Math.sin(angle - 0.1) * 0.9;
-    doc.line(x1, y1, x2, y2);
+
+  const innerR = r * 0.6;
+  const offset = r * 0.3;
+  for (let angle = Math.PI * 1.6; angle >= Math.PI * 0.4; angle -= 0.1) {
+    const px = cx - offset + innerR * Math.cos(angle);
+    const py = cy + innerR * Math.sin(angle) * 0.9;
+    doc.lineTo(px, py);
   }
-  
-  // Small star near crescent
-  const starX = cx - size * 0.3;
-  const starY = cy - size * 0.4;
-  const starSize = size * 0.25;
-  
-  doc.setFillColor(color[0], color[1], color[2]);
-  doc.circle(starX, starY, starSize * 0.4, "F");
+  doc.stroke();
+
+  // Star
+  const starX = cx - r * 0.1;
+  const starY = cy - r * 0.3;
+  doc.circle(starX, starY, size * 0.12, "F");
 }
 
 /**
@@ -174,14 +199,14 @@ function drawOrnamentalDivider(
 ): void {
   const centerX = (x1 + x2) / 2;
   const width = x2 - x1;
-  
+
   doc.setDrawColor(color[0], color[1], color[2]);
   doc.setLineWidth(0.3);
-  
+
   // Left flourish
   const leftEnd = centerX - 12;
   doc.line(x1, y, leftEnd - 5, y);
-  
+
   // Small decorative curl on left
   for (let i = 0; i <= 8; i++) {
     const angle = (i / 8) * Math.PI;
@@ -195,20 +220,20 @@ function drawOrnamentalDivider(
     }
   }
   doc.stroke();
-  
+
   // Center ornament - small diamond shape
   doc.setFillColor(color[0], color[1], color[2]);
   const diamondSize = 2;
   doc.triangle(centerX, y - diamondSize, centerX - diamondSize, y, centerX + diamondSize, y, "F");
   doc.triangle(centerX, y + diamondSize, centerX - diamondSize, y, centerX + diamondSize, y, "F");
-  
+
   // Small center dot
   doc.circle(centerX, y, 0.8, "F");
-  
+
   // Right flourish (mirror of left)
   const rightEnd = centerX + 12;
   doc.line(rightEnd + 5, y, x2, y);
-  
+
   // Small decorative curl on right
   for (let i = 0; i <= 8; i++) {
     const angle = (i / 8) * Math.PI;
@@ -235,14 +260,14 @@ function drawElegantLine(
   color: [number, number, number] = COLOR_GOLD
 ): void {
   const centerX = (x1 + x2) / 2;
-  
+
   doc.setDrawColor(color[0], color[1], color[2]);
   doc.setLineWidth(0.3);
-  
+
   // Lines on each side
   doc.line(x1, y, centerX - 4, y);
   doc.line(centerX + 4, y, x2, y);
-  
+
   // Center diamond
   doc.setFillColor(color[0], color[1], color[2]);
   doc.triangle(centerX, y - 2, centerX - 2, y, centerX + 2, y, "F");
@@ -252,39 +277,36 @@ function drawElegantLine(
 /**
  * Add header to all pages
  */
-function addHeaderToAllPages(doc: jsPDF, title: string): void {
+async function addHeaderToAllPages(doc: jsPDF, title: string): Promise<void> {
   const pageCount = (doc as unknown as { getNumberOfPages(): number }).getNumberOfPages();
-  
+
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
-    
+
     // Elegant top border - thicker gold line
     doc.setFillColor(COLOR_GOLD[0], COLOR_GOLD[1], COLOR_GOLD[2]);
     doc.rect(0, 0, PAGE_WIDTH, 3, "F");
-    
-    // App name with elegant spacing
+
+    // Logo on the left side - bigger size
+    await addLogoToPDF(doc, 18, 10, 24, COLOR_GOLD);
+
+    // App name with elegant spacing (to the right of logo)
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(COLOR_PRIMARY[0], COLOR_PRIMARY[1], COLOR_PRIMARY[2]);
-    doc.text("SadaqahBox", 20, 16);
-    
-    // Crescent moon ornament instead of star
-    drawCrescentMoon(doc, PAGE_WIDTH - 28, 12, 5, COLOR_GOLD);
-    
+    doc.text("Sadaqah Box", 46, 18);
+
     // Subtitle
     doc.setFontSize(9);
     doc.setFont("helvetica", "italic");
     doc.setTextColor(COLOR_TEXT_LIGHT[0], COLOR_TEXT_LIGHT[1], COLOR_TEXT_LIGHT[2]);
-    doc.text("Tracking your charitable giving", 20, 22);
-    
-    // Report title
-    doc.setFontSize(10);
+    doc.text("Tracking your charitable giving", 46, 24);
+
+    // Report title below the subtitle
+    doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(COLOR_TEXT[0], COLOR_TEXT[1], COLOR_TEXT[2]);
-    doc.text(title, PAGE_WIDTH - 20, 22, { align: "right" });
-    
-    // Elegant divider below header
-    drawOrnamentalDivider(doc, 28);
+    doc.setTextColor(COLOR_PRIMARY[0], COLOR_PRIMARY[1], COLOR_PRIMARY[2]);
+    doc.text(title, 46, 32);
   }
 }
 
@@ -293,35 +315,42 @@ function addHeaderToAllPages(doc: jsPDF, title: string): void {
  */
 function addFooterToAllPages(doc: jsPDF, collectionId?: string): void {
   const pageCount = (doc as unknown as { getNumberOfPages(): number }).getNumberOfPages();
-  
+  const githubUrl = "github.com/sadaqahbox";
+
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
-    
+
     // Elegant divider above footer
     drawElegantLine(doc, PAGE_HEIGHT - 22);
-    
+
     // Bottom gold border
     doc.setFillColor(COLOR_GOLD[0], COLOR_GOLD[1], COLOR_GOLD[2]);
     doc.rect(0, PAGE_HEIGHT - 3, PAGE_WIDTH, 3, "F");
-    
+
     // Hadith quote
     doc.setFontSize(9);
     doc.setFont("helvetica", "italic");
     doc.setTextColor(COLOR_TEXT_LIGHT[0], COLOR_TEXT_LIGHT[1], COLOR_TEXT_LIGHT[2]);
     const quote = '"The believer\'s shade on the Day of Resurrection will be his charity" — Tirmidhi';
-    doc.text(quote, PAGE_WIDTH / 2, PAGE_HEIGHT - 12, { align: "center" });
-    
+    doc.text(quote, PAGE_WIDTH / 2, PAGE_HEIGHT - 15, { align: "center" });
+
     // Page number
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(COLOR_TEXT_MUTED[0], COLOR_TEXT_MUTED[1], COLOR_TEXT_MUTED[2]);
     doc.text(`Page ${i} of ${pageCount}`, PAGE_WIDTH - 20, PAGE_HEIGHT - 7, { align: "right" });
-    
+
     // Collection ID if provided (only on last page)
-    if (collectionId && i === pageCount) {
+    if (collectionId) {
       doc.setFontSize(8);
       doc.text(`ID: ${collectionId.slice(-12)}`, 20, PAGE_HEIGHT - 7);
     }
+
+    // GitHub link in gold footer area - small, centered
+    doc.setFontSize(6);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(255, 255, 255);
+    doc.text(githubUrl, PAGE_WIDTH / 2, PAGE_HEIGHT - 1, { align: "center" });
   }
 }
 
@@ -339,7 +368,7 @@ function ensureSpace(doc: jsPDF, currentY: number, requiredHeight: number): numb
 }
 
 /**
- * Generate extra values section - no boxes, clean layout
+ * Generate extra values section - elegant compact layout
  */
 function generateExtraValuesSection(
   doc: jsPDF,
@@ -350,39 +379,65 @@ function generateExtraValuesSection(
   if (!extraValues || Object.keys(extraValues).length === 0) return startY;
 
   const items = Object.values(extraValues);
-  const lineHeight = 8;
-  const requiredHeight = items.length * lineHeight + 20;
-  
+  const itemHeight = 9;
+  const requiredHeight = items.length * itemHeight + 28;
+
   let yPos = ensureSpace(doc, startY, requiredHeight);
-  
+
   if (yPos !== startY || yPos + requiredHeight > CONTENT_END) {
     return generateExtraValuesSectionMultiPage(doc, items, yPos, label);
   }
 
-  // Section title with elegant styling
+  // Section title with elegant styling and decorative underline
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(COLOR_PRIMARY[0], COLOR_PRIMARY[1], COLOR_PRIMARY[2]);
   doc.text(label, 20, yPos);
-  
-  // Elegant divider under title
-  drawElegantLine(doc, yPos + 3, 20, 80, COLOR_GOLD);
+
+  // Decorative gold underline for section title
+  const titleWidth = doc.getTextWidth(label);
+  doc.setDrawColor(COLOR_GOLD[0], COLOR_GOLD[1], COLOR_GOLD[2]);
+  doc.setLineWidth(0.5);
+  doc.line(20, yPos + 2, 20 + titleWidth, yPos + 2);
 
   yPos += 14;
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(COLOR_TEXT[0], COLOR_TEXT[1], COLOR_TEXT[2]);
-  
-  items.forEach((extra) => {
-    doc.text(
-      `${extra.code}: ${formatValueForPDF(extra.total)} (${extra.name})`,
-      25,
-      yPos
-    );
-    yPos += lineHeight;
+
+  items.forEach((extra, index) => {
+    const itemY = yPos + index * itemHeight;
+    const textY = itemY + 2.5; // Center text vertically in row
+
+    // Subtle alternating background for every other item
+    if (index % 2 === 0) {
+      doc.setFillColor(250, 248, 245);
+      doc.roundedRect(18, itemY - 3.5, PAGE_WIDTH - 36, itemHeight - 1.5, 2, 2, "F");
+    }
+
+    // Left accent line (gold)
+    doc.setFillColor(COLOR_GOLD[0], COLOR_GOLD[1], COLOR_GOLD[2]);
+    doc.rect(20, itemY - 1.5, 0.8, 5, "F");
+
+    // Currency code - small, muted
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(COLOR_TEXT_MUTED[0], COLOR_TEXT_MUTED[1], COLOR_TEXT_MUTED[2]);
+    doc.text(extra.code, 24, textY);
+
+    // Value - prominent, primary color
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(COLOR_PRIMARY[0], COLOR_PRIMARY[1], COLOR_PRIMARY[2]);
+    const valueStr = formatValueForPDF(extra.total);
+    doc.text(valueStr, 48, textY);
+
+    // Currency name - normal weight, right side
+    const valueWidth = doc.getTextWidth(valueStr);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(COLOR_TEXT_LIGHT[0], COLOR_TEXT_LIGHT[1], COLOR_TEXT_LIGHT[2]);
+    doc.text(extra.name, 52 + valueWidth, textY);
   });
 
-  return yPos + 6;
+  return yPos + items.length * itemHeight + 8;
 }
 
 /**
@@ -394,17 +449,17 @@ function generateExtraValuesSectionMultiPage(
   startY: number,
   label: string
 ): number {
-  const lineHeight = 8;
+  const itemHeight = 9;
   let yPos = startY;
   let itemIndex = 0;
   let isFirstPage = true;
 
   while (itemIndex < items.length) {
-    const headerHeight = isFirstPage ? 18 : 5;
+    const headerHeight = isFirstPage ? 20 : 5;
     const availableHeight = CONTENT_END - yPos - headerHeight - 10;
-    const itemsPerPage = Math.floor(availableHeight / lineHeight);
+    const itemsPerPage = Math.floor(availableHeight / itemHeight);
     const itemsToRender = Math.min(itemsPerPage, items.length - itemIndex);
-    
+
     if (itemsToRender <= 0) {
       doc.addPage();
       doc.setFillColor(COLOR_CREAM[0], COLOR_CREAM[1], COLOR_CREAM[2]);
@@ -415,33 +470,62 @@ function generateExtraValuesSectionMultiPage(
     }
 
     if (isFirstPage) {
+      // Section title with elegant styling and decorative underline
       doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(COLOR_PRIMARY[0], COLOR_PRIMARY[1], COLOR_PRIMARY[2]);
       doc.text(label, 20, yPos);
-      
-      drawElegantLine(doc, yPos + 3, 20, 80, COLOR_GOLD);
+
+      // Decorative gold underline for section title
+      const titleWidth = doc.getTextWidth(label);
+      doc.setDrawColor(COLOR_GOLD[0], COLOR_GOLD[1], COLOR_GOLD[2]);
+      doc.setLineWidth(0.5);
+      doc.line(20, yPos + 2, 20 + titleWidth, yPos + 2);
+
       yPos += 14;
     } else {
       yPos += 5;
     }
 
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(COLOR_TEXT[0], COLOR_TEXT[1], COLOR_TEXT[2]);
-
     for (let i = 0; i < itemsToRender; i++) {
-      const extra = items[itemIndex]!;
-      doc.text(
-        `${extra.code}: ${formatValueForPDF(extra.total)} (${extra.name})`,
-        25,
-        yPos
-      );
-      yPos += lineHeight;
-      itemIndex++;
+      const currentIndex = itemIndex + i;
+      const extra = items[currentIndex]!;
+      const itemY = yPos + i * itemHeight;
+      const textY = itemY + 2.5; // Center text vertically in row
+
+      // Subtle alternating background for every other item
+      if (currentIndex % 2 === 0) {
+        doc.setFillColor(250, 248, 245);
+        doc.roundedRect(18, itemY - 3.5, PAGE_WIDTH - 36, itemHeight - 1.5, 2, 2, "F");
+      }
+
+      // Left accent line (gold)
+      doc.setFillColor(COLOR_GOLD[0], COLOR_GOLD[1], COLOR_GOLD[2]);
+      doc.rect(20, itemY - 1.5, 0.8, 5, "F");
+
+      // Currency code - small, muted
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(COLOR_TEXT_MUTED[0], COLOR_TEXT_MUTED[1], COLOR_TEXT_MUTED[2]);
+      doc.text(extra.code, 24, textY);
+
+      // Value - prominent, primary color
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(COLOR_PRIMARY[0], COLOR_PRIMARY[1], COLOR_PRIMARY[2]);
+      const valueStr = formatValueForPDF(extra.total);
+      doc.text(valueStr, 48, textY);
+
+      // Currency name - normal weight, right side
+      const valueWidth = doc.getTextWidth(valueStr);
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(COLOR_TEXT_LIGHT[0], COLOR_TEXT_LIGHT[1], COLOR_TEXT_LIGHT[2]);
+      doc.text(extra.name, 52 + valueWidth, textY);
     }
 
-    yPos += 5;
+    itemIndex += itemsToRender;
+    yPos += itemsToRender * itemHeight + 8;
 
     if (itemIndex < items.length) {
       doc.addPage();
@@ -458,7 +542,7 @@ function generateExtraValuesSectionMultiPage(
 /**
  * Generate a single collection receipt PDF
  */
-export function generateCollectionReceiptPDF(
+export async function generateCollectionReceiptPDF(
   collection: CollectionPDFData,
   boxName: string,
   preferredCurrency?: PreferredCurrencyInfo | null,
@@ -466,7 +550,7 @@ export function generateCollectionReceiptPDF(
     label?: string;
     title?: string;
   } = {}
-): string {
+): Promise<string> {
   const { label = "Total Sadaqah", title = "Collection Report" } = options;
 
   const doc = new jsPDF({
@@ -486,10 +570,10 @@ export function generateCollectionReceiptPDF(
   doc.setFont("helvetica", "normal");
   doc.setTextColor(COLOR_TEXT_LIGHT[0], COLOR_TEXT_LIGHT[1], COLOR_TEXT_LIGHT[2]);
   doc.text(`Box: ${boxName}`, 20, yPos);
-  
-  yPos += 8;
+
+  yPos += 6;
   doc.text(`Date: ${formatDateForPDF(collection.emptiedAt)}`, 20, yPos);
-  
+
   yPos += 20;
 
   const currencyCode = getCurrencyCode(collection);
@@ -500,18 +584,28 @@ export function generateCollectionReceiptPDF(
   doc.setFont("helvetica", "bold");
   doc.text(label, 20, yPos);
 
-  yPos += 14;
+  yPos += 10;
 
-  // Main value - prominent, no box background, just elegant presentation
+  // Main value - prominent, left-aligned, no box background
+  // Format: "2.56291 Gold (XAU)" with code in smaller font
   doc.setFontSize(26);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(COLOR_PRIMARY[0], COLOR_PRIMARY[1], COLOR_PRIMARY[2]);
-  doc.text(`${formatValueForPDF(collection.totalValue)} ${currencyCode}`, PAGE_WIDTH / 2, yPos, { align: "center" });
-  
-  // Elegant line below value
-  drawElegantLine(doc, yPos + 6, 40, PAGE_WIDTH - 40, COLOR_GOLD);
 
-  yPos += 22;
+  const currencyName = collection.currency?.name || currencyCode;
+  const valueText = `${formatValueForPDF(collection.totalValue)} ${currencyName}`;
+  doc.text(valueText, 20, yPos);
+
+  // Currency code in smaller font
+  const valueTextWidth = doc.getTextWidth(valueText);
+  doc.setFontSize(12);
+  doc.setTextColor(COLOR_TEXT_LIGHT[0], COLOR_TEXT_LIGHT[1], COLOR_TEXT_LIGHT[2]);
+  doc.text(` (${currencyCode})`, 20 + valueTextWidth, yPos);
+
+  yPos += 16;
+
+  // Reset text color for subsequent content
+  doc.setTextColor(COLOR_TEXT[0], COLOR_TEXT[1], COLOR_TEXT[2]);
 
   // Converted value section - no boxes
   const conversions = collection.metadata?.conversions || [];
@@ -528,15 +622,15 @@ export function generateCollectionReceiptPDF(
 
   if (conversionToShow && conversionToShow.code !== currencyCode) {
     yPos = ensureSpace(doc, yPos, 30);
-    
+
     // "Approximately" label
     doc.setFontSize(9);
     doc.setFont("helvetica", "italic");
     doc.setTextColor(COLOR_TEXT_LIGHT[0], COLOR_TEXT_LIGHT[1], COLOR_TEXT_LIGHT[2]);
     doc.text(`Approximately in ${conversionToShow.name}:`, 20, yPos);
 
-    yPos += 10;
-    
+    yPos += 7;
+
     // Converted value
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
@@ -544,8 +638,8 @@ export function generateCollectionReceiptPDF(
     const prefSymbol = conversionToShow.symbol || "";
     doc.text(`${prefSymbol}${formatValueForPDF(conversionToShow.value)} ${conversionToShow.code}`, 20, yPos);
 
-    yPos += 8;
-    
+    yPos += 6;
+
     // Exchange rate note
     doc.setFontSize(8);
     doc.setFont("helvetica", "italic");
@@ -561,7 +655,7 @@ export function generateCollectionReceiptPDF(
   }
 
   // Add header and footer
-  addHeaderToAllPages(doc, title);
+  await addHeaderToAllPages(doc, title);
   addFooterToAllPages(doc, collection.id);
 
   return doc.output("dataurlstring");
@@ -570,11 +664,11 @@ export function generateCollectionReceiptPDF(
 /**
  * Generate a PDF for a single collection
  */
-export function generateSingleCollectionPDF(
+export async function generateSingleCollectionPDF(
   collection: CollectionPDFData,
   boxName: string = "Collection",
   preferredCurrency?: PreferredCurrencyInfo | null
-): string {
+): Promise<string> {
   return generateCollectionReceiptPDF(collection, boxName, preferredCurrency, {
     label: "Total Sadaqah",
     title: "Collection Report",
@@ -584,11 +678,11 @@ export function generateSingleCollectionPDF(
 /**
  * Generate a PDF report for all collections
  */
-export function generateAllCollectionsPDF(
+export async function generateAllCollectionsPDF(
   collections: CollectionPDFData[],
   boxName: string = "Collection Report",
   _preferredCurrency?: PreferredCurrencyInfo | null
-): string {
+): Promise<string> {
   const doc = new jsPDF({
     orientation: "portrait",
     unit: "mm",
@@ -626,7 +720,7 @@ export function generateAllCollectionsPDF(
   doc.text(`Generated: ${new Date().toLocaleDateString()}`, 20, yPos);
 
   yPos += 12;
-  
+
   // Divider
   drawElegantLine(doc, yPos, 20, PAGE_WIDTH - 20, COLOR_GOLD);
   yPos += 10;
@@ -638,7 +732,7 @@ export function generateAllCollectionsPDF(
   doc.text("Date", 20, yPos);
   doc.text("Value", 70, yPos);
   doc.text("Currency", 108, yPos);
-  
+
   // Line under headers
   doc.setDrawColor(COLOR_GOLD[0], COLOR_GOLD[1], COLOR_GOLD[2]);
   doc.setLineWidth(0.3);
@@ -648,15 +742,15 @@ export function generateAllCollectionsPDF(
 
   // Table rows
   doc.setFont("helvetica", "normal");
-  
+
   collections.forEach((collection) => {
     if (yPos > CONTENT_END - 10) {
       doc.addPage();
       doc.setFillColor(COLOR_CREAM[0], COLOR_CREAM[1], COLOR_CREAM[2]);
       doc.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, "F");
-      
+
       yPos = CONTENT_START;
-      
+
       // Table header on new page
       doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
@@ -680,7 +774,7 @@ export function generateAllCollectionsPDF(
   });
 
   // Add header and footer
-  addHeaderToAllPages(doc, boxName);
+  await addHeaderToAllPages(doc, boxName);
   addFooterToAllPages(doc);
 
   return doc.output("dataurlstring");

@@ -9,6 +9,7 @@ import { useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Badge } from "@/components/ui/badge";
+import { Logo } from "@/components/layout/Logo";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -28,8 +29,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Trash2, MoreVertical, Package, Coins } from "lucide-react";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Mosque01Icon } from "@hugeicons/core-free-icons";
 import { cn, formatHighPrecision } from "@/lib/utils";
 import type { Box } from "@/types";
 
@@ -168,13 +167,18 @@ export function VirtualBoxList({
                     }}
                     transition={{ duration: 0.2 }}
                     className={cn(
-                      "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors",
+                      "flex h-14 w-14 shrink-0 items-center justify-center rounded-xl transition-colors ring-2",
                       isSelected
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted group-hover:bg-background"
+                        ? "bg-primary ring-primary"
+                        : "bg-white dark:bg-background ring-transparent"
                     )}
                   >
-                    <HugeiconsIcon icon={Mosque01Icon} className="size-5" />
+                    <Logo
+                      className={cn(
+                        "size-10",
+                        isSelected && "brightness-0 invert"
+                      )}
+                    />
                   </motion.div>
 
                   {/* Content */}

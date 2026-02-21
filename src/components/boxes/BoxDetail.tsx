@@ -123,13 +123,13 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
     );
   };
 
-  const handleCollect = () => {
+  const handleCollect = async () => {
     emptyBox(box.id, {
-        onSuccess: (result) => {
+        onSuccess: async (result) => {
             onBoxUpdated(result.box);
             // Generate and show PDF receipt
             if (result.collection) {
-                const pdfDataUrl = generateCollectionReceiptPDF(result.collection, box.name, preferredCurrency);
+                const pdfDataUrl = await generateCollectionReceiptPDF(result.collection, box.name, preferredCurrency);
                 setPdfUrl(pdfDataUrl);
                 setPdfTitle(`Collection - ${box.name}`);
                 setShowPdfDialog(true);

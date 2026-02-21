@@ -8,7 +8,7 @@ import { Header } from "@/components/layout";
 import { BoxList, BoxDetail, CreateBox } from "@/components/boxes";
 import { SignedIn, SignedOut, RedirectToSignIn } from "@daveyplate/better-auth-ui";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Mosque01Icon, Add01Icon, AlertCircleIcon } from "@hugeicons/core-free-icons";
+import { Add01Icon, AlertCircleIcon } from "@hugeicons/core-free-icons";
 import { useDashboard } from "@/hooks";
 import { containerVariants, mainContentVariants, sidebarVariants, fadeInVariants } from "@/lib/animations";
 import { EmptyState } from "./EmptyState";
@@ -155,12 +155,6 @@ const BoxListSection = React.memo(function BoxListSection({
                         className="flex items-center justify-between"
                     >
                         <div className="flex items-center gap-2">
-                            <motion.div
-                                whileHover={{ rotate: 10 }}
-                                transition={{ duration: 0.2 }}
-                            >
-                                <HugeiconsIcon icon={Mosque01Icon} className="text-primary size-5" />
-                            </motion.div>
                             <CardTitle className="text-lg">Your Boxes</CardTitle>
                         </div>
                         <motion.div

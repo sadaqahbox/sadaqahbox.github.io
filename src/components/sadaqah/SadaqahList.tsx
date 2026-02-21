@@ -1,11 +1,11 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "motion/react";
-import { Trash2, Clock, Calendar } from "lucide-react";
+import { Trash2, Calendar } from "lucide-react";
 import type { Currency, Sadaqah } from "@/types";
+import { ListItem, ListItemGroupHeader } from "@/components/ui/list-item";
 
 interface SadaqahListProps {
   sadaqahs: Sadaqah[];
@@ -153,16 +153,12 @@ export function SadaqahList({ sadaqahs, currency, onDelete, isDeleting }: Sadaqa
         >
           {groupEntries.map(([group, items], groupIndex) => (
             <motion.div key={group} variants={groupHeaderVariants} initial="hidden" animate="visible">
-              <div className="flex items-center gap-2 py-2 first:pt-0">
-                <Calendar className="text-primary h-3.5 w-3.5" />
-                <span className="text-xs font-semibold uppercase tracking-wider text-primary">
-                  {group}
-                </span>
-                <Badge variant="secondary" className="text-[10px]">
-                  {items.length}
-                </Badge>
-                <Separator className="flex-1" />
-              </div>
+              <ListItemGroupHeader
+                icon={<Calendar className="text-primary h-3.5 w-3.5" />}
+                title={group}
+                count={items.length}
+                className="first:pt-0"
+              />
               <div className="space-y-1 pb-2">
                 <AnimatePresence mode="popLayout">
                   {items.map((sadaqah, index) => (
@@ -173,46 +169,37 @@ export function SadaqahList({ sadaqahs, currency, onDelete, isDeleting }: Sadaqa
                       animate="visible"
                       exit={{ opacity: 0, x: 20 }}
                       layout
-                      whileHover={{ scale: 1.01, backgroundColor: "rgba(0,0,0,0.02)" }}
-                      className="flex items-center justify-between rounded-md px-2 py-2.5 transition-colors"
                     >
-                    <div className="flex items-center gap-3">
-                      <div className="bg-primary/10 flex h-8 w-8 items-center justify-center rounded-full">
-                        <span className="text-primary text-xs font-bold">#{items.length - index}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-sm">
-                          {sadaqah.value.toLocaleString()} {getCurrencyDisplay(sadaqah, currency)}
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="text-muted-foreground h-3 w-3" />
-                          <span className="text-muted-foreground text-xs">
-                            {formatRelativeTime(sadaqah.createdAt)}
-                          </span>
-                          <span className="text-muted-foreground/50 text-xs">•</span>
-                          <span className="text-muted-foreground/70 text-xs">
-                            {formatDateTime(sadaqah.createdAt)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {onDelete && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:bg-destructive/10 disabled:opacity-50"
-                          onClick={() => onDelete(sadaqah.id)}
-                          disabled={isDeleting}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
+                      <ListItem
+                        icon={{ type: "numbered", index: items.length - index }}
+                        title={`${sadaqah.value.toLocaleString()} ${getCurrencyDisplay(sadaqah, currency)}`}
+                        subtitle={
+                          <div className="flex items-center gap-1.5">
+                            <span>{formatRelativeTime(sadaqah.createdAt)}</span>
+                            <span className="text-muted-foreground/50">•</span>
+                            <span className="text-muted-foreground/70">{formatDateTime(sadaqah.createdAt)}</span>
+                          </div>
+                        }
+                        action={
+                          onDelete && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:bg-destructive/10 disabled:opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                              onClick={() => onDelete(sadaqah.id)}
+                              disabled={isDeleting}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )
+                        }
+                        hoverAnimation={false}
+                        className="hover:bg-muted/50 transition-colors"
+                      />
+                    </motion.div>
+                  ))}
                 </AnimatePresence>
-                </div>
+              </div>
               {groupIndex < groupEntries.length - 1 && (
                 <Separator className="my-2" />
               )}
