@@ -16,14 +16,14 @@ export function AuthPage() {
 
         <>
           {isSignOut ? (
-            <AuthView pathname={pathname} />
+            <AuthView pathname={pathname} redirectTo="/dashboard" />
           ) : (
             <>
               <SignedIn>
                 <Navigate to="/dashboard" replace />
               </SignedIn>
               <SignedOut>
-                <AuthView pathname={pathname} />
+                <AuthView pathname={pathname} redirectTo="/dashboard" />
               </SignedOut>
             </>
           )}
