@@ -33,7 +33,10 @@ export interface DeleteSadaqahInput {
 export interface CreateSadaqahResult {
     success: boolean;
     sadaqahs: Sadaqah[];
-    box: Box;
+    box: Box & {
+        totalValueExtra?: Record<string, { total: number; code: string; name: string }> | null;
+        baseCurrency?: { id: string; code: string; name: string; symbol?: string } | null;
+    };
     message: string;
 }
 
@@ -80,16 +83,26 @@ export function useCreateSadaqah() {
                 currencyId: data.currencyId,
             }),
         onSuccess: (result, variables) => {
-            // Get current sadaqahs and prepend the new one
+            // Get current sadaqahs and the new one from the result
             const currentSadaqahs = queryClient.getQueryData<Sadaqah[]>(
                 queryKeys.sadaqahs.list(variables.boxId)
             ) || [];
             
-            // API returns only the new sadaqah, prepend it to existing list
+            // API returns the new sadaqah - prepend it with currency data from variables
             if (result.sadaqahs && result.sadaqahs.length > 0) {
+                // Get the currencies cache to populate the currency relation
+                const currenciesData = queryClient.getQueryData<{ id: string; code: string; name: string; symbol?: string }[]>(
+                    queryKeys.currencies.list
+                ) || [];
+                
+                const newSadaqahsWithCurrency = result.sadaqahs.map(s => ({
+                    ...s,
+                    currency: currenciesData.find(c => c.id === s.currencyId) || undefined,
+                }));
+                
                 queryClient.setQueryData(
                     queryKeys.sadaqahs.list(variables.boxId),
-                    [...result.sadaqahs, ...currentSadaqahs]
+                    [...newSadaqahsWithCurrency, ...currentSadaqahs]
                 );
             }
             // Invalidate dashboard stats

@@ -350,6 +350,7 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
           >
             <AddSadaqah
               boxId={box.id}
+              defaultCurrencyId={box.baseCurrencyId || box.currencyId}
               onAdded={handleSadaqahAdded}
               onCancel={() => setShowAddForm(false)}
               isLoading={isCreatingSadaqah}

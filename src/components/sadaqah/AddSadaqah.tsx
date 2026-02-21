@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useCurrencies, useCurrencyTypes } from "@/hooks";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,6 @@ import {
   ComboboxEmpty,
   ComboboxSeparator,
   ComboboxCollection,
-  ComboboxValue,
 } from "@/components/ui/combobox";
 import { X, Plus } from "lucide-react";
 import type { Currency } from "@/types";
@@ -23,6 +22,7 @@ import type { CurrencyType } from "@/api/client/currency-types";
 
 interface AddSadaqahProps {
   boxId: string;
+  defaultCurrencyId?: string;
   onAdded: (value: number, currencyId?: string) => void;
   onCancel: () => void;
   isLoading?: boolean;
@@ -35,22 +35,15 @@ interface CurrencyGroup {
   items: Currency[];
 }
 
-export function AddSadaqah({ boxId, onAdded, onCancel, isLoading }: AddSadaqahProps) {
+export function AddSadaqah({ boxId, defaultCurrencyId, onAdded, onCancel, isLoading }: AddSadaqahProps) {
   const [amount, setAmount] = useState(1);
   const [value, setValue] = useState<number>(1);
-  const [currencyId, setCurrencyId] = useState<string>("");
+  const [currencyId, setCurrencyId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const isSelectingRef = useRef(false);
 
   const { data: currencies = [], isLoading: isLoadingCurrencies } = useCurrencies();
   const { data: currencyTypes = [] } = useCurrencyTypes();
-
-  // Set default currency when data loads
-  useEffect(() => {
-    if (currencies.length > 0 && !currencyId) {
-      const usdCurrency = currencies.find(c => c.code === "USD");
-      setCurrencyId(usdCurrency?.id || currencies[0]!.id);
-    }
-  }, [currencies, currencyId]);
 
   // Create a lookup map for currency types
   const currencyTypeMap = useMemo(() => {
@@ -60,6 +53,15 @@ export function AddSadaqah({ boxId, onAdded, onCancel, isLoading }: AddSadaqahPr
     }
     return map;
   }, [currencyTypes]);
+
+  // Create a lookup map for currencies by ID
+  const currencyById = useMemo(() => {
+    const map = new Map<string, Currency>();
+    for (const currency of currencies) {
+      map.set(currency.id, currency);
+    }
+    return map;
+  }, [currencies]);
 
   // Group currencies by their type
   const groupedCurrencies: CurrencyGroup[] = useMemo(() => {
@@ -109,10 +111,23 @@ export function AddSadaqah({ boxId, onAdded, onCancel, isLoading }: AddSadaqahPr
       .filter(group => group.items.length > 0);
   }, [groupedCurrencies, searchQuery]);
 
-  const selectedCurrency = useMemo(() =>
-    currencies.find(c => c.id === currencyId),
-    [currencies, currencyId]
-  );
+  // Set default currency when data loads - runs once when currencies are first available
+  useEffect(() => {
+    if (currencies.length === 0) return;
+    
+    // Skip if we already have a valid selection
+    if (currencyId && currencyById.has(currencyId)) return;
+
+    // Try defaultCurrencyId first (from box's base currency)
+    if (defaultCurrencyId && currencyById.has(defaultCurrencyId)) {
+      setCurrencyId(defaultCurrencyId);
+      return;
+    }
+
+    // Fall back to USD, then first currency
+    const usdCurrency = currencies.find(c => c.code === "USD");
+    setCurrencyId(usdCurrency?.id || currencies[0]?.id || null);
+  }, [currencies, currencyById, currencyId, defaultCurrencyId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,6 +138,9 @@ export function AddSadaqah({ boxId, onAdded, onCancel, isLoading }: AddSadaqahPr
   };
 
   const isFetchingCurrencies = isLoadingCurrencies || currencies.length === 0;
+
+  // Get the currently selected currency for display
+  const selectedCurrency = currencyId ? currencyById.get(currencyId) : null;
 
   return (
     <Card>
@@ -154,21 +172,42 @@ export function AddSadaqah({ boxId, onAdded, onCancel, isLoading }: AddSadaqahPr
             <Field>
               <FieldLabel>Currency</FieldLabel>
               <Combobox
-                items={filteredCurrencies}
+                items={groupedCurrencies}
+                filteredItems={filteredCurrencies}
+                filter={null}
                 value={currencyId}
+                onInputValueChange={(val, eventDetails) => {
+                  // Don't update search query during selection
+                  if (isSelectingRef.current) {
+                    return;
+                  }
+                  // Only update for user input events
+                  const reason = eventDetails?.reason;
+                  if (reason === "input-change" || reason === "input-paste" || reason === "input-clear" || reason === "clear-press") {
+                    setSearchQuery(val);
+                  }
+                }}
                 onValueChange={(val) => {
                   if (val) {
+                    isSelectingRef.current = true;
                     setCurrencyId(val);
-                    setSearchQuery(""); // Clear search on selection
+                    setSearchQuery("");
+                    // Reset the flag after a microtask
+                    setTimeout(() => {
+                      isSelectingRef.current = false;
+                    }, 0);
                   }
                 }}
                 disabled={isFetchingCurrencies}
-                itemToStringLabel={(v)=>selectedCurrency?.name + " ("+ selectedCurrency?.symbol+")"}
+                itemToStringLabel={(id) => {
+                  const currency = currencyById.get(id as string);
+                  if (!currency) return "";
+                  return `${currency.code} - ${currency.name}${currency.symbol ? ` (${currency.symbol})` : ""}`;
+                }}
               >
                 <ComboboxInput
                   placeholder={isFetchingCurrencies ? "Loading..." : "Search by code or name..."}
                   showClear
-                  onChange={(e) => setSearchQuery(e.target.value)}
                 />
                 <ComboboxContent>
                   <ComboboxEmpty>No currencies found.</ComboboxEmpty>
@@ -204,7 +243,7 @@ export function AddSadaqah({ boxId, onAdded, onCancel, isLoading }: AddSadaqahPr
               <Plus className="mr-2 h-4 w-4" />
               {isLoading
                 ? "Adding..."
-                : `Add ${amount > 1 ? `${amount} × ` : ""}${value} Sadaqah`}
+                : `Add ${amount > 1 ? `${amount} × ` : ""}${value} ${selectedCurrency?.code || ""} Sadaqah`}
             </Button>
           </div>
         </form>

@@ -173,6 +173,8 @@ export const AddSadaqahResponseSchema = z.object({
   sadaqahs: SadaqahSchema.array(),
   box: BoxSchema.omit({ tags: true }).extend({
     currency: z.any().nullable(),
+    baseCurrency: z.any().nullable(),
+    totalValueExtra: z.record(z.string(), TotalValueExtraEntrySchema).nullable().optional(),
   }),
   message: z.string(),
 });
