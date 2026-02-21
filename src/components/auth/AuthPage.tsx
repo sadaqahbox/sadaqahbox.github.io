@@ -4,6 +4,7 @@ import { Header } from "@/components/layout"
 
 export function AuthPage() {
   const { pathname } = useParams()
+  const isSignOut = pathname === "signout" || pathname === "sign-out"
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -14,12 +15,18 @@ export function AuthPage() {
         </AuthLoading>
 
         <>
-          <SignedIn>
-            <Navigate to="/dashboard" replace />
-          </SignedIn>
-          <SignedOut>
+          {isSignOut ? (
             <AuthView pathname={pathname} />
-          </SignedOut>
+          ) : (
+            <>
+              <SignedIn>
+                <Navigate to="/dashboard" replace />
+              </SignedIn>
+              <SignedOut>
+                <AuthView pathname={pathname} />
+              </SignedOut>
+            </>
+          )}
         </>
       </main>
     </div>

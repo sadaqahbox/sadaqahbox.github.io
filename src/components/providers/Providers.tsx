@@ -1,4 +1,4 @@
-import { AuthUIProvider } from "@daveyplate/better-auth-ui";
+import { AuthUIProvider, authViewPaths } from "@daveyplate/better-auth-ui";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 import { authClient, LinkComponent } from "@/lib/auth";
