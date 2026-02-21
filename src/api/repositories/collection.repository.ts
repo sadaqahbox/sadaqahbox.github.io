@@ -20,16 +20,20 @@ export interface CollectionRecord {
   boxId: string;
   userId: string;
   emptiedAt: Date;
-  sadaqahsCollected: number;
   totalValue: number;
+  totalValueExtra: {
+    [currencyId: string]: { total: number; code: string; name: string };
+  } | null;
   currencyId: string;
 }
 
 export interface CreateCollectionData {
   boxId: string;
   userId: string;
-  sadaqahsCollected: number;
   totalValue: number;
+  totalValueExtra?: {
+    [currencyId: string]: { total: number; code: string; name: string };
+  };
   currencyId: string;
 }
 
@@ -57,8 +61,8 @@ export class CollectionRepository {
       boxId: data.boxId,
       userId: data.userId,
       emptiedAt: timestamp,
-      sadaqahsCollected: data.sadaqahsCollected,
       totalValue: data.totalValue,
+      totalValueExtra: data.totalValueExtra || null,
       currencyId: data.currencyId,
     });
 
@@ -66,8 +70,8 @@ export class CollectionRepository {
       id,
       boxId: data.boxId,
       emptiedAt: timestamp.toISOString(),
-      sadaqahsCollected: data.sadaqahsCollected,
       totalValue: data.totalValue,
+      totalValueExtra: data.totalValueExtra || null,
       currencyId: data.currencyId,
     };
   }
@@ -102,8 +106,8 @@ export class CollectionRepository {
       id: result.id,
       boxId: result.boxId,
       emptiedAt: new Date(result.emptiedAt).toISOString(),
-      sadaqahsCollected: result.sadaqahsCollected,
       totalValue: result.totalValue,
+      totalValueExtra: result.totalValueExtra,
       currencyId: result.currencyId,
     };
 
@@ -192,8 +196,8 @@ export class CollectionRepository {
           id: c.id,
           boxId: c.boxId,
           emptiedAt: new Date(c.emptiedAt).toISOString(),
-          sadaqahsCollected: c.sadaqahsCollected,
           totalValue: c.totalValue,
+          totalValueExtra: c.totalValueExtra,
           currencyId: c.currencyId,
         };
 
@@ -285,8 +289,8 @@ export class CollectionRepository {
           id: c.id,
           boxId: c.boxId,
           emptiedAt: new Date(c.emptiedAt).toISOString(),
-          sadaqahsCollected: c.sadaqahsCollected,
           totalValue: c.totalValue,
+          totalValueExtra: c.totalValueExtra,
           currencyId: c.currencyId,
         };
 

@@ -109,8 +109,10 @@ export const collections = sqliteTable(
       .notNull()
       .references(() => authSchema.users.id, { onDelete: "cascade" }),
     emptiedAt: integer("emptiedAt", { mode: "timestamp" }).notNull(),
-    sadaqahsCollected: integer("sadaqahsCollected").notNull(),
     totalValue: real("totalValue").notNull(),
+    totalValueExtra: text("totalValueExtra", { mode: "json" }).$type<{
+      [currencyId: string]: { total: number; code: string; name: string };
+    }>(),
     currencyId: text("currencyId")
       .notNull()
       .references(() => currencies.id),

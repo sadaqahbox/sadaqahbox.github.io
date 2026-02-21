@@ -433,8 +433,10 @@ export class BoxRepository {
   async createCollection(
     boxId: string,
     userId: string,
-    sadaqahsCollected: number,
     totalValue: number,
+    totalValueExtra: {
+      [currencyId: string]: { total: number; code: string; name: string };
+    } | null,
     currencyId: string
   ): Promise<{ id: string; emptiedAt: string }> {
     const timestamp = new Date();
@@ -445,8 +447,8 @@ export class BoxRepository {
       boxId,
       userId,
       emptiedAt: timestamp,
-      sadaqahsCollected,
       totalValue,
+      totalValueExtra,
       currencyId,
     });
 
@@ -489,8 +491,8 @@ export class BoxRepository {
         id: c.id,
         boxId: c.boxId,
         emptiedAt: new Date(c.emptiedAt).toISOString(),
-        sadaqahsCollected: c.sadaqahsCollected,
         totalValue: c.totalValue,
+        totalValueExtra: c.totalValueExtra,
         currencyId: c.currencyId,
         currency: c.currency ? {
           id: c.currency.id,
@@ -531,8 +533,8 @@ export class BoxRepository {
         id: c.id,
         boxId: c.boxId,
         emptiedAt: new Date(c.emptiedAt).toISOString(),
-        sadaqahsCollected: c.sadaqahsCollected,
         totalValue: c.totalValue,
+        totalValueExtra: c.totalValueExtra,
         currencyId: c.currencyId,
       })),
       total: totalResult[0]?.count ?? 0,

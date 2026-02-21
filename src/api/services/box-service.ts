@@ -290,8 +290,8 @@ export class BoxService extends BaseService {
     const collection = await this.boxRepo.createCollection(
       boxId,
       userId,
-      record.count,
       record.totalValue,
+      record.totalValueExtra,
       currencyId
     );
 
@@ -311,8 +311,8 @@ export class BoxService extends BaseService {
         id: collection.id,
         boxId,
         emptiedAt: collection.emptiedAt,
-        sadaqahsCollected: record.count,
         totalValue: record.totalValue,
+        totalValueExtra: record.totalValueExtra,
         currencyId,
       },
     };

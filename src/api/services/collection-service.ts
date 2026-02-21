@@ -24,8 +24,10 @@ export interface ListCollectionsOptions {
 export interface CreateCollectionInput {
   boxId: string;
   userId: string;
-  sadaqahsCollected: number;
   totalValue: number;
+  totalValueExtra?: {
+    [currencyId: string]: { total: number; code: string; name: string };
+  };
   currencyId: string;
 }
 
@@ -57,8 +59,8 @@ export class CollectionService extends BaseService {
       id: collection.id,
       boxId: collection.boxId,
       emptiedAt: new Date(collection.emptiedAt).toISOString(),
-      sadaqahsCollected: collection.sadaqahsCollected,
       totalValue: collection.totalValue,
+      totalValueExtra: collection.totalValueExtra,
       currencyId: collection.currencyId,
     };
   }

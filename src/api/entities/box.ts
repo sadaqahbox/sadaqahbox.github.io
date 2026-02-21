@@ -264,8 +264,8 @@ export class BoxEntity {
 				boxId: id,
 				userId: boxUserId,
 				emptiedAt: timestamp,
-				sadaqahsCollected: box.count,
 				totalValue: box.totalValue,
+				totalValueExtra: box.totalValueExtra,
 				currencyId,
 			}));
 
@@ -294,8 +294,8 @@ export class BoxEntity {
 			box: updatedBox,
 			collection: {
 				id: collectionId,
-				sadaqahsCollected: box.count,
 				totalValue: box.totalValue,
+				totalValueExtra: box.totalValueExtra,
 				currencyId,
 				emptiedAt: timestamp.toISOString(),
 			},
@@ -341,8 +341,8 @@ export class BoxEntity {
 					id: c.id,
 					boxId: c.boxId,
 					emptiedAt: new Date(c.emptiedAt).toISOString(),
-					sadaqahsCollected: c.sadaqahsCollected,
 					totalValue: c.totalValue,
+					totalValueExtra: c.totalValueExtra,
 					currencyId: c.currencyId,
 				};
 				const currency = currencyMap.get(c.currencyId);

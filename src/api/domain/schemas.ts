@@ -83,8 +83,12 @@ export const CollectionSchema = z.object({
 	id: z.string().openapi({ example: "col_abc123" }),
 	boxId: z.string(),
 	emptiedAt: IsoDate,
-	sadaqahsCollected: z.number(),
 	totalValue: z.number(),
+	totalValueExtra: z.record(z.string(), z.object({
+		total: z.number(),
+		code: z.string(),
+		name: z.string(),
+	})).optional(),
 	currencyId: z.string(),
 	currency: CurrencySchema.optional(),
 });

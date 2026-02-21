@@ -101,7 +101,6 @@ export function isCollection(value: unknown): value is Collection {
         hasString(value, "id") &&
         hasString(value, "boxId") &&
         hasString(value, "emptiedAt") &&
-        hasNumber(value, "sadaqahsCollected") &&
         hasNumber(value, "totalValue") &&
         hasString(value, "currencyId")
     );

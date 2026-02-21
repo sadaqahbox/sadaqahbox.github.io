@@ -69,8 +69,8 @@ export const CollectionSchema = z.object({
   id: z.string(),
   boxId: z.string(),
   emptiedAt: z.string(),
-  sadaqahsCollected: z.number(),
   totalValue: z.number(),
+  totalValueExtra: z.record(z.string(), TotalValueExtraEntrySchema).nullable().optional(),
   currencyId: z.string(),
   currency: CurrencySchema.optional(),
 });
