@@ -14,6 +14,7 @@ import {
 	createItemResponseSchema,
 } from "../domain/schemas";
 import { getBoxEntity, getTagEntity } from "../entities";
+import { getCurrentUser } from "../middleware";
 import {
 	success,
 	notFound,
@@ -66,15 +67,17 @@ export const listRoute = buildRoute({
 	summary: "List all charity boxes",
 	query: ListQuerySchema,
 	responses: create200Response(ListResponseSchema, "Returns a list of boxes"),
+	requireAuth: true,
 });
 
 export const listHandler = async (c: Context<{ Bindings: Env }>) => {
+	const user = getCurrentUser(c);
 	const { sortBy, sortOrder } = getQuery<{
 		sortBy: "name" | "createdAt" | "count" | "totalValue";
 		sortOrder: "asc" | "desc";
 	}>(c);
 
-	const boxes = await getBoxEntity(c).list();
+	const boxes = await getBoxEntity(c).list(user.id);
 
 	boxes.sort((a, b) => {
 		let comparison = 0;
@@ -119,9 +122,11 @@ export const createRoute = buildRoute({
 		...create400Response("Invalid input"),
 		...create404Response("Tag not found"),
 	},
+	requireAuth: true,
 });
 
 export const createHandler = async (c: Context<{ Bindings: Env }>) => {
+	const user = getCurrentUser(c);
 	const { name, description, metadata, tagIds } = getBody<{
 		name: string;
 		description?: string;
@@ -157,6 +162,7 @@ export const createHandler = async (c: Context<{ Bindings: Env }>) => {
 		description: description?.trim(),
 		metadata,
 		tagIds,
+		userId: user.id,
 	});
 
 	return jsonSuccess(c, { box }, 201);
@@ -180,13 +186,15 @@ export const getRoute = buildRoute({
 		...create200Response(GetResponseSchema, "Returns the box"),
 		...create404Response("Box not found"),
 	},
+	requireAuth: true,
 });
 
 export const getHandler = async (c: Context<{ Bindings: Env }>) => {
+	const user = getCurrentUser(c);
 	const { boxId } = getParams<{ boxId: string }>(c);
 
 	const boxEntity = getBoxEntity(c);
-	const box = await boxEntity.get(boxId);
+	const box = await boxEntity.get(boxId, user.id);
 
 	if (!box) {
 		return notFound("Box", boxId);
@@ -211,9 +219,11 @@ export const updateRoute = buildRoute({
 		...create200Response(UpdateResponseSchema, "Returns the updated box"),
 		...create404Response("Box not found"),
 	},
+	requireAuth: true,
 });
 
 export const updateHandler = async (c: Context<{ Bindings: Env }>) => {
+	const user = getCurrentUser(c);
 	const { boxId } = getParams<{ boxId: string }>(c);
 	const updates = getBody<{
 		name?: string;
@@ -222,7 +232,7 @@ export const updateHandler = async (c: Context<{ Bindings: Env }>) => {
 	}>(c);
 
 	const boxEntity = getBoxEntity(c);
-	const box = await boxEntity.update(boxId, updates);
+	const box = await boxEntity.update(boxId, updates, user.id);
 
 	if (!box) {
 		return notFound("Box", boxId);
@@ -250,12 +260,14 @@ export const deleteRoute = buildRoute({
 		...create200Response(DeleteResponseSchema, "Box deleted"),
 		...create404Response("Box not found"),
 	},
+	requireAuth: true,
 });
 
 export const deleteHandler = async (c: Context<{ Bindings: Env }>) => {
+	const user = getCurrentUser(c);
 	const { boxId } = getParams<{ boxId: string }>(c);
 
-	const result = await getBoxEntity(c).delete(boxId);
+	const result = await getBoxEntity(c).delete(boxId, user.id);
 
 	if (!result.deleted) {
 		return notFound("Box", boxId);
@@ -286,12 +298,14 @@ export const emptyRoute = buildRoute({
 		...create200Response(EmptyResponseSchema, "Box emptied"),
 		...create404Response("Box not found"),
 	},
+	requireAuth: true,
 });
 
 export const emptyHandler = async (c: Context<{ Bindings: Env }>) => {
+	const user = getCurrentUser(c);
 	const { boxId } = getParams<{ boxId: string }>(c);
 
-	const result = await getBoxEntity(c).collect(boxId);
+	const result = await getBoxEntity(c).collect(boxId, user.id);
 
 	if (!result) {
 		return notFound("Box", boxId);
@@ -318,20 +332,22 @@ export const collectionsRoute = buildRoute({
 		...create200Response(CollectionsResponseSchema, "Returns collection history"),
 		...create404Response("Box not found"),
 	},
+	requireAuth: true,
 });
 
 export const collectionsHandler = async (c: Context<{ Bindings: Env }>) => {
+	const user = getCurrentUser(c);
 	const { boxId } = getParams<{ boxId: string }>(c);
 	const { page, limit } = getQuery<{ page: number; limit: number }>(c);
 
 	const boxEntity = getBoxEntity(c);
 
-	const box = await boxEntity.get(boxId);
+	const box = await boxEntity.get(boxId, user.id);
 	if (!box) {
 		return notFound("Box", boxId);
 	}
 
-	const result = await boxEntity.getCollections(boxId, { page, limit });
+	const result = await boxEntity.getCollections(boxId, { page, limit }, user.id);
 	return c.json(success({
 		collections: result.collections,
 		total: result.total,
@@ -358,9 +374,11 @@ export const addTagRoute = buildRoute({
 		...create404Response("Box or tag not found"),
 		...create409Response("Tag already added"),
 	},
+	requireAuth: true,
 });
 
 export const addTagHandler = async (c: Context<{ Bindings: Env }>) => {
+	const user = getCurrentUser(c);
 	const { boxId } = getParams<{ boxId: string }>(c);
 	const { tagId } = getBody<{ tagId: string }>(c);
 
@@ -368,7 +386,7 @@ export const addTagHandler = async (c: Context<{ Bindings: Env }>) => {
 	const tagEntity = getTagEntity(c);
 
 	const [box, tag] = await Promise.all([
-		boxEntity.get(boxId),
+		boxEntity.get(boxId, user.id),
 		tagEntity.get(tagId),
 	]);
 
@@ -398,14 +416,16 @@ export const removeTagRoute = buildRoute({
 		...create200Response(RemoveTagResponseSchema, "Tag removed"),
 		...create404Response("Box not found"),
 	},
+	requireAuth: true,
 });
 
 export const removeTagHandler = async (c: Context<{ Bindings: Env }>) => {
+	const user = getCurrentUser(c);
 	const { boxId, tagId } = getParams<{ boxId: string; tagId: string }>(c);
 
 	const boxEntity = getBoxEntity(c);
 
-	const box = await boxEntity.get(boxId);
+	const box = await boxEntity.get(boxId, user.id);
 	if (!box) {
 		return notFound("Box", boxId);
 	}
@@ -434,16 +454,18 @@ export const setTagsRoute = buildRoute({
 		...create200Response(SetTagsResponseSchema, "Tags updated"),
 		...create404Response("Box or tag not found"),
 	},
+	requireAuth: true,
 });
 
 export const setTagsHandler = async (c: Context<{ Bindings: Env }>) => {
+	const user = getCurrentUser(c);
 	const { boxId } = getParams<{ boxId: string }>(c);
 	const { tagIds } = getBody<{ tagIds: string[] }>(c);
 
 	const boxEntity = getBoxEntity(c);
 	const tagEntity = getTagEntity(c);
 
-	const box = await boxEntity.get(boxId);
+	const box = await boxEntity.get(boxId, user.id);
 	if (!box) {
 		return notFound("Box", boxId);
 	}

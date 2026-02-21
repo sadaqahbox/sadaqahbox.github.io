@@ -22,7 +22,8 @@ export class BoxEntity {
 		name: string; 
 		description?: string; 
 		metadata?: Record<string, string>; 
-		tagIds?: string[] 
+		tagIds?: string[];
+		userId: string;
 	}): Promise<Box> {
 		const timestamp = new Date();
 		const id = generateBoxId();
@@ -41,6 +42,7 @@ export class BoxEntity {
 				count: 0,
 				totalValue: 0,
 				currencyId: null,
+				userId: data.userId,
 				createdAt: timestamp,
 				updatedAt: timestamp,
 			});
@@ -64,8 +66,11 @@ export class BoxEntity {
 		});
 	}
 
-	async get(id: string): Promise<Box | null> {
-		const result = await this.db.select().from(boxes).where(eq(boxes.id, id)).limit(1);
+	async get(id: string, userId?: string): Promise<Box | null> {
+		const query = userId
+			? this.db.select().from(boxes).where(and(eq(boxes.id, id), eq(boxes.userId, userId))).limit(1)
+			: this.db.select().from(boxes).where(eq(boxes.id, id)).limit(1);
+		const result = await query;
 		if (!result[0]) return null;
 
 		const box = mapBox(result[0]);
@@ -79,8 +84,11 @@ export class BoxEntity {
 		return box;
 	}
 
-	async list(): Promise<Box[]> {
-		const result = await this.db.select().from(boxes).orderBy(desc(boxes.createdAt));
+	async list(userId?: string): Promise<Box[]> {
+		const query = userId 
+			? this.db.select().from(boxes).where(eq(boxes.userId, userId)).orderBy(desc(boxes.createdAt))
+			: this.db.select().from(boxes).orderBy(desc(boxes.createdAt));
+		const result = await query;
 		if (result.length === 0) return [];
 
 		const [allCurrencies, allTags, relations] = await Promise.all([
@@ -113,8 +121,8 @@ export class BoxEntity {
 		});
 	}
 
-	async update(id: string, updates: Partial<Box> & { metadata?: Record<string, string> | null }): Promise<Box | null> {
-		const existing = await this.get(id);
+	async update(id: string, updates: Partial<Box> & { metadata?: Record<string, string> | null }, userId?: string): Promise<Box | null> {
+		const existing = await this.get(id, userId);
 		if (!existing) return null;
 
 		const updateData: Record<string, unknown> = { updatedAt: new Date() };
@@ -133,8 +141,16 @@ export class BoxEntity {
 		return this.get(id);
 	}
 
-	async delete(id: string): Promise<DeleteBoxResult> {
+	async delete(id: string, userId?: string): Promise<DeleteBoxResult> {
 		return this.db.transaction(async (tx) => {
+			// Verify ownership if userId provided
+			if (userId) {
+				const boxResult = await tx.select({ id: boxes.id }).from(boxes).where(and(eq(boxes.id, id), eq(boxes.userId, userId))).limit(1);
+				if (!boxResult[0]) {
+					return { deleted: false, sadaqahsDeleted: 0, collectionsDeleted: 0 };
+				}
+			}
+
 			const [sadaqahCount, collectionCount] = await Promise.all([
 				tx.select({ count: count() }).from(sadaqahs).where(eq(sadaqahs.boxId, id)).then((r) => r[0]?.count ?? 0),
 				tx.select({ count: count() }).from(collections).where(eq(collections.boxId, id)).then((r) => r[0]?.count ?? 0),
@@ -203,19 +219,24 @@ export class BoxEntity {
 
 	// ============== Collection (Empty Box) ==============
 
-	async collect(id: string): Promise<CollectionResult | null> {
+	async collect(id: string, userId?: string): Promise<CollectionResult | null> {
 		return this.db.transaction(async (tx) => {
-			const boxResult = await tx.select().from(boxes).where(eq(boxes.id, id)).limit(1);
+			const query = userId
+				? tx.select().from(boxes).where(and(eq(boxes.id, id), eq(boxes.userId, userId))).limit(1)
+				: tx.select().from(boxes).where(eq(boxes.id, id)).limit(1);
+			const boxResult = await query;
 			const box = boxResult[0];
 			if (!box) return null;
 
 			const timestamp = new Date();
 			const collectionId = generateCollectionId();
 			const currencyId = box.currencyId || "cur_default";
-
+			const boxUserId = box.userId;
+			
 			await tx.insert(collections).values({
 				id: collectionId,
 				boxId: id,
+				userId: boxUserId,
 				emptiedAt: timestamp,
 				sadaqahsCollected: box.count,
 				totalValue: box.totalValue,
@@ -259,11 +280,20 @@ export class BoxEntity {
 
 	async getCollections(
 		boxId: string,
-		options?: { page?: number; limit?: number }
+		options?: { page?: number; limit?: number },
+		userId?: string
 	): Promise<CollectionsListResult> {
 		const page = options?.page || DEFAULT_PAGE;
 		const limit = Math.min(options?.limit || DEFAULT_LIMIT, 100);
 		const offset = (page - 1) * limit;
+
+		// Verify box ownership
+		if (userId) {
+			const boxResult = await this.db.select({ id: boxes.id }).from(boxes).where(and(eq(boxes.id, boxId), eq(boxes.userId, userId))).limit(1);
+			if (!boxResult[0]) {
+				return { collections: [], total: 0 };
+			}
+		}
 
 		const [cols, totalResult] = await Promise.all([
 			this.db

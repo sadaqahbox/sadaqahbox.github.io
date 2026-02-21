@@ -4,8 +4,9 @@
  */
 
 import { createRoute, z, type OpenAPIHono } from "@hono/zod-openapi";
-import type { Context } from "hono";
+import type { Context, Next } from "hono";
 import { success } from "./response";
+import type { MiddlewareHandler } from "hono";
 
 // ============== Common Response Schemas ==============
 
@@ -146,6 +147,8 @@ export interface RouteConfig<
 	body?: B;
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	responses: Record<string, any>;
+	/** Whether this route requires authentication (adds security to OpenAPI docs) */
+	requireAuth?: boolean;
 }
 
 /**
@@ -173,6 +176,12 @@ export function buildRoute<
 		summary: config.summary,
 		request: Object.keys(request).length > 0 ? request : undefined,
 		responses: config.responses,
+		...(config.requireAuth ? {
+			security: [
+				{ apiKeyCookie: [] },
+				{ bearerAuth: [] },
+			],
+		} : {}),
 	});
 }
 
@@ -226,6 +235,7 @@ export interface RouteDefinition {
 	route: ReturnType<typeof createRoute>;
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	handler: (c: Context<any>) => Promise<Response | void>;
+	middleware?: MiddlewareHandler<{ Bindings: Env }>[];
 }
 
 /**
@@ -236,7 +246,7 @@ export function registerRoute(
 	definition: RouteDefinition
 ): void {
 	// @ts-expect-error - Type mismatch for routes without params
-	app.openapi(definition.route, definition.handler);
+	app.openapi(definition.route, definition.handler, ...(definition.middleware || []));
 }
 
 /**

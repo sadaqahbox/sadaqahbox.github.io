@@ -28,6 +28,7 @@ export function mapSadaqah(sadaqah: DbSadaqah): Sadaqah {
 		boxId: sadaqah.boxId,
 		value: sadaqah.value,
 		currencyId: sadaqah.currencyId,
+		userId: sadaqah.userId,
 		createdAt: new Date(sadaqah.createdAt).toISOString(),
 	};
 }

@@ -47,6 +47,7 @@ export interface Sadaqah {
 	value: number;
 	currencyId: string;
 	currency?: Currency;
+	userId: string;
 	createdAt: string;
 }
 

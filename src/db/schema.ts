@@ -45,10 +45,13 @@ export const boxes = sqliteTable(
     count: integer("count").notNull().default(0),
     totalValue: real("totalValue").notNull().default(0),
     currencyId: text("currencyId").references(() => currencies.id),
+    userId: text("userId")
+      .notNull()
+      .references(() => authSchema.users.id, { onDelete: "cascade" }),
     createdAt: integer("createdAt", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updatedAt", { mode: "timestamp" }).notNull(),
   },
-  (table) => [index("Box_createdAt_idx").on(table.createdAt)]
+  (table) => [index("Box_createdAt_idx").on(table.createdAt), index("Box_userId_idx").on(table.userId)]
 );
 
 // ============== Sadaqah Table ==============
@@ -63,12 +66,16 @@ export const sadaqahs = sqliteTable(
     currencyId: text("currencyId")
       .notNull()
       .references(() => currencies.id),
+    userId: text("userId")
+      .notNull()
+      .references(() => authSchema.users.id, { onDelete: "cascade" }),
     createdAt: integer("createdAt", { mode: "timestamp" }).notNull(),
   },
   (table) => [
     index("Sadaqah_boxId_idx").on(table.boxId),
     index("Sadaqah_createdAt_idx").on(table.createdAt),
     index("Sadaqah_currencyId_idx").on(table.currencyId),
+    index("Sadaqah_userId_idx").on(table.userId),
   ]
 );
 
@@ -80,6 +87,9 @@ export const collections = sqliteTable(
     boxId: text("boxId")
       .notNull()
       .references(() => boxes.id, { onDelete: "cascade" }),
+    userId: text("userId")
+      .notNull()
+      .references(() => authSchema.users.id, { onDelete: "cascade" }),
     emptiedAt: integer("emptiedAt", { mode: "timestamp" }).notNull(),
     sadaqahsCollected: integer("sadaqahsCollected").notNull(),
     totalValue: real("totalValue").notNull(),
@@ -89,6 +99,7 @@ export const collections = sqliteTable(
   },
   (table) => [
     index("Collection_boxId_idx").on(table.boxId),
+    index("Collection_userId_idx").on(table.userId),
     index("Collection_emptiedAt_idx").on(table.emptiedAt),
     index("Collection_currencyId_idx").on(table.currencyId),
   ]
@@ -158,6 +169,10 @@ export const boxesRelations = relations(boxes, ({ one, many }) => ({
     fields: [boxes.currencyId],
     references: [currencies.id],
   }),
+  owner: one(authSchema.users, {
+    fields: [boxes.userId],
+    references: [authSchema.users.id],
+  }),
   sadaqahs: many(sadaqahs),
   collections: many(collections),
   boxTags: many(boxTags),
@@ -172,6 +187,10 @@ export const sadaqahsRelations = relations(sadaqahs, ({ one }) => ({
     fields: [sadaqahs.currencyId],
     references: [currencies.id],
   }),
+  owner: one(authSchema.users, {
+    fields: [sadaqahs.userId],
+    references: [authSchema.users.id],
+  }),
 }));
 
 export const collectionsRelations = relations(collections, ({ one }) => ({
@@ -182,6 +201,10 @@ export const collectionsRelations = relations(collections, ({ one }) => ({
   currency: one(currencies, {
     fields: [collections.currencyId],
     references: [currencies.id],
+  }),
+  owner: one(authSchema.users, {
+    fields: [collections.userId],
+    references: [authSchema.users.id],
   }),
 }));
 

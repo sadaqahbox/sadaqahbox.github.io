@@ -6,6 +6,7 @@ import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { TagSchema, BoxSchema, CreateTagBodySchema, createItemResponseSchema } from "../domain/schemas";
 import { getTagEntity } from "../entities";
+import { getCurrentUser } from "../middleware";
 import { success, notFound, conflict } from "../shared/response";
 import {
 	buildRoute,
@@ -51,6 +52,7 @@ export const createRoute = buildRoute({
 		...create201Response(CreateResponseSchema, "Returns the created tag"),
 		...create409Response("Tag already exists"),
 	},
+	requireAuth: true,
 });
 
 export const createHandler = async (c: Context<{ Bindings: Env }>) => {
@@ -110,6 +112,7 @@ export const deleteRoute = buildRoute({
 		...create200Response(DeleteResponseSchema, "Tag deleted"),
 		...create404Response("Tag not found"),
 	},
+	requireAuth: true,
 });
 
 export const deleteHandler = async (c: Context<{ Bindings: Env }>) => {
@@ -144,6 +147,7 @@ export const boxesRoute = buildRoute({
 });
 
 export const boxesHandler = async (c: Context<{ Bindings: Env }>) => {
+	const user = getCurrentUser(c);
 	const { tagId } = getParams<{ tagId: string }>(c);
 
 	const tagEntity = getTagEntity(c);
@@ -153,6 +157,6 @@ export const boxesHandler = async (c: Context<{ Bindings: Env }>) => {
 		return notFound("Tag", tagId);
 	}
 
-	const boxes = await tagEntity.getBoxes(tagId);
+	const boxes = await tagEntity.getBoxes(tagId, user?.id);
 	return c.json(success({ tag, boxes }));
 };

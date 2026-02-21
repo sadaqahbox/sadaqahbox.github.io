@@ -51,6 +51,7 @@ export const createRoute = buildRoute({
 		...create201Response(CreateResponseSchema, "Returns the created currency"),
 		...create409Response("Currency already exists"),
 	},
+	requireAuth: true,
 });
 
 export const createHandler = async (c: Context<{ Bindings: Env }>) => {
@@ -121,6 +122,7 @@ export const deleteRoute = buildRoute({
 		...create200Response(DeleteResponseSchema, "Currency deleted"),
 		...create404Response("Currency not found"),
 	},
+	requireAuth: true,
 });
 
 export const deleteHandler = async (c: Context<{ Bindings: Env }>) => {

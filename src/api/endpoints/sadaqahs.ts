@@ -11,6 +11,7 @@ import {
 	createItemResponseSchema,
 } from "../domain/schemas";
 import { getSadaqahEntity, getBoxEntity, getCurrencyEntity } from "../entities";
+import { getCurrentUser } from "../middleware";
 import { success, notFound, validationError } from "../shared/response";
 import {
 	buildRoute,
@@ -68,9 +69,11 @@ export const listRoute = buildRoute({
 		...create200Response(ListResponseSchema, "Returns sadaqahs"),
 		...create404Response("Box not found"),
 	},
+	requireAuth: true,
 });
 
 export const listHandler = async (c: Context<{ Bindings: Env }>) => {
+	const user = getCurrentUser(c);
 	const { boxId } = getParams<{ boxId: string }>(c);
 	const { page, limit, from, to } = getQuery<{
 		page: number;
@@ -79,12 +82,12 @@ export const listHandler = async (c: Context<{ Bindings: Env }>) => {
 		to?: string;
 	}>(c);
 
-	const box = await getBoxEntity(c).get(boxId);
+	const box = await getBoxEntity(c).get(boxId, user.id);
 	if (!box) {
 		return notFound("Box", boxId);
 	}
 
-	const result = await getSadaqahEntity(c).list(boxId, { page, limit, from, to });
+	const result = await getSadaqahEntity(c).list(boxId, { page, limit, from, to }, user.id);
 	return c.json(success({
 		sadaqahs: result.sadaqahs,
 		total: result.total,
@@ -113,9 +116,11 @@ export const addRoute = buildRoute({
 		...create400Response("Invalid input"),
 		...create404Response("Box not found"),
 	},
+	requireAuth: true,
 });
 
 export const addHandler = async (c: Context<{ Bindings: Env }>) => {
+	const user = getCurrentUser(c);
 	const { boxId } = getParams<{ boxId: string }>(c);
 	const { amount, value, currencyCode, metadata } = getBody<{
 		amount?: number;
@@ -124,7 +129,7 @@ export const addHandler = async (c: Context<{ Bindings: Env }>) => {
 		metadata?: Record<string, string>;
 	}>(c);
 
-	const box = await getBoxEntity(c).get(boxId);
+	const box = await getBoxEntity(c).get(boxId, user.id);
 	if (!box) {
 		return notFound("Box", boxId);
 	}
@@ -143,6 +148,7 @@ export const addHandler = async (c: Context<{ Bindings: Env }>) => {
 		amount: sadaqahAmount,
 		value,
 		currencyId: currency.id,
+		userId: user.id,
 		metadata,
 	});
 
@@ -180,10 +186,18 @@ export const getRoute = buildRoute({
 		...create200Response(GetResponseSchema, "Returns the sadaqah"),
 		...create404Response("Sadaqah not found"),
 	},
+	requireAuth: true,
 });
 
 export const getHandler = async (c: Context<{ Bindings: Env }>) => {
+	const user = getCurrentUser(c);
 	const { boxId, sadaqahId } = getParams<{ boxId: string; sadaqahId: string }>(c);
+
+	// Verify box ownership
+	const box = await getBoxEntity(c).get(boxId, user.id);
+	if (!box) {
+		return notFound("Box", boxId);
+	}
 
 	const sadaqah = await getSadaqahEntity(c).get(boxId, sadaqahId);
 	if (!sadaqah) {
@@ -207,12 +221,20 @@ export const deleteRoute = buildRoute({
 		...create200Response(DeleteResponseSchema, "Sadaqah deleted"),
 		...create404Response("Sadaqah not found"),
 	},
+	requireAuth: true,
 });
 
 export const deleteHandler = async (c: Context<{ Bindings: Env }>) => {
+	const user = getCurrentUser(c);
 	const { boxId, sadaqahId } = getParams<{ boxId: string; sadaqahId: string }>(c);
 
-	const deleted = await getSadaqahEntity(c).delete(boxId, sadaqahId);
+	// Verify box ownership
+	const box = await getBoxEntity(c).get(boxId, user.id);
+	if (!box) {
+		return notFound("Box", boxId);
+	}
+
+	const deleted = await getSadaqahEntity(c).delete(boxId, sadaqahId, user.id);
 	if (!deleted) {
 		return notFound("Sadaqah", sadaqahId);
 	}

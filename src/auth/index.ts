@@ -1,7 +1,7 @@
 import type { D1Database, IncomingRequestCfProperties, KVNamespace } from "@cloudflare/workers-types";
 import { betterAuth } from "better-auth";
 import { withCloudflare } from "better-auth-cloudflare";
-import { anonymous, openAPI } from "better-auth/plugins";
+import { admin, anonymous, openAPI } from "better-auth/plugins";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { drizzle } from "drizzle-orm/d1";
 import { schema } from "../db";
@@ -37,9 +37,17 @@ function createAuth(env?: AuthEnv, cf?: IncomingRequestCfProperties) {
                     enabled: true,
                 },
                 plugins: [
+                    admin() as any,
                     anonymous(),
-                    openAPI({disableDefaultReference:true}),
-                    passkey(), 
+                    openAPI({
+                        disableDefaultReference: true,
+                        apiReference: {
+                            servers: [
+                                { url: "/api/auth", description: "Auth API" }
+                            ]
+                        }
+                    }),
+                    passkey(),
                 ],
                 rateLimit: {
                     enabled: true,

@@ -51,6 +51,7 @@ export const createRoute = buildRoute({
 		...create201Response(CreateResponseSchema, "Returns the created currency type"),
 		...create409Response("Currency type already exists"),
 	},
+	requireAuth: true,
 });
 
 export const createHandler = async (c: Context<{ Bindings: Env }>) => {
@@ -113,6 +114,7 @@ export const deleteRoute = buildRoute({
 		...create200Response(DeleteResponseSchema, "Currency type deleted"),
 		...create404Response("Currency type not found"),
 	},
+	requireAuth: true,
 });
 
 export const deleteHandler = async (c: Context<{ Bindings: Env }>) => {
@@ -140,6 +142,7 @@ export const initializeRoute = buildRoute({
 	tags: ["Currency Types"],
 	summary: "Initialize default currency types (Fiat, Crypto, Commodity)",
 	responses: create200Response(InitializeResponseSchema, "Default currency types initialized"),
+	requireAuth: true,
 });
 
 export const initializeHandler = async (c: Context<{ Bindings: Env }>) => {

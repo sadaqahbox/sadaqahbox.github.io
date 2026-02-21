@@ -20,6 +20,7 @@ export class SadaqahEntity {
 		boxId: string;
 		value: number;
 		currencyId: string;
+		userId: string;
 		metadata?: Record<string, string>;
 	}): Promise<{ sadaqah: Sadaqah; updatedBox: Box } | null> {
 		return this.db.transaction(async (tx) => {
@@ -35,6 +36,7 @@ export class SadaqahEntity {
 				boxId: data.boxId,
 				value: data.value,
 				currencyId: data.currencyId,
+				userId: data.userId,
 				createdAt: timestamp,
 			});
 
@@ -66,6 +68,7 @@ export class SadaqahEntity {
 					boxId: data.boxId,
 					value: data.value,
 					currencyId: data.currencyId,
+					userId: data.userId,
 					createdAt: timestamp.toISOString(),
 				},
 				updatedBox,
@@ -91,14 +94,14 @@ export class SadaqahEntity {
 		return mapped;
 	}
 
-	async delete(boxId: string, sadaqahId: string): Promise<boolean> {
+	async delete(boxId: string, sadaqahId: string, userId?: string): Promise<boolean> {
 		return this.db.transaction(async (tx) => {
-			const sadaqahResult = await tx
-				.select()
-				.from(sadaqahs)
-				.where(eq(sadaqahs.id, sadaqahId))
-				.limit(1);
+			// Build query with optional user filter
+			const query = userId
+				? tx.select().from(sadaqahs).where(and(eq(sadaqahs.id, sadaqahId), eq(sadaqahs.userId, userId))).limit(1)
+				: tx.select().from(sadaqahs).where(eq(sadaqahs.id, sadaqahId)).limit(1);
 			
+			const sadaqahResult = await query;
 			const sadaqah = sadaqahResult[0];
 			if (!sadaqah || sadaqah.boxId !== boxId) return false;
 
@@ -123,15 +126,23 @@ export class SadaqahEntity {
 
 	async list(
 		boxId: string,
-		options?: { page?: number; limit?: number; from?: string; to?: string }
+		options?: { page?: number; limit?: number; from?: string; to?: string },
+		userId?: string
 	): Promise<ListSadaqahsResult> {
 		const page = options?.page || 1;
 		const limit = Math.min(options?.limit || 50, 100);
 		const from = options?.from;
 		const to = options?.to;
 
-		const boxResult = await this.db.select().from(boxes).where(eq(boxes.id, boxId)).limit(1);
+		// Verify box ownership if userId provided
+		const boxQuery = userId
+			? this.db.select().from(boxes).where(and(eq(boxes.id, boxId), eq(boxes.userId, userId))).limit(1)
+			: this.db.select().from(boxes).where(eq(boxes.id, boxId)).limit(1);
+		const boxResult = await boxQuery;
 		const box = boxResult[0];
+		if (!box) {
+			return { sadaqahs: [], total: 0, summary: { totalSadaqahs: 0, totalValue: 0, currency: await new CurrencyEntity(this.db).getDefault() } };
+		}
 
 		// Build where conditions
 		const conditions: ReturnType<typeof eq>[] = [eq(sadaqahs.boxId, boxId)];
@@ -187,6 +198,7 @@ export class SadaqahEntity {
 		amount?: number;
 		value?: number;
 		currencyId: string;
+		userId: string;
 		metadata?: Record<string, string>;
 	}): Promise<AddMultipleResult | null> {
 		const amount = Math.min(
@@ -210,6 +222,7 @@ export class SadaqahEntity {
 					boxId: options.boxId,
 					value,
 					currencyId: options.currencyId,
+					userId: options.userId,
 					createdAt: timestamp,
 				});
 				createdSadaqahs.push({
@@ -217,6 +230,7 @@ export class SadaqahEntity {
 					boxId: options.boxId,
 					value,
 					currencyId: options.currencyId,
+					userId: options.userId,
 					createdAt: timestamp.toISOString(),
 				});
 			}

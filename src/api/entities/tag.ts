@@ -2,7 +2,7 @@
  * Tag entity - Database operations only
  */
 
-import { eq, desc, inArray } from "drizzle-orm";
+import { eq, desc, inArray, and } from "drizzle-orm";
 import type { Database } from "../../db";
 import { tags, boxTags, boxes } from "../../db/schema";
 import type { Tag, Box, CreateTagOptions } from "../domain/types";
@@ -91,25 +91,43 @@ export class TagEntity {
 
 	// ============== Box Relations ==============
 
-	async getBoxes(tagId: string): Promise<Box[]> {
+	async getBoxes(tagId: string, userId?: string): Promise<Box[]> {
 		const tag = await this.get(tagId);
 		if (!tag) return [];
 
-		const result = await this.db
-			.select({
-				boxId: boxes.id,
-				name: boxes.name,
-				description: boxes.description,
-				count: boxes.count,
-				totalValue: boxes.totalValue,
-				currencyId: boxes.currencyId,
-				createdAt: boxes.createdAt,
-				updatedAt: boxes.updatedAt,
-			})
-			.from(boxTags)
-			.innerJoin(boxes, eq(boxTags.boxId, boxes.id))
-			.where(eq(boxTags.tagId, tagId))
-			.orderBy(desc(boxes.createdAt));
+		const query = userId
+			? this.db
+				.select({
+					boxId: boxes.id,
+					name: boxes.name,
+					description: boxes.description,
+					count: boxes.count,
+					totalValue: boxes.totalValue,
+					currencyId: boxes.currencyId,
+					createdAt: boxes.createdAt,
+					updatedAt: boxes.updatedAt,
+				})
+				.from(boxTags)
+				.innerJoin(boxes, eq(boxTags.boxId, boxes.id))
+				.where(and(eq(boxTags.tagId, tagId), eq(boxes.userId, userId)))
+				.orderBy(desc(boxes.createdAt))
+			: this.db
+				.select({
+					boxId: boxes.id,
+					name: boxes.name,
+					description: boxes.description,
+					count: boxes.count,
+					totalValue: boxes.totalValue,
+					currencyId: boxes.currencyId,
+					createdAt: boxes.createdAt,
+					updatedAt: boxes.updatedAt,
+				})
+				.from(boxTags)
+				.innerJoin(boxes, eq(boxTags.boxId, boxes.id))
+				.where(eq(boxTags.tagId, tagId))
+				.orderBy(desc(boxes.createdAt));
+
+		const result = await query;
 
 		const currencyIds = [...new Set(result.map((r) => r.currencyId).filter(Boolean))];
 		const currencyMap = await new CurrencyEntity(this.db).getMany(currencyIds as string[]);
