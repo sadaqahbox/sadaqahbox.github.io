@@ -7,10 +7,10 @@
     "dev": "bunx vite",
     "dev:static": "bunx vite --config vite.static.config.ts",
     "preview": "bun run build && bunx wrangler dev",
-    "build": "bunx vite build",
-    "deploy": "bun run build && bunx wrangler deploy",
-    "cf-typegen": "bunx wrangler types",
-    "build:static": "bunx vite build --config vite.static.config.ts",
+    "generate:favicons": "node scripts/generate-favicons.js",
+    "generate:llms": "bun scripts/generate-llms.ts",
+    "build": "bun run generate:llms && bunx vite build",
+    "build:static": "bun run generate:llms && bunx vite build --config vite.static.config.ts",
     "build:worker": "bunx wrangler deploy --config wrangler.worker.jsonc --dry-run --outdir=dist/worker",
     "deploy:worker": "bunx wrangler deploy --config wrangler.worker.jsonc",
     "deploy:static": "echo 'Deploy dist/static to your static host (e.g., GitHub Pages)'",
@@ -23,8 +23,7 @@
     "studio:dev": "drizzle-kit studio",
     "studio:prd": "cross-env NODE_ENV=production drizzle-kit studio",
     "test": "bun test",
-    "test:coverage": "bun test --coverage",
-    "generate:favicons": "node scripts/generate-favicons.js"
+    "test:coverage": "bun test --coverage"
   },
   "dependencies": {
     "@base-ui/react": "^1.1.0",
