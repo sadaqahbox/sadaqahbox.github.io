@@ -47,6 +47,7 @@ export const boxes = sqliteTable(
     count: integer("count").notNull().default(0),
     totalValue: real("totalValue").notNull().default(0),
     currencyId: text("currencyId").references(() => currencies.id),
+    baseCurrencyId: text("baseCurrencyId").references(() => currencies.id),
     userId: text("userId")
       .notNull()
       .references(() => authSchema.users.id, { onDelete: "cascade" }),
@@ -56,6 +57,7 @@ export const boxes = sqliteTable(
   (table) => [
     index("Box_createdAt_idx").on(table.createdAt),
     index("Box_userId_idx").on(table.userId),
+    index("Box_baseCurrencyId_idx").on(table.baseCurrencyId),
     // Composite indexes for common query patterns
     index("Box_userId_createdAt_idx").on(table.userId, table.createdAt),
     index("Box_userId_count_idx").on(table.userId, table.count),
@@ -159,6 +161,7 @@ export const currenciesRelations = relations(currencies, ({ one, many }) => ({
   }),
   sadaqahs: many(sadaqahs),
   boxes: many(boxes),
+  baseCurrencyBoxes: many(boxes, { relationName: "boxBaseCurrency" }),
   collections: many(collections),
 }));
 
@@ -181,6 +184,11 @@ export const boxesRelations = relations(boxes, ({ one, many }) => ({
   currency: one(currencies, {
     fields: [boxes.currencyId],
     references: [currencies.id],
+  }),
+  baseCurrency: one(currencies, {
+    fields: [boxes.baseCurrencyId],
+    references: [currencies.id],
+    relationName: "boxBaseCurrency",
   }),
   owner: one(authSchema.users, {
     fields: [boxes.userId],

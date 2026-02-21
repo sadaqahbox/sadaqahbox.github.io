@@ -96,10 +96,16 @@ export const BoxSchema = z.object({
   metadata: MetadataSchema,
   count: z.number().int().nonnegative().openapi({ description: "Total sadaqahs in box" }),
   totalValue: z.number().nonnegative().openapi({ 
-    description: "Total value in grams of gold (universal base currency)" 
+    description: "Total value in base currency" 
   }),
   currencyId: z.string().optional(),
   currency: CurrencySchema.optional(),
+  baseCurrencyId: z.string().optional().openapi({ 
+    description: "Base currency ID for the box - cannot be changed after sadaqahs are added" 
+  }),
+  baseCurrency: CurrencySchema.optional().openapi({ 
+    description: "Base currency for the box - all values are stored in this currency" 
+  }),
   tags: TagSchema.array().optional(),
   createdAt: IsoDateSchema,
   updatedAt: IsoDateSchema,
@@ -115,6 +121,9 @@ export const CreateBoxSchema = z.object({
   description: z.string().optional(),
   metadata: MetadataSchema,
   tagIds: z.array(z.string()).optional(),
+  baseCurrencyId: z.string().optional().openapi({ 
+    description: "Base currency ID for the box - defaults to USD if not provided. Cannot be changed after sadaqahs are added." 
+  }),
 });
 
 export type CreateBoxInput = z.infer<typeof CreateBoxSchema>;
@@ -123,6 +132,9 @@ export const UpdateBoxSchema = z.object({
   name: z.string().min(1).max(constants.MAX_BOX_NAME_LENGTH).optional(),
   description: z.string().optional(),
   metadata: MetadataSchema,
+  baseCurrencyId: z.string().optional().openapi({ 
+    description: "Base currency ID - can only be changed if box has no sadaqahs" 
+  }),
 });
 
 export type UpdateBoxInput = z.infer<typeof UpdateBoxSchema>;

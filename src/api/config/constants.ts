@@ -34,3 +34,21 @@ export const DEFAULT_CACHE_TTL_SECONDS = 300; // 5 minutes
 
 export const CSRF_TOKEN_LENGTH = 32;
 export const CSRF_COOKIE_NAME = "csrf-token";
+
+// ============== Currency ==============
+
+/**
+ * Default base currency code for new boxes
+ * Used when no baseCurrencyId is specified during box creation
+ */
+export const DEFAULT_BASE_CURRENCY_CODE = "XAU";
+
+/**
+ * Default base currency name
+ */
+export const DEFAULT_BASE_CURRENCY_NAME = "Gold";
+
+/**
+ * Default base currency symbol
+ */
+export const DEFAULT_BASE_CURRENCY_SYMBOL = "";

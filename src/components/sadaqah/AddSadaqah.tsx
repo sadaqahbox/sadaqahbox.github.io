@@ -143,17 +143,17 @@ export function AddSadaqah({ boxId, onAdded, onCancel, isLoading }: AddSadaqahPr
                 itemToStringLabel={(v)=>selectedCurrency?.name + " ("+ selectedCurrency?.symbol+")"}
               >
                 <ComboboxInput
-                  placeholder={isFetchingCurrencies ? "Loading..." : "Select currency..."}
+                  placeholder={isFetchingCurrencies ? "Loading..." : "Search by code or name..."}
                   showClear
                 />
                 <ComboboxContent>
                   <ComboboxEmpty>No currencies found.</ComboboxEmpty>
                   <ComboboxList>
-                    {(group, index) => (
+                    {(group: CurrencyGroup, index: number) => (
                       <ComboboxGroup key={group.value} items={group.items}>
                         <ComboboxLabel>{group.value}</ComboboxLabel>
                         <ComboboxCollection>
-                          {(item) => (
+                          {(item: Currency) => (
                             <ComboboxItem key={item.id} value={item.id}>
                               <span className="font-medium w-12">{item.code}</span>
                               <span className="text-muted-foreground text-xs truncate">

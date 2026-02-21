@@ -12,7 +12,7 @@ import { BaseService, createServiceFactory } from "./base-service";
 import { BoxRepository, SadaqahRepository, CurrencyRepository, TagRepository, CollectionRepository } from "../repositories";
 import type { BoxRecord } from "../repositories/box.repository";
 import type { Box, BoxStats, BoxSummary, Collection, Tag, Currency } from "../schemas";
-import { DEFAULT_PAGE, DEFAULT_LIMIT } from "../config/constants";
+import { DEFAULT_PAGE, DEFAULT_LIMIT, DEFAULT_BASE_CURRENCY_CODE } from "../config/constants";
 import { sanitizeString } from "../shared/validators";
 import { dbBatch } from "../shared/transaction";
 import {
@@ -31,12 +31,14 @@ export interface CreateBoxInput {
   metadata?: Record<string, string>;
   tagIds?: string[];
   userId: string;
+  baseCurrencyId?: string;
 }
 
 export interface UpdateBoxInput {
   name?: string;
   description?: string;
   metadata?: Record<string, string> | null;
+  baseCurrencyId?: string;
 }
 
 export interface ListBoxesOptions {
@@ -100,12 +102,23 @@ export class BoxService extends BaseService {
       throw new BoxValidationError("Box name is required");
     }
 
+    // Get or set default base currency
+    let baseCurrencyId = input.baseCurrencyId;
+    if (!baseCurrencyId) {
+      // Try to find the default currency (USD)
+      const defaultCurrency = await this.currencyRepo.findByCode(DEFAULT_BASE_CURRENCY_CODE);
+      if (defaultCurrency) {
+        baseCurrencyId = defaultCurrency.id;
+      }
+    }
+
     // Create box via repository
     const box = await this.boxRepo.create({
       name,
       description: input.description,
       metadata: input.metadata,
       userId: input.userId,
+      baseCurrencyId,
     });
 
     // Add tags if provided
@@ -187,7 +200,7 @@ export class BoxService extends BaseService {
     if (!existing) return null;
 
     // Validate input
-    const updateData: { name?: string; description?: string | null; metadata?: Record<string, string> | null } = {};
+    const updateData: { name?: string; description?: string | null; metadata?: Record<string, string> | null; baseCurrencyId?: string } = {};
 
     if (input.name !== undefined) {
       const name = sanitizeString(input.name);
@@ -201,6 +214,16 @@ export class BoxService extends BaseService {
     }
     if (input.metadata !== undefined) {
       updateData.metadata = input.metadata;
+    }
+    
+    // Handle baseCurrencyId update - only allowed if box has no sadaqahs
+    if (input.baseCurrencyId !== undefined) {
+      // Check if box has sadaqahs
+      const sadaqahCount = await this.sadaqahRepo.countByBoxId(boxId);
+      if (sadaqahCount > 0) {
+        throw new BoxValidationError("Cannot change base currency after sadaqahs have been added to the box");
+      }
+      updateData.baseCurrencyId = input.baseCurrencyId;
     }
 
     // Update via repository

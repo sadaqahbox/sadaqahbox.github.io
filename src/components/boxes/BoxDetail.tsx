@@ -125,8 +125,19 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
   };
 
   const getCurrencyDisplay = () => {
-    if (!box.currency) return "";
-    return box.currency.symbol || box.currency.code;
+    // Use baseCurrency for display since totalValue is stored in base currency
+    if (box.baseCurrency) return box.baseCurrency.symbol || box.baseCurrency.code;
+    if (box.currency) return box.currency.symbol || box.currency.code;
+    return "";
+  };
+
+  const getBaseCurrencyInfo = () => {
+    if (!box.baseCurrency) return null;
+    return (
+      <div className="text-xs text-muted-foreground mt-1">
+        Base: {box.baseCurrency.code}
+      </div>
+    );
   };
 
   const unassignedTags = availableTags.filter((tag: Tag) => !box.tags?.some((t) => t.id === tag.id));
@@ -259,8 +270,9 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
             </Card>
             <Card>
               <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold">{box.totalValue}</div>
+                <div className="text-2xl font-bold">{box.totalValue.toFixed(2)}</div>
                 <div className="text-muted-foreground text-xs">{getCurrencyDisplay() || "Value"}</div>
+                {getBaseCurrencyInfo()}
               </CardContent>
             </Card>
             <Card>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { tagsApi } from "@/api/client";
+import { tagsApi, currenciesApi } from "@/api/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { X, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Box, Tag } from "@/types";
+import type { Box, Tag, Currency } from "@/types";
 import type { CreateBoxBody } from "@/api/client";
+import { DEFAULT_BASE_CURRENCY_CODE } from "@/api/config";
 
 interface CreateBoxProps {
   onCreated: (box: Box) => void;
@@ -23,7 +24,10 @@ export function CreateBox({ onCreated, onCancel, createBox, isCreating = false }
   const [description, setDescription] = useState("");
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+  const [availableCurrencies, setAvailableCurrencies] = useState<Currency[]>([]);
+  const [selectedBaseCurrencyId, setSelectedBaseCurrencyId] = useState<string>("");
   const [fetchingTags, setFetchingTags] = useState(true);
+  const [fetchingCurrencies, setFetchingCurrencies] = useState(true);
 
   useEffect(() => {
     const fetchTags = async () => {
@@ -39,6 +43,27 @@ export function CreateBox({ onCreated, onCancel, createBox, isCreating = false }
     fetchTags();
   }, []);
 
+  useEffect(() => {
+    const fetchCurrencies = async () => {
+      try {
+        const currencies = await currenciesApi.getAll();
+        setAvailableCurrencies(currencies);
+        // Set default currency using the constant (USD if available, otherwise first one)
+        const defaultCurrency = currencies.find(c => c.code === DEFAULT_BASE_CURRENCY_CODE);
+        if (defaultCurrency) {
+          setSelectedBaseCurrencyId(defaultCurrency.id);
+        } else if (currencies.length > 0 && currencies[0]) {
+          setSelectedBaseCurrencyId(currencies[0].id);
+        }
+      } catch {
+        // Error handled by api.ts
+      } finally {
+        setFetchingCurrencies(false);
+      }
+    };
+    fetchCurrencies();
+  }, []);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
@@ -49,6 +74,7 @@ export function CreateBox({ onCreated, onCancel, createBox, isCreating = false }
         name,
         description,
         tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
+        baseCurrencyId: selectedBaseCurrencyId || undefined,
       });
     }
     
@@ -92,6 +118,27 @@ export function CreateBox({ onCreated, onCancel, createBox, isCreating = false }
               placeholder="Optional description..."
               rows={2}
             />
+          </Field>
+
+          <Field>
+            <FieldLabel htmlFor="base-currency">Base Currency</FieldLabel>
+            <select
+              id="base-currency"
+              value={selectedBaseCurrencyId}
+              onChange={(e) => setSelectedBaseCurrencyId(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={fetchingCurrencies}
+            >
+              <option value="">Select a currency</option>
+              {availableCurrencies.map((currency) => (
+                <option key={currency.id} value={currency.id}>
+                  {currency.code} - {currency.name} {currency.symbol ? `(${currency.symbol})` : ""}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground mt-1">
+              All sadaqah values will be converted to this currency. Cannot be changed after adding sadaqahs.
+            </p>
           </Field>
 
           {availableTags.length > 0 && (

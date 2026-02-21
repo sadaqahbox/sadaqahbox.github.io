@@ -167,12 +167,20 @@ export type HealthResponseDto = z.infer<typeof HealthResponseSchema>;
 
 // ============== Stats DTOs ==============
 
+const PrimaryCurrencySchema = z.object({
+  id: z.string(),
+  code: z.string(),
+  name: z.string(),
+  symbol: z.string().optional(),
+});
+
 export const StatsResponseSchema = z.object({
   success: z.boolean(),
   totalBoxes: z.number().int().nonnegative(),
   totalSadaqahs: z.number().int().nonnegative(),
   totalValue: z.number().nonnegative(),
   uniqueCurrencies: z.number().int().nonnegative(),
+  primaryCurrency: PrimaryCurrencySchema.nullable(),
 });
 
 export type StatsResponseDto = z.infer<typeof StatsResponseSchema>;

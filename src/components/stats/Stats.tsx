@@ -1,12 +1,14 @@
 import { motion } from "motion/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, HandHeart, Wallet } from "lucide-react";
+import { Package, HandHeart, Wallet, Coins } from "lucide-react";
+import type { PrimaryCurrency } from "@/hooks/useStats";
 
 interface StatsProps {
   stats: {
     totalBoxes: number;
     totalSadaqahs: number;
     totalValue: number;
+    primaryCurrency: PrimaryCurrency | null;
   };
 }
 
@@ -47,11 +49,12 @@ const numberVariants = {
 interface StatCardProps {
   title: string;
   value: string | number;
+  subtitle?: string;
   icon: React.ReactNode;
   delay?: number;
 }
 
-function StatCard({ title, value, icon, delay = 0 }: StatCardProps) {
+function StatCard({ title, value, subtitle, icon, delay = 0 }: StatCardProps) {
   return (
     <motion.div variants={cardVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
       <Card className="group overflow-hidden">
@@ -71,13 +74,49 @@ function StatCard({ title, value, icon, delay = 0 }: StatCardProps) {
           >
             {value}
           </motion.div>
+          {subtitle && (
+            <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
+          )}
         </CardContent>
       </Card>
     </motion.div>
   );
 }
 
+/**
+ * Format value with currency
+ */
+function formatCurrencyValue(value: number, currency: PrimaryCurrency | null): { display: string; subtitle: string } {
+  if (!currency) {
+    return {
+      display: value.toFixed(2),
+      subtitle: "No base currency set",
+    };
+  }
+  
+  // For gold and commodities, show more decimal places
+  const isCommodity = ["XAU", "XAG", "XPT", "XPd", "XCU", "XAL", "COCOA"].includes(currency.code);
+  const decimals = isCommodity ? 6 : 2;
+  
+  const symbol = currency.symbol || currency.code;
+  
+  return {
+    display: `${symbol}${value.toFixed(decimals)}`,
+    subtitle: `${currency.name}`,
+  };
+}
+
 export function Stats({ stats }: StatsProps) {
+  const { display: valueDisplay, subtitle: valueSubtitle } = formatCurrencyValue(
+    stats.totalValue,
+    stats.primaryCurrency
+  );
+  
+  // Use Coins icon for gold/commodities, Wallet for fiat
+  const ValueIcon = stats.primaryCurrency && ["XAU", "XAG", "XPT", "XPd", "XCU", "XAL", "COCOA"].includes(stats.primaryCurrency.code)
+    ? Coins
+    : Wallet;
+  
   return (
     <motion.div
       variants={containerVariants}
@@ -97,8 +136,9 @@ export function Stats({ stats }: StatsProps) {
       />
       <StatCard
         title="Total Value"
-        value={`$${stats.totalValue.toFixed(2)}`}
-        icon={<Wallet className="text-muted-foreground h-4 w-4" />}
+        value={valueDisplay}
+        subtitle={valueSubtitle}
+        icon={<ValueIcon className="text-muted-foreground h-4 w-4" />}
       />
     </motion.div>
   );

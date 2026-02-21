@@ -23,6 +23,8 @@ export const CurrencySchema = z.object({
   name: z.string(),
   symbol: z.string().optional(),
   currencyTypeId: z.string().optional(),
+  usdValue: z.number().nullable().optional(),
+  lastRateUpdate: z.string().nullable().optional(),
 });
 
 export const TagSchema = z.object({
@@ -40,6 +42,8 @@ export const BoxSchema = z.object({
   totalValue: z.number(),
   currencyId: z.string().optional(),
   currency: CurrencySchema.optional(),
+  baseCurrencyId: z.string().optional(),
+  baseCurrency: CurrencySchema.optional(),
   tags: TagSchema.array().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -76,6 +80,7 @@ export const CreateBoxBodySchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
   tagIds: z.string().array().optional(),
+  baseCurrencyId: z.string().optional(),
 });
 
 export const AddSadaqahBodySchema = z.object({

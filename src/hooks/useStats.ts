@@ -9,12 +9,24 @@ import { statsApi } from "@/api/client";
 import { queryKeys } from "@/lib/query-client";
 
 /**
+ * Primary currency type
+ */
+export interface PrimaryCurrency {
+    id: string;
+    code: string;
+    name: string;
+    symbol?: string;
+}
+
+/**
  * Dashboard stats type
  */
 export interface DashboardStats {
     totalBoxes: number;
     totalSadaqahs: number;
     totalValue: number;
+    uniqueCurrencies: number;
+    primaryCurrency: PrimaryCurrency | null;
 }
 
 /**

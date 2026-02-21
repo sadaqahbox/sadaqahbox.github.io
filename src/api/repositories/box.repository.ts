@@ -24,6 +24,7 @@ export interface BoxRecord {
   count: number;
   totalValue: number;
   currencyId: string | null;
+  baseCurrencyId: string | null;
   userId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -34,16 +35,19 @@ export interface CreateBoxData {
   description?: string;
   metadata?: Record<string, string>;
   userId: string;
+  baseCurrencyId?: string;
 }
 
 export interface UpdateBoxData {
   name?: string;
   description?: string | null;
   metadata?: Record<string, string> | null;
+  baseCurrencyId?: string;
 }
 
 export interface BoxWithRelations extends Box {
   currency?: Currency;
+  baseCurrency?: Currency;
   tags?: Tag[];
 }
 
@@ -69,6 +73,7 @@ export class BoxRepository {
       count: 0,
       totalValue: 0,
       currencyId: null,
+      baseCurrencyId: data.baseCurrencyId || null,
       userId: data.userId,
       createdAt: timestamp,
       updatedAt: timestamp,
@@ -81,6 +86,7 @@ export class BoxRepository {
       metadata: data.metadata,
       count: 0,
       totalValue: 0,
+      baseCurrencyId: data.baseCurrencyId,
       createdAt: timestamp.toISOString(),
       updatedAt: timestamp.toISOString(),
     };
@@ -110,6 +116,7 @@ export class BoxRepository {
         : eq(boxes.id, id),
       with: {
         currency: true,
+        baseCurrency: true,
         boxTags: {
           with: {
             tag: true,
@@ -129,6 +136,7 @@ export class BoxRepository {
       count: result.count,
       totalValue: result.totalValue,
       currencyId: result.currencyId || undefined,
+      baseCurrencyId: result.baseCurrencyId || undefined,
       createdAt: new Date(result.createdAt).toISOString(),
       updatedAt: new Date(result.updatedAt).toISOString(),
     };
@@ -141,6 +149,19 @@ export class BoxRepository {
         name: result.currency.name,
         symbol: result.currency.symbol || undefined,
         currencyTypeId: result.currency.currencyTypeId || undefined,
+      };
+    }
+
+    // Map baseCurrency if present
+    if (result.baseCurrency) {
+      box.baseCurrency = {
+        id: result.baseCurrency.id,
+        code: result.baseCurrency.code,
+        name: result.baseCurrency.name,
+        symbol: result.baseCurrency.symbol || undefined,
+        currencyTypeId: result.baseCurrency.currencyTypeId || undefined,
+        usdValue: result.baseCurrency.usdValue,
+        lastRateUpdate: result.baseCurrency.lastRateUpdate ? new Date(result.baseCurrency.lastRateUpdate).toISOString() : null,
       };
     }
 
@@ -168,6 +189,7 @@ export class BoxRepository {
       orderBy: [desc(boxes.createdAt)],
       with: {
         currency: true,
+        baseCurrency: true,
         boxTags: {
           with: {
             tag: true,
@@ -186,6 +208,7 @@ export class BoxRepository {
         count: result.count,
         totalValue: result.totalValue,
         currencyId: result.currencyId || undefined,
+        baseCurrencyId: result.baseCurrencyId || undefined,
         createdAt: new Date(result.createdAt).toISOString(),
         updatedAt: new Date(result.updatedAt).toISOString(),
       };
@@ -198,6 +221,19 @@ export class BoxRepository {
           name: result.currency.name,
           symbol: result.currency.symbol || undefined,
           currencyTypeId: result.currency.currencyTypeId || undefined,
+        };
+      }
+
+      // Map baseCurrency if present
+      if (result.baseCurrency) {
+        box.baseCurrency = {
+          id: result.baseCurrency.id,
+          code: result.baseCurrency.code,
+          name: result.baseCurrency.name,
+          symbol: result.baseCurrency.symbol || undefined,
+          currencyTypeId: result.baseCurrency.currencyTypeId || undefined,
+          usdValue: result.baseCurrency.usdValue,
+          lastRateUpdate: result.baseCurrency.lastRateUpdate ? new Date(result.baseCurrency.lastRateUpdate).toISOString() : null,
         };
       }
 
@@ -247,6 +283,9 @@ export class BoxRepository {
     }
     if (data.metadata !== undefined) {
       updateData.metadata = data.metadata ? JSON.stringify(data.metadata) : null;
+    }
+    if (data.baseCurrencyId !== undefined) {
+      updateData.baseCurrencyId = data.baseCurrencyId || null;
     }
 
     await this.db.update(boxes).set(updateData).where(eq(boxes.id, id));
