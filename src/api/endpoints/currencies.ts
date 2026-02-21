@@ -7,7 +7,7 @@
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { requireAuth, requireAdmin, getCurrentUser } from "../middleware";
-import { getCurrencyService } from "../services";
+import { getCurrencyService, GoldRateService } from "../services";
 import { CurrencySchema, CreateCurrencyBodySchema } from "../dtos";
 import {
 	buildRoute,
@@ -21,6 +21,7 @@ import {
 	create409Response,
 	type RouteDefinition,
 } from "../shared/route-builder";
+import { getDbFromContext } from "../../db";
 
 // ============== Schemas ==============
 
@@ -61,7 +62,7 @@ export const createRoute = buildRoute({
 });
 
 export const createHandler = async (c: Context<{ Bindings: Env }>) => {
-	const body = getBody<{ code: string; name: string; symbol?: string; currencyTypeId?: string }>(c);
+	const body = getBody<{ code: string; name: string; symbol?: string; currencyTypeId?: string; usdValue?: number }>(c);
 
 	try {
 		const currency = await getCurrencyService(c).createCurrency({
@@ -69,6 +70,7 @@ export const createHandler = async (c: Context<{ Bindings: Env }>) => {
 			name: body.name,
 			symbol: body.symbol,
 			currencyTypeId: body.currencyTypeId,
+			usdValue: body.usdValue,
 		});
 		return jsonSuccess(c, { currency }, 201);
 	} catch (error) {
@@ -129,6 +131,33 @@ export const deleteHandler = async (c: Context<{ Bindings: Env }>) => {
 	return jsonSuccess(c, { deleted: true });
 };
 
+// Update Gold Rates (Admin only)
+export const updateGoldRatesRoute = buildRoute({
+	method: "post",
+	path: "/api/currencies/update-gold-rates",
+	tags: ["Currencies"],
+	summary: "Update gold rates for all currencies",
+	description: "Fetches latest gold prices from external APIs and updates all currency gold values. Admin only.",
+	responses: create200Response(z.object({
+		success: z.boolean(),
+		updated: z.number(),
+		errors: z.array(z.string()).optional(),
+	}), "Returns number of currencies updated"),
+	requireAuth: true,
+});
+
+export const updateGoldRatesHandler = async (c: Context<{ Bindings: Env }>) => {
+	const db = getDbFromContext(c);
+	const goldRateService = GoldRateService.getInstance(db);
+	
+	const result = await goldRateService.updateCurrencyValues();
+	
+	return jsonSuccess(c, { 
+		updated: result.updated,
+		errors: result.errors.length > 0 ? result.errors : undefined,
+	});
+};
+
 // ============== Route Definitions ==============
 
 export const currencyRouteDefinitions: RouteDefinition[] = [
@@ -136,4 +165,5 @@ export const currencyRouteDefinitions: RouteDefinition[] = [
 	{ route: createRoute, handler: createHandler, middleware: [requireAuth, requireAdmin] },
 	{ route: getRoute, handler: getHandler, middleware: [requireAuth] },
 	{ route: deleteRoute, handler: deleteHandler, middleware: [requireAuth, requireAdmin] },
+	{ route: updateGoldRatesRoute, handler: updateGoldRatesHandler, middleware: [requireAuth, requireAdmin] },
 ];

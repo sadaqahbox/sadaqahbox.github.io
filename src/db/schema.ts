@@ -30,6 +30,8 @@ export const currencies = sqliteTable(
     name: text("name").notNull(),
     symbol: text("symbol"),
     currencyTypeId: text("currencyTypeId").references(() => currencyTypes.id),
+    usdValue: real("usdValue"), // USD value for 1 unit of this currency
+    lastRateUpdate: integer("lastRateUpdate", { mode: "timestamp" }), // When the rate was last updated
   },
   (table) => [index("Currency_code_idx").on(table.code), index("Currency_currencyTypeId_idx").on(table.currencyTypeId)]
 );

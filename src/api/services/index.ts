@@ -60,3 +60,17 @@ export {
 	type ListCollectionsOptions as ListUserCollectionsOptions,
 	type CreateCollectionInput,
 } from "./collection-service";
+
+// Rate service (currency and gold rates)
+export {
+	GoldRateService,
+	scheduleRateUpdate,
+	calculateGoldValue,
+	calculateGoldGrams,
+	convertGoldToCurrency,
+	type RateResult,
+	type CurrencyRate,
+} from "./gold-rate-service";
+
+// Re-export CurrencyWithRates for convenience
+export type { CurrencyWithRates, CurrencyWithGold } from "../entities/currency";

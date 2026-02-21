@@ -23,6 +23,8 @@ export interface CurrencyRecord {
   name: string;
   symbol?: string | null;
   currencyTypeId?: string | null;
+  usdValue?: number | null;
+  lastRateUpdate?: string | null;
 }
 
 export interface CreateCurrencyData {
@@ -30,6 +32,7 @@ export interface CreateCurrencyData {
   name: string;
   symbol?: string;
   currencyTypeId?: string;
+  usdValue?: number;
 }
 
 export interface CurrencyWithRelations extends Currency {
@@ -49,6 +52,7 @@ export class CurrencyRepository {
   async create(data: CreateCurrencyData): Promise<Currency> {
     const id = generateCurrencyId();
     const code = data.code.toUpperCase();
+    const now = data.usdValue ? new Date() : null;
 
     await this.db.insert(currencies).values({
       id,
@@ -56,6 +60,8 @@ export class CurrencyRepository {
       name: data.name,
       symbol: data.symbol || null,
       currencyTypeId: data.currencyTypeId || null,
+      usdValue: data.usdValue ?? null,
+      lastRateUpdate: now,
     });
 
     const currency: Currency = {
@@ -64,6 +70,8 @@ export class CurrencyRepository {
       name: data.name,
       symbol: data.symbol,
       currencyTypeId: data.currencyTypeId,
+      usdValue: data.usdValue ?? null,
+      lastRateUpdate: now ? now.toISOString() : null,
     };
 
     this.cacheCurrency(currency);
@@ -82,7 +90,18 @@ export class CurrencyRepository {
       .from(currencies)
       .where(eq(currencies.id, id))
       .limit(1);
-    return result[0] || null;
+    
+    if (!result[0]) return null;
+    
+    return {
+      id: result[0].id,
+      code: result[0].code,
+      name: result[0].name,
+      symbol: result[0].symbol,
+      currencyTypeId: result[0].currencyTypeId,
+      usdValue: result[0].usdValue,
+      lastRateUpdate: result[0].lastRateUpdate ? new Date(result[0].lastRateUpdate).toISOString() : null,
+    };
   }
 
   /**
@@ -104,6 +123,8 @@ export class CurrencyRepository {
       name: result.name,
       symbol: result.symbol || undefined,
       currencyTypeId: result.currencyTypeId || undefined,
+      usdValue: result.usdValue,
+      lastRateUpdate: result.lastRateUpdate ? new Date(result.lastRateUpdate).toISOString() : null,
     };
 
     if (result.currencyType) {
@@ -130,7 +151,18 @@ export class CurrencyRepository {
       .from(currencies)
       .where(eq(currencies.code, upperCode))
       .limit(1);
-    return result[0] || null;
+    
+    if (!result[0]) return null;
+    
+    return {
+      id: result[0].id,
+      code: result[0].code,
+      name: result[0].name,
+      symbol: result[0].symbol,
+      currencyTypeId: result[0].currencyTypeId,
+      usdValue: result[0].usdValue,
+      lastRateUpdate: result[0].lastRateUpdate ? new Date(result[0].lastRateUpdate).toISOString() : null,
+    };
   }
 
   /**
@@ -140,7 +172,16 @@ export class CurrencyRepository {
     const cached = currencyCache.get("list:all") as Currency[] | undefined;
     if (cached) return cached;
 
-    return this.db.select().from(currencies);
+    const results = await this.db.select().from(currencies);
+    return results.map(r => ({
+      id: r.id,
+      code: r.code,
+      name: r.name,
+      symbol: r.symbol,
+      currencyTypeId: r.currencyTypeId,
+      usdValue: r.usdValue,
+      lastRateUpdate: r.lastRateUpdate ? new Date(r.lastRateUpdate).toISOString() : null,
+    }));
   }
 
   /**
@@ -160,6 +201,8 @@ export class CurrencyRepository {
         name: c.name,
         symbol: c.symbol || undefined,
         currencyTypeId: c.currencyTypeId || undefined,
+        usdValue: c.usdValue,
+        lastRateUpdate: c.lastRateUpdate ? new Date(c.lastRateUpdate).toISOString() : null,
       };
       if (c.currencyType) {
         currency.currencyType = {
@@ -252,7 +295,16 @@ export class CurrencyRepository {
         .where(inArray(currencies.id, missingIds));
 
       for (const c of dbCurrencies) {
-        const currency = this.mapToCurrency(c);
+        const record: CurrencyRecord = {
+          id: c.id,
+          code: c.code,
+          name: c.name,
+          symbol: c.symbol,
+          currencyTypeId: c.currencyTypeId,
+          usdValue: c.usdValue,
+          lastRateUpdate: c.lastRateUpdate ? new Date(c.lastRateUpdate).toISOString() : null,
+        };
+        const currency = this.mapToCurrency(record);
         result.set(c.id, currency);
         this.cacheCurrency(currency);
       }
@@ -282,6 +334,8 @@ export class CurrencyRepository {
       name: c.name,
       symbol: c.symbol || undefined,
       currencyTypeId: c.currencyTypeId || undefined,
+      usdValue: c.usdValue,
+      lastRateUpdate: c.lastRateUpdate,
     };
   }
 

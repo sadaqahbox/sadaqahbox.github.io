@@ -46,6 +46,13 @@ export const CurrencySchema = z.object({
   symbol: z.string().optional().openapi({ example: "$" }),
   currencyTypeId: z.string().optional().openapi({ example: "ctyp_abc123" }),
   currencyType: CurrencyTypeSchema.optional(),
+  usdValue: z.number().nullable().optional().openapi({ 
+    example: 1.0, 
+    description: "USD value for 1 unit of this currency" 
+  }),
+  lastRateUpdate: IsoDateSchema.nullable().optional().openapi({ 
+    description: "When the rate was last updated" 
+  }),
 });
 
 export type Currency = z.infer<typeof CurrencySchema>;
@@ -55,6 +62,9 @@ export const CreateCurrencySchema = z.object({
   name: z.string().min(1).max(constants.MAX_CURRENCY_NAME_LENGTH),
   symbol: z.string().optional(),
   currencyTypeId: z.string().optional(),
+  usdValue: z.number().optional().openapi({ 
+    description: "USD value for 1 unit of this currency (optional, will be fetched automatically)" 
+  }),
 });
 
 export type CreateCurrencyInput = z.infer<typeof CreateCurrencySchema>;
@@ -85,7 +95,9 @@ export const BoxSchema = z.object({
   description: z.string().optional(),
   metadata: MetadataSchema,
   count: z.number().int().nonnegative().openapi({ description: "Total sadaqahs in box" }),
-  totalValue: z.number().nonnegative().openapi({ description: "Sum of all sadaqah values" }),
+  totalValue: z.number().nonnegative().openapi({ 
+    description: "Total value in grams of gold (universal base currency)" 
+  }),
   currencyId: z.string().optional(),
   currency: CurrencySchema.optional(),
   tags: TagSchema.array().optional(),

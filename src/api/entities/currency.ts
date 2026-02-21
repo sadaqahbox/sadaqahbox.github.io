@@ -11,12 +11,20 @@ import { generateCurrencyId } from "../shared/id-generator";
 import { currencyCache } from "../shared/cache";
 import { sanitizeString } from "../shared/validators";
 
+export interface CurrencyWithRates extends Currency {
+	usdValue?: number | null | undefined;
+	lastRateUpdate?: string | null | undefined;
+}
+
+// Keep CurrencyWithGold as an alias for backwards compatibility
+export type CurrencyWithGold = CurrencyWithRates;
+
 export class CurrencyEntity {
 	constructor(private db: Database) {}
 
 	// ============== CRUD Operations ==============
 
-	async create(data: CreateCurrencyOptions): Promise<Currency> {
+	async create(data: CreateCurrencyOptions & { usdValue?: number }): Promise<CurrencyWithRates> {
 		const id = generateCurrencyId();
 		const code = data.code.toUpperCase();
 		const name = sanitizeString(data.name) || code;
@@ -28,15 +36,25 @@ export class CurrencyEntity {
 			name,
 			symbol: symbol || null,
 			currencyTypeId: data.currencyTypeId || null,
+			usdValue: data.usdValue ?? null,
+			lastRateUpdate: data.usdValue ? new Date() : null,
 		});
 
-		const currency: Currency = { id, code, name, symbol, currencyTypeId: data.currencyTypeId };
+		const currency: CurrencyWithRates = { 
+			id, 
+			code, 
+			name, 
+			symbol, 
+			currencyTypeId: data.currencyTypeId,
+			usdValue: data.usdValue ?? null,
+			lastRateUpdate: data.usdValue ? new Date().toISOString() : null,
+		};
 		this.cacheCurrency(currency);
 		return currency;
 	}
 
-	async get(id: string): Promise<Currency | null> {
-		const cached = currencyCache.get(`id:${id}`) as Currency | undefined;
+	async get(id: string): Promise<CurrencyWithRates | null> {
+		const cached = currencyCache.get(`id:${id}`) as CurrencyWithRates | undefined;
 		if (cached) return cached;
 
 		const result = await this.db.select().from(currencies).where(eq(currencies.id, id)).limit(1);
@@ -47,9 +65,9 @@ export class CurrencyEntity {
 		return currency;
 	}
 
-	async getByCode(code: string): Promise<Currency | null> {
+	async getByCode(code: string): Promise<CurrencyWithRates | null> {
 		const upperCode = code.toUpperCase();
-		const cached = currencyCache.get(`code:${upperCode}`) as Currency | undefined;
+		const cached = currencyCache.get(`code:${upperCode}`) as CurrencyWithRates | undefined;
 		if (cached) return cached;
 
 		const result = await this.db.select().from(currencies).where(eq(currencies.code, upperCode)).limit(1);
@@ -60,7 +78,7 @@ export class CurrencyEntity {
 		return currency;
 	}
 
-	async getOrCreate(options: GetOrCreateOptions): Promise<Currency> {
+	async getOrCreate(options: GetOrCreateOptions & { usdValue?: number }): Promise<CurrencyWithRates> {
 		const existing = await this.getByCode(options.code);
 		if (existing) return existing;
 
@@ -69,10 +87,11 @@ export class CurrencyEntity {
 			name: options.name || options.code.toUpperCase(),
 			symbol: options.symbol,
 			currencyTypeId: options.currencyTypeId,
+			usdValue: options.usdValue,
 		});
 	}
 
-	async getDefault(): Promise<Currency> {
+	async getDefault(): Promise<CurrencyWithRates> {
 		return this.getOrCreate({
 			code: DEFAULT_CURRENCY_CODE,
 			name: DEFAULT_CURRENCY_NAME,
@@ -80,8 +99,8 @@ export class CurrencyEntity {
 		});
 	}
 
-	async list(): Promise<Currency[]> {
-		const cached = currencyCache.get("list:all") as Currency[] | undefined;
+	async list(): Promise<CurrencyWithRates[]> {
+		const cached = currencyCache.get("list:all") as CurrencyWithRates[] | undefined;
 		if (cached) return cached;
 
 		const result = await this.db.select().from(currencies);
@@ -108,16 +127,64 @@ export class CurrencyEntity {
 		return true;
 	}
 
+	// ============== Rate Operations ==============
+
+	/**
+	 * Update USD value for a currency
+	 */
+	async updateUsdValue(id: string, usdValue: number): Promise<CurrencyWithRates | null> {
+		const currency = await this.get(id);
+		if (!currency) return null;
+
+		const now = new Date();
+		await this.db.update(currencies)
+			.set({ usdValue, lastRateUpdate: now })
+			.where(eq(currencies.id, id));
+
+		// Invalidate cache
+		currencyCache.delete(`id:${id}`);
+		currencyCache.delete(`code:${currency.code}`);
+		currencyCache.delete("list:all");
+
+		return this.get(id);
+	}
+
+	/**
+	 * Batch update USD values for multiple currencies
+	 */
+	async updateUsdValues(updates: Array<{ id: string; usdValue: number }>): Promise<void> {
+		const now = new Date();
+		for (const update of updates) {
+			await this.db.update(currencies)
+				.set({ usdValue: update.usdValue, lastRateUpdate: now })
+				.where(eq(currencies.id, update.id));
+		}
+		// Clear all currency cache
+		currencyCache.clear();
+	}
+
+	/**
+	 * Get currencies that need rate updates (older than specified age)
+	 */
+	async getStaleCurrencies(maxAgeMs: number = 60 * 60 * 1000): Promise<CurrencyWithRates[]> {
+		const cutoff = new Date(Date.now() - maxAgeMs);
+		const result = await this.db.select().from(currencies);
+		
+		return result
+			.filter((c) => !c.lastRateUpdate || new Date(c.lastRateUpdate) < cutoff)
+			.map((c) => this.mapCurrency(c));
+	}
+
 	// ============== Batch Operations ==============
 
-	async getMany(ids: string[]): Promise<Map<string, Currency>> {
+	async getMany(ids: string[]): Promise<Map<string, CurrencyWithRates>> {
 		const uniqueIds = [...new Set(ids)];
-		const result = new Map<string, Currency>();
+		const result = new Map<string, CurrencyWithRates>();
 		const missingIds: string[] = [];
 
 		// Check cache first
 		for (const id of uniqueIds) {
-			const cached = currencyCache.get(`id:${id}`) as Currency | undefined;
+			const cached = currencyCache.get(`id:${id}`) as CurrencyWithRates | undefined;
 			if (cached) {
 				result.set(id, cached);
 			} else {
@@ -144,17 +211,19 @@ export class CurrencyEntity {
 
 	// ============== Helpers ==============
 
-	private mapCurrency(c: typeof currencies.$inferSelect): Currency {
+	private mapCurrency(c: typeof currencies.$inferSelect): CurrencyWithRates {
 		return {
 			id: c.id,
 			code: c.code,
 			name: c.name,
 			symbol: c.symbol || undefined,
 			currencyTypeId: c.currencyTypeId || undefined,
+			usdValue: c.usdValue,
+			lastRateUpdate: c.lastRateUpdate ? new Date(c.lastRateUpdate).toISOString() : null,
 		};
 	}
 
-	private cacheCurrency(currency: Currency): void {
+	private cacheCurrency(currency: CurrencyWithRates): void {
 		currencyCache.set(`id:${currency.id}`, currency);
 		currencyCache.set(`code:${currency.code}`, currency);
 	}

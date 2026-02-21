@@ -38,6 +38,7 @@ export const ID_PREFIXES = {
 	CURRENCY: "cur",
 	CURRENCY_TYPE: "ctyp",
 	TAG: "tag",
+	RATE_CACHE: "rc",
 } as const;
 
 // ============== Cache TTLs (in milliseconds) ==============

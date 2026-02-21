@@ -11,6 +11,7 @@ import { generateSadaqahId } from "../shared/id-generator";
 import { mapSadaqah } from "./mappers";
 import { CurrencyEntity } from "./currency";
 import { dbBatch } from "../shared/transaction";
+import { calculateGoldGrams } from "../services/gold-rate-service";
 
 export class SadaqahEntity {
 	constructor(private db: Database) {}
@@ -28,6 +29,18 @@ export class SadaqahEntity {
 		const box = boxResult[0];
 		if (!box) return null;
 
+		// Get currency and XAU to calculate gold equivalent
+		const currencyEntity = new CurrencyEntity(this.db);
+		const currency = await currencyEntity.get(data.currencyId);
+		const xau = await currencyEntity.getByCode("XAU");
+		
+		// Calculate gold value (grams of gold) using USD values
+		const goldValue = calculateGoldGrams(
+			data.value,
+			currency?.usdValue ?? null,
+			xau?.usdValue ?? null
+		);
+
 		const timestamp = new Date();
 		const id = generateSadaqahId();
 
@@ -42,7 +55,8 @@ export class SadaqahEntity {
 			}));
 
 			const newCount = box.count + 1;
-			const newTotalValue = box.totalValue + data.value;
+			// totalValue now represents grams of gold
+			const newTotalValue = box.totalValue + goldValue;
 			const currencyId = box.currencyId || data.currencyId;
 
 			b.add(this.db.update(boxes).set({
@@ -58,7 +72,7 @@ export class SadaqahEntity {
 			name: box.name,
 			description: box.description || undefined,
 			count: box.count + 1,
-			totalValue: box.totalValue + data.value,
+			totalValue: box.totalValue + goldValue, // Now in grams of gold
 			currencyId: box.currencyId || data.currencyId,
 			createdAt: new Date(box.createdAt).toISOString(),
 			updatedAt: timestamp.toISOString(),
@@ -109,11 +123,22 @@ export class SadaqahEntity {
 		const box = boxResult[0];
 		if (!box) return false;
 
+		// Get currency and XAU to calculate gold equivalent for subtraction
+		const currencyEntity = new CurrencyEntity(this.db);
+		const currency = await currencyEntity.get(sadaqah.currencyId);
+		const xau = await currencyEntity.getByCode("XAU");
+		const goldValue = calculateGoldGrams(
+			sadaqah.value,
+			currency?.usdValue ?? null,
+			xau?.usdValue ?? null
+		);
+
 		await dbBatch(this.db, async (b) => {
 			b.add(this.db.delete(sadaqahs).where(eq(sadaqahs.id, sadaqahId)));
 
 			const newCount = Math.max(0, box.count - 1);
-			const newTotalValue = Math.max(0, box.totalValue - sadaqah.value);
+			// Subtract gold value from total
+			const newTotalValue = Math.max(0, box.totalValue - goldValue);
 
 			b.add(this.db.update(boxes).set({
 				count: newCount,
@@ -214,6 +239,18 @@ export class SadaqahEntity {
 		const box = boxResult[0];
 		if (!box) return null;
 
+		// Get currency and XAU to calculate gold equivalent
+		const currencyEntity = new CurrencyEntity(this.db);
+		const currency = await currencyEntity.get(options.currencyId);
+		const xau = await currencyEntity.getByCode("XAU");
+		
+		// Calculate gold value (grams of gold)
+		const goldValue = calculateGoldGrams(
+			totalValue,
+			currency?.usdValue ?? null,
+			xau?.usdValue ?? null
+		);
+
 		const timestamp = new Date();
 		const id = generateSadaqahId();
 
@@ -228,9 +265,9 @@ export class SadaqahEntity {
 				createdAt: timestamp,
 			}));
 
-			// Update box: increment count by 1 (one transaction), add total value
+			// Update box: increment count by 1 (one transaction), add gold value
 			const newCount = box.count + 1;
-			const newTotalValue = box.totalValue + totalValue;
+			const newTotalValue = box.totalValue + goldValue; // Now in grams of gold
 			const currencyId = box.currencyId || options.currencyId;
 
 			b.add(this.db.update(boxes).set({
@@ -246,7 +283,7 @@ export class SadaqahEntity {
 			name: box.name,
 			description: box.description || undefined,
 			count: box.count + 1,
-			totalValue: box.totalValue + totalValue,
+			totalValue: box.totalValue + goldValue, // Now in grams of gold
 			currencyId: box.currencyId || options.currencyId,
 			createdAt: new Date(box.createdAt).toISOString(),
 			updatedAt: timestamp.toISOString(),

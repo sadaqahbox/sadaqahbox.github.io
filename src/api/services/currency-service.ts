@@ -20,6 +20,7 @@ export interface CreateCurrencyInput {
   name: string;
   symbol?: string;
   currencyTypeId?: string;
+  usdValue?: number;
 }
 
 export interface UpdateCurrencyInput {
@@ -27,6 +28,7 @@ export interface UpdateCurrencyInput {
   name?: string;
   symbol?: string;
   currencyTypeId?: string;
+  usdValue?: number;
 }
 
 // ============== Service ==============
@@ -55,6 +57,7 @@ export class CurrencyService extends BaseService {
       name: input.name,
       symbol: input.symbol,
       currencyTypeId: input.currencyTypeId,
+      usdValue: input.usdValue,
     });
   }
 

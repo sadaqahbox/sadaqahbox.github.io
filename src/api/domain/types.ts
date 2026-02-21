@@ -77,6 +77,7 @@ export interface CreateCurrencyOptions {
   name: string;
   symbol?: string;
   currencyTypeId?: string;
+  goldValue?: number; // Grams of gold per 1 unit of this currency
 }
 
 export interface GetOrCreateOptions {
@@ -84,6 +85,7 @@ export interface GetOrCreateOptions {
   name?: string;
   symbol?: string;
   currencyTypeId?: string;
+  goldValue?: number; // Grams of gold per 1 unit of this currency
 }
 
 export interface CreateCurrencyTypeOptions {
