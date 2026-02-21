@@ -189,3 +189,45 @@ export const scaleVariants: Variants = {
         },
     },
 };
+
+/**
+ * List item variant for staggered list animations
+ */
+export const listItemVariants: Variants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: (i: number) => ({
+        opacity: 1,
+        x: 0,
+        transition: {
+            delay: i * 0.05,
+            duration: 0.3,
+            ease: defaultEase,
+        },
+    }),
+    exit: { opacity: 0, x: 20, transition: { duration: 0.2 } },
+};
+
+/**
+ * Icon variant for hover/selected states
+ */
+export const iconVariants: Variants = {
+    initial: { scale: 1 },
+    hover: { scale: 1.1, transition: { duration: 0.2 } },
+    selected: { scale: 1.05, transition: { duration: 0.2 } },
+};
+
+/**
+ * Content variant for hover opacity
+ */
+export const contentVariants: Variants = {
+    initial: { opacity: 0.8 },
+    hover: { opacity: 1, transition: { duration: 0.2 } },
+};
+
+/**
+ * Tag variant for staggered tag appearance
+ */
+export const tagVariants: Variants = {
+    hidden: { opacity: 0, scale: 0.8 },
+    visible: { opacity: 1, scale: 1, transition: { duration: 0.2 } },
+};

@@ -17,6 +17,7 @@ import { Coins, MoreVertical, Star, Trash2 } from "lucide-react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Mosque01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
+import { listItemVariants, iconVariants, contentVariants, tagVariants } from "@/lib/animations";
 import type { Box } from "@/types";
 
 interface BoxListItemProps {
@@ -31,31 +32,6 @@ interface BoxListItemProps {
   onSetDefault: (boxId: string) => void;
   onDelete: (box: Box) => void;
 }
-
-const listItemVariants = {
-  hidden: { opacity: 0, x: -20 },
-  visible: (i: number) => ({
-    opacity: 1,
-    x: 0,
-    transition: {
-      delay: i * 0.05,
-      duration: 0.3,
-      ease: [0.25, 0.1, 0.25, 1] as const,
-    },
-  }),
-  exit: { opacity: 0, x: 20, transition: { duration: 0.2 } },
-};
-
-const iconVariants = {
-  initial: { scale: 1 },
-  hover: { scale: 1.1, transition: { duration: 0.2 } },
-  selected: { scale: 1.05, transition: { duration: 0.2 } },
-};
-
-const contentVariants = {
-  initial: { opacity: 0.8 },
-  hover: { opacity: 1, transition: { duration: 0.2 } },
-};
 
 export function BoxListItem({
   box,
@@ -212,8 +188,9 @@ function BoxListItemTags({ tags }: { tags: Box["tags"] }) {
       {tags.slice(0, 3).map((tag, tagIndex) => (
         <motion.div
           key={tag.id}
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
+          variants={tagVariants}
+          initial="hidden"
+          animate="visible"
           transition={{ delay: tagIndex * 0.05 }}
         >
           <Badge

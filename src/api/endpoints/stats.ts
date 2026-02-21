@@ -115,12 +115,14 @@ export const statsHandler = async (c: Context<{ Bindings: Env }>) => {
 	}
 
 	return jsonSuccess(c, {
-		totalBoxes: boxes.length,
-		totalSadaqahs: sadaqahs.length,
-		totalValue,
-		totalValueExtra: Object.keys(aggregatedExtra).length > 0 ? aggregatedExtra : undefined,
-		uniqueCurrencies,
-		primaryCurrency,
+		stats: {
+			totalBoxes: boxes.length,
+			totalSadaqahs: sadaqahs.length,
+			totalValue,
+			totalValueExtra: Object.keys(aggregatedExtra).length > 0 ? aggregatedExtra : undefined,
+			uniqueCurrencies,
+			primaryCurrency,
+		},
 	});
 };
 

@@ -3,15 +3,25 @@ import { AnimatePresence, motion } from "motion/react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Header } from "@/components/layout";
 import { BoxList, BoxDetail, CreateBox } from "@/components/boxes";
 import { SignedIn, SignedOut, RedirectToSignIn } from "@daveyplate/better-auth-ui";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Mosque01Icon, Add01Icon } from "@hugeicons/core-free-icons";
+import { Mosque01Icon, Add01Icon, AlertCircleIcon } from "@hugeicons/core-free-icons";
 import { useDashboard } from "@/hooks";
-import { containerVariants, itemVariants, mainContentVariants } from "@/lib/animations";
+import { containerVariants, mainContentVariants, sidebarVariants, fadeInVariants } from "@/lib/animations";
 import { EmptyState } from "./EmptyState";
+import { DashboardSkeleton } from "./DashboardSkeleton";
 import type { Box } from "@/types";
+import type { UseMutateFunction } from "@tanstack/react-query";
+
+/** Type for the createBox mutation function */
+type CreateBoxMutate = UseMutateFunction<
+    Box,
+    Error,
+    { name: string; description?: string; currencyId?: string }
+>;
 
 // Inner component that uses the dashboard data - wrapped in React.memo
 const DashboardContent = React.memo(function DashboardContent() {
@@ -21,6 +31,8 @@ const DashboardContent = React.memo(function DashboardContent() {
         showCreateForm,
         isLoadingBoxes,
         isLoadingStats,
+        error,
+        stats,
         setSelectedBox,
         setShowCreateForm,
         handleBoxCreated,
@@ -30,8 +42,37 @@ const DashboardContent = React.memo(function DashboardContent() {
         isCreating,
     } = useDashboard();
 
-    // Show initial skeleton only on first load when we have no data
+    // Show skeleton only on first load when we have no data
     const showInitialLoading = isLoadingBoxes && boxes.length === 0;
+
+    // Show skeleton during initial load
+    if (showInitialLoading) {
+        return <DashboardSkeleton />;
+    }
+
+    // Show error state only after loading is complete and we have an error
+    if (error && !isLoadingBoxes && !isLoadingStats) {
+        return (
+            <div className="flex min-h-screen flex-col">
+                <Header />
+                <main className="flex-1 p-4 md:p-6 lg:p-8">
+                    <motion.div
+                        variants={containerVariants}
+                        initial="hidden"
+                        animate="visible"
+                        className="mx-auto max-w-7xl"
+                    >
+                        <Alert variant="destructive">
+                            <HugeiconsIcon icon={AlertCircleIcon} className="size-4" />
+                            <AlertDescription>
+                                Failed to load dashboard data. Please try refreshing the page.
+                            </AlertDescription>
+                        </Alert>
+                    </motion.div>
+                </main>
+            </div>
+        );
+    }
 
     return (
         <div className="flex min-h-screen flex-col">
@@ -56,7 +97,6 @@ const DashboardContent = React.memo(function DashboardContent() {
                             onBoxCreated={handleBoxCreated}
                             onBoxDeleted={handleBoxDeleted}
                             onCancelCreate={() => setShowCreateForm(false)}
-                            isLoading={showInitialLoading}
                             createBox={createBox}
                             isCreating={isCreating}
                         />
@@ -65,7 +105,6 @@ const DashboardContent = React.memo(function DashboardContent() {
                         <BoxDetailSection
                             selectedBox={selectedBox}
                             onBoxUpdated={handleBoxUpdated}
-                            isLoading={isLoadingStats && !selectedBox}
                         />
                     </div>
                 </motion.div>
@@ -78,17 +117,16 @@ interface BoxListSectionProps {
     boxes: Box[];
     selectedBox: Box | null;
     showCreateForm: boolean;
-    onSelectBox: (box: Box) => void;
+    onSelectBox: (box: Box | null) => void;
     onToggleCreateForm: () => void;
     onBoxCreated: (box: Box) => void;
     onBoxDeleted: (id: string) => void;
     onCancelCreate: () => void;
-    isLoading?: boolean;
-    createBox: ReturnType<typeof import("@/hooks").useCreateBox>['mutate'];
+    createBox: CreateBoxMutate;
     isCreating: boolean;
 }
 
-function BoxListSection({
+const BoxListSection = React.memo(function BoxListSection({
     boxes,
     selectedBox,
     showCreateForm,
@@ -97,22 +135,22 @@ function BoxListSection({
     onBoxCreated,
     onBoxDeleted,
     onCancelCreate,
-    isLoading,
     createBox,
     isCreating,
 }: BoxListSectionProps) {
     return (
         <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
+            variants={sidebarVariants}
+            initial="hidden"
+            animate="visible"
             className="lg:col-span-4 xl:col-span-3"
         >
             <Card className="h-full overflow-hidden flex flex-col">
                 <CardHeader className="pb-4 shrink-0">
                     <motion.div
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
+                        variants={fadeInVariants}
+                        initial="hidden"
+                        animate="visible"
                         transition={{ delay: 0.3 }}
                         className="flex items-center justify-between"
                     >
@@ -137,8 +175,9 @@ function BoxListSection({
                         </motion.div>
                     </motion.div>
                     <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
+                        variants={fadeInVariants}
+                        initial="hidden"
+                        animate="visible"
                         transition={{ delay: 0.4 }}
                     >
                         <CardDescription>
@@ -176,15 +215,17 @@ function BoxListSection({
             </Card>
         </motion.div>
     );
-}
+});
 
 interface BoxDetailSectionProps {
     selectedBox: Box | null;
     onBoxUpdated: (box: Box) => void;
-    isLoading?: boolean;
 }
 
-function BoxDetailSection({ selectedBox, onBoxUpdated, isLoading }: BoxDetailSectionProps) {
+const BoxDetailSection = React.memo(function BoxDetailSection({
+    selectedBox,
+    onBoxUpdated,
+}: BoxDetailSectionProps) {
     return (
         <motion.div
             variants={mainContentVariants}
@@ -204,12 +245,12 @@ function BoxDetailSection({ selectedBox, onBoxUpdated, isLoading }: BoxDetailSec
                         <BoxDetail box={selectedBox} onBoxUpdated={onBoxUpdated} />
                     </motion.div>
                 ) : (
-                    <EmptyState />
+                    <EmptyState key="empty" />
                 )}
             </AnimatePresence>
         </motion.div>
     );
-}
+});
 
 export function ProtectedDashboard() {
     return (
