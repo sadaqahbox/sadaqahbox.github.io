@@ -10,6 +10,7 @@ import { DEFAULT_SADAQAH_VALUE, DEFAULT_SADAQAH_AMOUNT, MAX_SADAQAH_AMOUNT } fro
 import { generateSadaqahId } from "../shared/id-generator";
 import { mapSadaqah } from "./mappers";
 import { CurrencyEntity } from "./currency";
+import { dbBatch } from "../shared/transaction";
 
 export class SadaqahEntity {
 	constructor(private db: Database) {}
@@ -23,57 +24,57 @@ export class SadaqahEntity {
 		userId: string;
 		metadata?: Record<string, string>;
 	}): Promise<{ sadaqah: Sadaqah; updatedBox: Box } | null> {
-		return this.db.transaction(async (tx) => {
-			const boxResult = await tx.select().from(boxes).where(eq(boxes.id, data.boxId)).limit(1);
-			const box = boxResult[0];
-			if (!box) return null;
+		const boxResult = await this.db.select().from(boxes).where(eq(boxes.id, data.boxId)).limit(1);
+		const box = boxResult[0];
+		if (!box) return null;
 
-			const timestamp = new Date();
-			const id = generateSadaqahId();
+		const timestamp = new Date();
+		const id = generateSadaqahId();
 
-			await tx.insert(sadaqahs).values({
+		await dbBatch(this.db, async (b) => {
+			b.add(this.db.insert(sadaqahs).values({
 				id,
 				boxId: data.boxId,
 				value: data.value,
 				currencyId: data.currencyId,
 				userId: data.userId,
 				createdAt: timestamp,
-			});
+			}));
 
 			const newCount = box.count + 1;
 			const newTotalValue = box.totalValue + data.value;
 			const currencyId = box.currencyId || data.currencyId;
 
-			await tx.update(boxes).set({
+			b.add(this.db.update(boxes).set({
 				count: newCount,
 				totalValue: newTotalValue,
 				currencyId,
 				updatedAt: timestamp,
-			}).where(eq(boxes.id, data.boxId));
-
-			const updatedBox: Box = {
-				id: box.id,
-				name: box.name,
-				description: box.description || undefined,
-				count: newCount,
-				totalValue: newTotalValue,
-				currencyId,
-				createdAt: new Date(box.createdAt).toISOString(),
-				updatedAt: timestamp.toISOString(),
-			};
-
-			return {
-				sadaqah: {
-					id,
-					boxId: data.boxId,
-					value: data.value,
-					currencyId: data.currencyId,
-					userId: data.userId,
-					createdAt: timestamp.toISOString(),
-				},
-				updatedBox,
-			};
+			}).where(eq(boxes.id, data.boxId)));
 		});
+
+		const updatedBox: Box = {
+			id: box.id,
+			name: box.name,
+			description: box.description || undefined,
+			count: box.count + 1,
+			totalValue: box.totalValue + data.value,
+			currencyId: box.currencyId || data.currencyId,
+			createdAt: new Date(box.createdAt).toISOString(),
+			updatedAt: timestamp.toISOString(),
+		};
+
+		return {
+			sadaqah: {
+				id,
+				boxId: data.boxId,
+				value: data.value,
+				currencyId: data.currencyId,
+				userId: data.userId,
+				createdAt: timestamp.toISOString(),
+			},
+			updatedBox,
+		};
 	}
 
 	async get(boxId: string, sadaqahId: string): Promise<Sadaqah | null> {
@@ -95,33 +96,33 @@ export class SadaqahEntity {
 	}
 
 	async delete(boxId: string, sadaqahId: string, userId?: string): Promise<boolean> {
-		return this.db.transaction(async (tx) => {
-			// Build query with optional user filter
-			const query = userId
-				? tx.select().from(sadaqahs).where(and(eq(sadaqahs.id, sadaqahId), eq(sadaqahs.userId, userId))).limit(1)
-				: tx.select().from(sadaqahs).where(eq(sadaqahs.id, sadaqahId)).limit(1);
-			
-			const sadaqahResult = await query;
-			const sadaqah = sadaqahResult[0];
-			if (!sadaqah || sadaqah.boxId !== boxId) return false;
+		// Build query with optional user filter
+		const query = userId
+			? this.db.select().from(sadaqahs).where(and(eq(sadaqahs.id, sadaqahId), eq(sadaqahs.userId, userId))).limit(1)
+			: this.db.select().from(sadaqahs).where(eq(sadaqahs.id, sadaqahId)).limit(1);
+		
+		const sadaqahResult = await query;
+		const sadaqah = sadaqahResult[0];
+		if (!sadaqah || sadaqah.boxId !== boxId) return false;
 
-			const boxResult = await tx.select().from(boxes).where(eq(boxes.id, boxId)).limit(1);
-			const box = boxResult[0];
-			if (!box) return false;
+		const boxResult = await this.db.select().from(boxes).where(eq(boxes.id, boxId)).limit(1);
+		const box = boxResult[0];
+		if (!box) return false;
 
-			await tx.delete(sadaqahs).where(eq(sadaqahs.id, sadaqahId));
+		await dbBatch(this.db, async (b) => {
+			b.add(this.db.delete(sadaqahs).where(eq(sadaqahs.id, sadaqahId)));
 
 			const newCount = Math.max(0, box.count - 1);
 			const newTotalValue = Math.max(0, box.totalValue - sadaqah.value);
 
-			await tx.update(boxes).set({
+			b.add(this.db.update(boxes).set({
 				count: newCount,
 				totalValue: newTotalValue,
 				updatedAt: new Date(),
-			}).where(eq(boxes.id, boxId));
-
-			return true;
+			}).where(eq(boxes.id, boxId)));
 		});
+
+		return true;
 	}
 
 	async list(
@@ -207,24 +208,24 @@ export class SadaqahEntity {
 		);
 		const value = options.value || DEFAULT_SADAQAH_VALUE;
 
-		return this.db.transaction(async (tx) => {
-			const boxResult = await tx.select().from(boxes).where(eq(boxes.id, options.boxId)).limit(1);
-			const box = boxResult[0];
-			if (!box) return null;
+		const boxResult = await this.db.select().from(boxes).where(eq(boxes.id, options.boxId)).limit(1);
+		const box = boxResult[0];
+		if (!box) return null;
 
-			const timestamp = new Date();
-			const createdSadaqahs: Sadaqah[] = [];
+		const timestamp = new Date();
+		const createdSadaqahs: Sadaqah[] = [];
 
+		await dbBatch(this.db, async (b) => {
 			for (let i = 0; i < amount; i++) {
 				const id = generateSadaqahId(i);
-				await tx.insert(sadaqahs).values({
+				b.add(this.db.insert(sadaqahs).values({
 					id,
 					boxId: options.boxId,
 					value,
 					currencyId: options.currencyId,
 					userId: options.userId,
 					createdAt: timestamp,
-				});
+				}));
 				createdSadaqahs.push({
 					id,
 					boxId: options.boxId,
@@ -239,25 +240,25 @@ export class SadaqahEntity {
 			const newTotalValue = box.totalValue + value * amount;
 			const currencyId = box.currencyId || options.currencyId;
 
-			await tx.update(boxes).set({
+			b.add(this.db.update(boxes).set({
 				count: newCount,
 				totalValue: newTotalValue,
 				currencyId,
 				updatedAt: timestamp,
-			}).where(eq(boxes.id, options.boxId));
-
-			const updatedBox: Box = {
-				id: box.id,
-				name: box.name,
-				description: box.description || undefined,
-				count: newCount,
-				totalValue: newTotalValue,
-				currencyId,
-				createdAt: new Date(box.createdAt).toISOString(),
-				updatedAt: timestamp.toISOString(),
-			};
-
-			return { sadaqahs: createdSadaqahs, box: updatedBox };
+			}).where(eq(boxes.id, options.boxId)));
 		});
+
+		const updatedBox: Box = {
+			id: box.id,
+			name: box.name,
+			description: box.description || undefined,
+			count: box.count + amount,
+			totalValue: box.totalValue + value * amount,
+			currencyId: box.currencyId || options.currencyId,
+			createdAt: new Date(box.createdAt).toISOString(),
+			updatedAt: timestamp.toISOString(),
+		};
+
+		return { sadaqahs: createdSadaqahs, box: updatedBox };
 	}
 }

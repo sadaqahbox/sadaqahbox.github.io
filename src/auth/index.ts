@@ -36,6 +36,15 @@ function createAuth(env?: AuthEnv, cf?: IncomingRequestCfProperties) {
                 emailAndPassword: {
                     enabled: true,
                 },
+                advanced: {
+                    cookiePrefix: "sadakabox",
+                    useSecureCookies: false,
+                    defaultCookieAttributes: {
+                        secure: false,
+                        sameSite: "lax",
+                        path: "/",
+                    },
+                },
                 plugins: [
                     admin() as any,
                     anonymous(),

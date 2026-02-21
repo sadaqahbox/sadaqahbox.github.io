@@ -17,6 +17,7 @@ const crud = createCrud<Currency, CreateCurrencyOptions, unknown>({
     tagName: "Currencies",
     path: "/api/currencies",
     idParam: "currencyId",
+    itemsKey: "currencies",  // Proper pluralization
     schemas: {
         item: CurrencySchema,
         create: CreateCurrencyBodySchema,

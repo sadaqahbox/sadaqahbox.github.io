@@ -12,6 +12,7 @@ import { sanitizeString } from "../shared/validators";
 import { mapBox } from "./mappers";
 import { CurrencyEntity } from "./currency";
 import { TagEntity } from "./tag";
+import { dbBatch } from "../shared/transaction";
 
 export class BoxEntity {
 	constructor(private db: Database) {}
@@ -33,8 +34,8 @@ export class BoxEntity {
 			throw new Error("Box name is required");
 		}
 
-		return this.db.transaction(async (tx) => {
-			await tx.insert(boxes).values({
+		return dbBatch(this.db, async (b) => {
+			b.add(this.db.insert(boxes).values({
 				id,
 				name,
 				description: sanitizeString(data.description) || null,
@@ -45,12 +46,12 @@ export class BoxEntity {
 				userId: data.userId,
 				createdAt: timestamp,
 				updatedAt: timestamp,
-			});
+			}));
 
 			if (data.tagIds?.length) {
-				await tx.insert(boxTags).values(
+				b.add(this.db.insert(boxTags).values(
 					data.tagIds.map((tagId) => ({ boxId: id, tagId }))
-				);
+				));
 			}
 
 			return {
@@ -142,28 +143,26 @@ export class BoxEntity {
 	}
 
 	async delete(id: string, userId?: string): Promise<DeleteBoxResult> {
-		return this.db.transaction(async (tx) => {
-			// Verify ownership if userId provided
-			if (userId) {
-				const boxResult = await tx.select({ id: boxes.id }).from(boxes).where(and(eq(boxes.id, id), eq(boxes.userId, userId))).limit(1);
-				if (!boxResult[0]) {
-					return { deleted: false, sadaqahsDeleted: 0, collectionsDeleted: 0 };
-				}
+		// Verify ownership if userId provided
+		if (userId) {
+			const boxResult = await this.db.select({ id: boxes.id }).from(boxes).where(and(eq(boxes.id, id), eq(boxes.userId, userId))).limit(1);
+			if (!boxResult[0]) {
+				return { deleted: false, sadaqahsDeleted: 0, collectionsDeleted: 0 };
 			}
+		}
 
-			const [sadaqahCount, collectionCount] = await Promise.all([
-				tx.select({ count: count() }).from(sadaqahs).where(eq(sadaqahs.boxId, id)).then((r) => r[0]?.count ?? 0),
-				tx.select({ count: count() }).from(collections).where(eq(collections.boxId, id)).then((r) => r[0]?.count ?? 0),
-			]);
+		const [sadaqahCount, collectionCount] = await Promise.all([
+			this.db.select({ count: count() }).from(sadaqahs).where(eq(sadaqahs.boxId, id)).then((r) => r[0]?.count ?? 0),
+			this.db.select({ count: count() }).from(collections).where(eq(collections.boxId, id)).then((r) => r[0]?.count ?? 0),
+		]);
 
-			await tx.delete(boxes).where(eq(boxes.id, id));
+		await this.db.delete(boxes).where(eq(boxes.id, id));
 
-			return {
-				deleted: true,
-				sadaqahsDeleted: sadaqahCount,
-				collectionsDeleted: collectionCount,
-			};
-		});
+		return {
+			deleted: true,
+			sadaqahsDeleted: sadaqahCount,
+			collectionsDeleted: collectionCount,
+		};
 	}
 
 	// ============== Tag Operations ==============
@@ -185,10 +184,10 @@ export class BoxEntity {
 	}
 
 	async setTags(boxId: string, tagIds: string[]): Promise<boolean> {
-		return this.db.transaction(async (tx) => {
-			await tx.delete(boxTags).where(eq(boxTags.boxId, boxId));
+		return dbBatch(this.db, async (b) => {
+			b.add(this.db.delete(boxTags).where(eq(boxTags.boxId, boxId)));
 			if (tagIds.length > 0) {
-				await tx.insert(boxTags).values(tagIds.map((tagId) => ({ boxId, tagId })));
+				b.add(this.db.insert(boxTags).values(tagIds.map((tagId) => ({ boxId, tagId }))));
 			}
 			return true;
 		});
@@ -220,20 +219,20 @@ export class BoxEntity {
 	// ============== Collection (Empty Box) ==============
 
 	async collect(id: string, userId?: string): Promise<CollectionResult | null> {
-		return this.db.transaction(async (tx) => {
-			const query = userId
-				? tx.select().from(boxes).where(and(eq(boxes.id, id), eq(boxes.userId, userId))).limit(1)
-				: tx.select().from(boxes).where(eq(boxes.id, id)).limit(1);
-			const boxResult = await query;
-			const box = boxResult[0];
-			if (!box) return null;
+		const query = userId
+			? this.db.select().from(boxes).where(and(eq(boxes.id, id), eq(boxes.userId, userId))).limit(1)
+			: this.db.select().from(boxes).where(eq(boxes.id, id)).limit(1);
+		const boxResult = await query;
+		const box = boxResult[0];
+		if (!box) return null;
 
-			const timestamp = new Date();
-			const collectionId = generateCollectionId();
-			const currencyId = box.currencyId || "cur_default";
-			const boxUserId = box.userId;
-			
-			await tx.insert(collections).values({
+		const timestamp = new Date();
+		const collectionId = generateCollectionId();
+		const currencyId = box.currencyId || "cur_default";
+		const boxUserId = box.userId;
+
+		await dbBatch(this.db, async (b) => {
+			b.add(this.db.insert(collections).values({
 				id: collectionId,
 				boxId: id,
 				userId: boxUserId,
@@ -241,39 +240,39 @@ export class BoxEntity {
 				sadaqahsCollected: box.count,
 				totalValue: box.totalValue,
 				currencyId,
-			});
+			}));
 
-			await tx.delete(sadaqahs).where(eq(sadaqahs.boxId, id));
+			b.add(this.db.delete(sadaqahs).where(eq(sadaqahs.boxId, id)));
 
-			await tx.update(boxes).set({
+			b.add(this.db.update(boxes).set({
 				count: 0,
 				totalValue: 0,
 				currencyId: null,
 				updatedAt: timestamp,
-			}).where(eq(boxes.id, id));
-
-			const updatedBoxResult = await tx.select().from(boxes).where(eq(boxes.id, id)).limit(1);
-			const updatedBox = mapBox(updatedBoxResult[0]!);
-
-			const tagEntity = new TagEntity(this.db);
-			updatedBox.tags = await tagEntity.getTagsForBox(id);
-
-			if (currencyId !== "cur_default") {
-				const currency = await new CurrencyEntity(this.db).get(currencyId);
-				if (currency) updatedBox.currency = currency;
-			}
-
-			return {
-				box: updatedBox,
-				collection: {
-					id: collectionId,
-					sadaqahsCollected: box.count,
-					totalValue: box.totalValue,
-					currencyId,
-					emptiedAt: timestamp.toISOString(),
-				},
-			};
+			}).where(eq(boxes.id, id)));
 		});
+
+		const updatedBoxResult = await this.db.select().from(boxes).where(eq(boxes.id, id)).limit(1);
+		const updatedBox = mapBox(updatedBoxResult[0]!);
+
+		const tagEntity = new TagEntity(this.db);
+		updatedBox.tags = await tagEntity.getTagsForBox(id);
+
+		if (currencyId !== "cur_default") {
+			const currency = await new CurrencyEntity(this.db).get(currencyId);
+			if (currency) updatedBox.currency = currency;
+		}
+
+		return {
+			box: updatedBox,
+			collection: {
+				id: collectionId,
+				sadaqahsCollected: box.count,
+				totalValue: box.totalValue,
+				currencyId,
+				emptiedAt: timestamp.toISOString(),
+			},
+		};
 	}
 
 	// ============== Collections List ==============

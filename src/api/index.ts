@@ -21,8 +21,9 @@ const app = new OpenAPIHono<{ Bindings: Env }>();
 
 // ============== Middleware Setup ==============
 
-// CORS for auth routes
+// CORS for auth routes and API routes
 app.use("/api/auth/**", authCors);
+app.use("/api/*", authCors);
 
 // Global middleware
 app.use("*", requestLogger);

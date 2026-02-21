@@ -26,7 +26,11 @@
 			"@types/service-worker-mock"
 		],
 		/* JSX */
-		"jsx": "react-jsx"
+		"jsx": "react-jsx",
+		"baseUrl": ".",
+		"paths": {
+		"@/*": ["./src/*"]
+		}
 	},
 	"exclude": ["node_modules", "dist", "tests"],
 	"include": ["src", "worker-configuration.d.ts"]

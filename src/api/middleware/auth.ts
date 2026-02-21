@@ -28,15 +28,19 @@ declare module "hono" {
  */
 export async function requireAuth(c: Context<{ Bindings: Env }>, next: Next) {
   // Get session token from cookie
-  const sessionToken = getCookie(c, "better-auth.session_token") || 
+  const cookieValue = getCookie(c, "better-auth.session_token") || 
                        getCookie(c, "session_token");
   
-  if (!sessionToken) {
+  if (!cookieValue) {
     return c.json(
       { success: false, error: "Unauthorized - No session token" },
       401
     );
   }
+
+  // Better-auth cookie format: token.signature
+  // Only the token part (before the dot) is stored in the database
+  const sessionToken = cookieValue.split('.')[0];
 
   const db = getDbFromContext(c);
 

@@ -34,7 +34,6 @@ interface CreateBoxInput extends Record<string, unknown> {
     description?: string;
     metadata?: Record<string, string>;
     tagIds?: string[];
-    userId: string;
 }
 
 // ============== Schemas ==============
@@ -49,6 +48,12 @@ const BoxTagParamsSchema = z.object({
 const ListQuerySchema = z.object({
     sortBy: z.enum(["name", "createdAt", "count", "totalValue"]).default("createdAt"),
     sortOrder: z.enum(["asc", "desc"]).default("desc"),
+});
+
+const CreateBoxBodySchema = z.object({
+    name: z.string().min(1),
+    description: z.string().optional(),
+    tagIds: z.array(z.string()).optional(),
 });
 
 // ============== CRUD Routes ==============
@@ -116,6 +121,7 @@ export const createRoute = buildRoute({
     path: "/api/boxes",
     tags: ["Boxes"],
     summary: "Create a new charity box",
+    body: CreateBoxBodySchema,
     responses: create200Response(CreateResponseSchema, "Returns the created box"),
     requireAuth: true,
 });
@@ -179,12 +185,18 @@ export const getHandler = async (c: Context<{ Bindings: Env }>) => {
 // Update
 const UpdateResponseSchema = createItemResponseSchema(BoxSchema, "box");
 
+const UpdateBoxBodySchema = z.object({
+    name: z.string().min(1).optional(),
+    description: z.string().optional(),
+});
+
 export const updateRoute = buildRoute({
     method: "patch",
     path: "/api/boxes/{boxId}",
     tags: ["Boxes"],
     summary: "Update a box",
     params: BoxIdParamSchema,
+    body: UpdateBoxBodySchema,
     responses: {
         ...create200Response(UpdateResponseSchema, "Returns the updated box"),
         ...create404Response("Box not found"),

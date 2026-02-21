@@ -76,6 +76,8 @@ export interface CrudConfig<T, CreateInput, EntityContext> {
     includeUpdate?: boolean;
     /** Query schema for list endpoint */
     listQuery?: ZodType;
+    /** Custom items key for list response (e.g., "currencies" instead of auto-generated "currencys") */
+    itemsKey?: string;
     /** Custom list handler logic (transform items before response) */
     transformList?: (items: T[], query: Record<string, unknown>, c: Context<{ Bindings: Env }>) => { items: T[]; [key: string]: unknown };
     /** Custom handlers to override defaults */
@@ -102,7 +104,8 @@ export function createCrud<T, CreateInput = Record<string, unknown>, EntityConte
 
     const IdParamSchema = createIdParamSchema(idParam);
     const itemKey = resourceName.toLowerCase().replace(/\s+/g, "");
-    const itemsKey = itemKey + "s";
+    // Support custom itemsKey for proper pluralization (e.g., "currencies" not "currencys")
+    const itemsKey = config.itemsKey ?? itemKey + "s";
     const ListResponseSchema = createPaginatedResponse(schemas.item, itemsKey);
     const ItemResponseSchema = createItemResponseSchema(schemas.item, itemKey);
     const DeleteResponseSchema = createItemResponseSchema(z.object({ deleted: z.boolean() }), "data");
