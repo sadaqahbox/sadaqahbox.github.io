@@ -128,7 +128,13 @@ export class BoxService extends BaseService {
       await this.boxRepo.setTags(box.id, input.tagIds);
     }
 
-    return box;
+    // Fetch the box with relations to return complete data
+    const boxWithRelations = await this.boxRepo.findByIdWithRelations(box.id, input.userId);
+    if (!boxWithRelations) {
+      throw new BoxNotFoundError("Created box not found");
+    }
+
+    return boxWithRelations;
   }
 
   /**
@@ -286,7 +292,7 @@ export class BoxService extends BaseService {
     const record = await this.boxRepo.findById(boxId, userId);
     if (!record) return null;
 
-    const currencyId = record.currencyId || "cur_default";
+    const currencyId = record.baseCurrencyId || record.currencyId || "cur_default";
 
     // Get user's preferred currency
     const user = await this.db.query.users.findFirst({
@@ -295,16 +301,15 @@ export class BoxService extends BaseService {
     });
     const preferredCurrencyId = user?.preferredCurrencyId;
 
-    // Get all currencies for conversion calculation
-    const allCurrencies = await this.currencyRepo.findAll();
+    // Get box currency and user's preferred currency for conversion
     const boxCurrency = currencyId !== "cur_default"
       ? await this.currencyRepo.findById(currencyId)
       : null;
     const preferredCurrency = preferredCurrencyId
-      ? allCurrencies.find(c => c.id === preferredCurrencyId)
+      ? await this.currencyRepo.findById(preferredCurrencyId)
       : null;
 
-    // Calculate conversions for all currencies with usdValue
+    // Calculate conversion to user's preferred currency (if different from base)
     // usdValue represents: 1 unit of currency = X USD
     // To convert: value_in_target = value_in_source * (sourceUSD / targetUSD)
     const conversions: Array<{
@@ -315,24 +320,19 @@ export class BoxService extends BaseService {
       value: number;
       rate: number;
     }> = [];
-    if (boxCurrency?.usdValue) {
-      for (const targetCurrency of allCurrencies) {
-        if (targetCurrency.usdValue && targetCurrency.id !== currencyId) {
-          // Correct formula: sourceUSD / targetUSD
-          // Example: XAU (159.14 USD) to TRY (0.023 USD)
-          // 1 XAU = 159.14 / 0.023 = ~6919 TRY
-          const rate = boxCurrency.usdValue / targetCurrency.usdValue;
-          const convertedValue = record.totalValue * rate;
-          conversions.push({
-            currencyId: targetCurrency.id,
-            code: targetCurrency.code,
-            name: targetCurrency.name,
-            symbol: targetCurrency.symbol,
-            value: convertedValue,
-            rate: rate,
-          });
-        }
-      }
+    // Only store conversions for user's preferred currency (if different from base)
+    // This avoids storing unnecessary data for all currencies
+    if (boxCurrency?.usdValue && preferredCurrency?.usdValue && preferredCurrency.id !== currencyId) {
+      const rate = boxCurrency.usdValue / preferredCurrency.usdValue;
+      const convertedValue = record.totalValue * rate;
+      conversions.push({
+        currencyId: preferredCurrency.id,
+        code: preferredCurrency.code,
+        name: preferredCurrency.name,
+        symbol: preferredCurrency.symbol,
+        value: convertedValue,
+        rate: rate,
+      });
     }
 
     // Build metadata

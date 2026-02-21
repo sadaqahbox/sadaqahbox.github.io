@@ -12,18 +12,18 @@ export const schema = {
 
 // ============== Currency Type Table ==============
 export const currencyTypes = sqliteTable(
-  "CurrencyType",
+  "currency_type",
   {
     id: text("id").primaryKey(),
     name: text("name").notNull().unique(),
     description: text("description"),
   },
-  (table) => [index("CurrencyType_name_idx").on(table.name)]
+  (table) => [index("currency_type_name_idx").on(table.name)]
 );
 
 // ============== Currency Table ==============
 export const currencies = sqliteTable(
-  "Currency",
+  "currency",
   {
     id: text("id").primaryKey(),
     code: text("code").notNull().unique(),
@@ -33,12 +33,12 @@ export const currencies = sqliteTable(
     usdValue: real("usdValue"), // USD value for 1 unit of this currency
     lastRateUpdate: integer("lastRateUpdate", { mode: "timestamp" }), // When the rate was last updated
   },
-  (table) => [index("Currency_code_idx").on(table.code), index("Currency_currencyTypeId_idx").on(table.currencyTypeId)]
+  (table) => [index("currency_code_idx").on(table.code), index("currency_currency_type_id_idx").on(table.currencyTypeId)]
 );
 
 // ============== Box Table ==============
 export const boxes = sqliteTable(
-  "Box",
+  "box",
   {
     id: text("id").primaryKey(),
     name: text("name").notNull(),
@@ -58,19 +58,19 @@ export const boxes = sqliteTable(
     updatedAt: integer("updatedAt", { mode: "timestamp" }).notNull(),
   },
   (table) => [
-    index("Box_createdAt_idx").on(table.createdAt),
-    index("Box_userId_idx").on(table.userId),
-    index("Box_baseCurrencyId_idx").on(table.baseCurrencyId),
+    index("box_created_at_idx").on(table.createdAt),
+    index("box_user_id_idx").on(table.userId),
+    index("box_base_currency_id_idx").on(table.baseCurrencyId),
     // Composite indexes for common query patterns
-    index("Box_userId_createdAt_idx").on(table.userId, table.createdAt),
-    index("Box_userId_count_idx").on(table.userId, table.count),
-    index("Box_userId_totalValue_idx").on(table.userId, table.totalValue),
+    index("box_user_id_created_at_idx").on(table.userId, table.createdAt),
+    index("box_user_id_count_idx").on(table.userId, table.count),
+    index("box_user_id_total_value_idx").on(table.userId, table.totalValue),
   ]
 );
 
 // ============== Sadaqah Table ==============
 export const sadaqahs = sqliteTable(
-  "Sadaqah",
+  "sadaqah",
   {
     id: text("id").primaryKey(),
     boxId: text("boxId")
@@ -86,20 +86,20 @@ export const sadaqahs = sqliteTable(
     createdAt: integer("createdAt", { mode: "timestamp" }).notNull(),
   },
   (table) => [
-    index("Sadaqah_boxId_idx").on(table.boxId),
-    index("Sadaqah_createdAt_idx").on(table.createdAt),
-    index("Sadaqah_currencyId_idx").on(table.currencyId),
-    index("Sadaqah_userId_idx").on(table.userId),
+    index("sadaqah_box_id_idx").on(table.boxId),
+    index("sadaqah_created_at_idx").on(table.createdAt),
+    index("sadaqah_currency_id_idx").on(table.currencyId),
+    index("sadaqah_user_id_idx").on(table.userId),
     // Composite indexes for common query patterns
-    index("Sadaqah_boxId_createdAt_idx").on(table.boxId, table.createdAt),
-    index("Sadaqah_userId_createdAt_idx").on(table.userId, table.createdAt),
-    index("Sadaqah_currencyId_value_idx").on(table.currencyId, table.value),
+    index("sadaqah_box_id_created_at_idx").on(table.boxId, table.createdAt),
+    index("sadaqah_user_id_created_at_idx").on(table.userId, table.createdAt),
+    index("sadaqah_currency_id_value_idx").on(table.currencyId, table.value),
   ]
 );
 
 // ============== Collection Table ==============
 export const collections = sqliteTable(
-  "Collection",
+  "collection",
   {
     id: text("id").primaryKey(),
     boxId: text("boxId")
@@ -130,28 +130,42 @@ export const collections = sqliteTable(
       .references(() => currencies.id),
   },
   (table) => [
-    index("Collection_boxId_idx").on(table.boxId),
-    index("Collection_userId_idx").on(table.userId),
-    index("Collection_emptiedAt_idx").on(table.emptiedAt),
-    index("Collection_currencyId_idx").on(table.currencyId),
+    index("collection_box_id_idx").on(table.boxId),
+    index("collection_user_id_idx").on(table.userId),
+    index("collection_emptied_at_idx").on(table.emptiedAt),
+    index("collection_currency_id_idx").on(table.currencyId),
   ]
 );
 
 // ============== Tag Table ==============
 export const tags = sqliteTable(
-  "Tag",
+  "tag",
   {
     id: text("id").primaryKey(),
     name: text("name").notNull().unique(),
     color: text("color"),
     createdAt: integer("createdAt", { mode: "timestamp" }).notNull(),
   },
-  (table) => [index("Tag_name_idx").on(table.name)]
+  (table) => [index("tag_name_idx").on(table.name)]
+);
+
+// ============== API Rate Limiting Table ==============
+// Tracks when API calls were last attempted to prevent hitting rate limits
+export const apiRateCalls = sqliteTable(
+  "api_rate_call",
+  {
+    id: text("id").primaryKey(),
+    endpoint: text("endpoint").notNull().unique(), // e.g., "fiat_rates", "crypto_rates", "gold_price"
+    lastAttemptAt: integer("lastAttemptAt", { mode: "timestamp" }).notNull(),
+    lastSuccessAt: integer("lastSuccessAt", { mode: "timestamp" }), // null if last attempt failed
+    errorCount: integer("errorCount").notNull().default(0),
+  },
+  (table) => [index("api_rate_call_endpoint_idx").on(table.endpoint)]
 );
 
 // ============== Box-Tag Junction Table ==============
 export const boxTags = sqliteTable(
-  "BoxTag",
+  "box_tag",
   {
     boxId: text("boxId")
       .notNull()
@@ -161,8 +175,8 @@ export const boxTags = sqliteTable(
       .references(() => tags.id, { onDelete: "cascade" }),
   },
   (table) => [
-    index("BoxTag_boxId_idx").on(table.boxId),
-    index("BoxTag_tagId_idx").on(table.tagId),
+    index("box_tag_box_id_idx").on(table.boxId),
+    index("box_tag_tag_id_idx").on(table.tagId),
   ]
 );
 
@@ -262,3 +276,5 @@ export type Tag = typeof tags.$inferSelect;
 export type NewTag = typeof tags.$inferInsert;
 export type BoxTag = typeof boxTags.$inferSelect;
 export type NewBoxTag = typeof boxTags.$inferInsert;
+export type ApiRateCall = typeof apiRateCalls.$inferSelect;
+export type NewApiRateCall = typeof apiRateCalls.$inferInsert;

@@ -90,9 +90,9 @@ export class SadaqahService extends BaseService {
   }
 
   /**
-   * Get currency with usdValue, fetching rates if needed
-   * Bypasses cache to ensure fresh data after rate updates
-   * @returns Currency with usdValue, or currency without usdValue if rate is not available
+   * Get currency with usdValue
+   * Only fetches rates if API rate limits allow (1 hour cooldown)
+   * @returns Currency with usdValue, or currency without usdValue if rate is not available or APIs are rate-limited
    */
   private async getCurrencyWithRate(currencyId: string): Promise<{ id: string; code: string; name: string; usdValue?: number | null }> {
     // First check if currency exists
@@ -106,14 +106,26 @@ export class SadaqahService extends BaseService {
       return currency;
     }
     
-    // Try to fetch rates and update
+    // Check if API calls are allowed (rate limiting)
+    const canFetchRates = await this.rateService.canFetchRateForCurrency(currency.code);
+    
+    if (!canFetchRates) {
+      logger.info("API rate limit cooldown active, skipping rate fetch", {
+        currencyId,
+        code: currency.code
+      });
+      // Return currency without usdValue - value will be stored in totalValueExtra
+      return currency;
+    }
+    
+    // Try to fetch rates (respects rate limiting internally)
     logger.info("Currency missing usdValue, fetching rates", { currencyId, code: currency.code });
     
     try {
-      // Fetch fresh rates from APIs
+      // Fetch rates (this will skip APIs in cooldown)
       const ratesResult = await this.rateService.fetchAllRates();
-      logger.info("Rates fetched", { 
-        rateCount: ratesResult.usdRates.size, 
+      logger.info("Rates fetched", {
+        rateCount: ratesResult.usdRates.size,
         errors: ratesResult.errors,
         hasUsd: ratesResult.usdRates.has("USD"),
         hasXau: ratesResult.usdRates.has("XAU"),

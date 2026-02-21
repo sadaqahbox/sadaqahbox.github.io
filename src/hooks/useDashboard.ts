@@ -54,26 +54,38 @@ export function useDashboard(): UseDashboardReturn {
         refetch: refetchBoxes,
     } = useBoxes();
 
-    // Preselect default box when boxes load
+    // Preselect default box when boxes load, or clear if selected box was deleted
     useEffect(() => {
-        if (boxes.length > 0 && !selectedBox) {
-            // Get defaultBoxId from session
-            const defaultBoxId = session.data?.user?.defaultBoxId;
-            
-            if (defaultBoxId) {
-                const defaultBox = boxes.find(b => b.id === defaultBoxId);
-                if (defaultBox) {
-                    setSelectedBox(defaultBox);
-                    return;
-                }
+        // If no boxes, clear selection
+        if (boxes.length === 0) {
+            if (selectedBox) {
+                setSelectedBox(null);
             }
-            
-            // Fallback to first box if no default set or default not found
-            const firstBox = boxes[0];
-            if (firstBox) {
-                setSelectedBox(firstBox);
+            return;
+        }
+        
+        // If we have a selected box, verify it still exists
+        if (selectedBox) {
+            const boxStillExists = boxes.find(b => b.id === selectedBox.id);
+            if (!boxStillExists) {
+                setSelectedBox(null);
+            }
+            return;
+        }
+        
+        // No box selected but we have boxes - select one
+        const defaultBoxId = session.data?.user?.defaultBoxId;
+        
+        if (defaultBoxId) {
+            const defaultBox = boxes.find(b => b.id === defaultBoxId);
+            if (defaultBox) {
+                setSelectedBox(defaultBox);
+                return;
             }
         }
+        
+        // Fallback to first box
+        setSelectedBox(boxes[0]);
     }, [boxes, selectedBox, session.data?.user?.defaultBoxId]);
 
     const {
@@ -105,14 +117,11 @@ export function useDashboard(): UseDashboardReturn {
 
     const handleBoxDeleted = useCallback(
         (boxId: string) => {
-            deleteBox(boxId, {
-                onSuccess: () => {
-                    if (selectedBox?.id === boxId) {
-                        setSelectedBox(null);
-                    }
-                    // Stats will be automatically invalidated by the mutation
-                },
-            });
+            // Optimistically clear selected box to avoid showing deleted box
+            if (selectedBox?.id === boxId) {
+                setSelectedBox(null);
+            }
+            deleteBox(boxId);
         },
         [deleteBox, selectedBox]
     );

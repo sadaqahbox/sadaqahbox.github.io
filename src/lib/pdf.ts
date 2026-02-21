@@ -1,6 +1,7 @@
 /**
  * PDF Generation Utilities
  * Shared functions for generating collection receipt PDFs
+ * Elegant, minimal design with refined Islamic ornamentation
  */
 
 import { jsPDF } from "jspdf";
@@ -10,7 +11,7 @@ import { jsPDF } from "jspdf";
  */
 export interface PreferredCurrencyInfo {
   code: string;
-  name: string;
+ name: string;
   symbol?: string | null;
   usdValue?: number | null;
 }
@@ -54,6 +55,24 @@ export interface CollectionPDFData {
 }
 
 /**
+ * A5 page dimensions and margins
+ */
+const PAGE_WIDTH = 148;
+const PAGE_HEIGHT = 210;
+const MARGIN_TOP = 15;
+const MARGIN_BOTTOM = 20;
+const CONTENT_END = PAGE_HEIGHT - MARGIN_BOTTOM;
+const CONTENT_START = MARGIN_TOP + 32;
+
+// Refined color palette
+const COLOR_PRIMARY: [number, number, number] = [38, 84, 64]; // Deep elegant green
+const COLOR_GOLD: [number, number, number] = [168, 138, 72]; // Muted gold
+const COLOR_TEXT: [number, number, number] = [45, 45, 45];
+const COLOR_TEXT_LIGHT: [number, number, number] = [110, 110, 110];
+const COLOR_TEXT_MUTED: [number, number, number] = [150, 150, 150];
+const COLOR_CREAM: [number, number, number] = [253, 252, 250];
+
+/**
  * Format a date for display in PDF
  */
 export function formatDateForPDF(dateStr: string): string {
@@ -92,107 +111,352 @@ export function convertCurrency(
   toUsdValue: number | null | undefined
 ): number | null {
   if (!fromUsdValue || !toUsdValue || fromUsdValue === 0) return null;
-  // Convert: value * (toUsdValue / fromUsdValue)
   return value * (toUsdValue / fromUsdValue);
 }
 
 /**
- * Generate the common header section of a collection PDF
+ * Draw elegant crescent moon with star - Islamic symbol
  */
-function generatePDFHeader(doc: jsPDF, title: string, boxName: string): void {
-  // Decorative top bar
-  doc.setFillColor(45, 125, 90); // Primary green color
-  doc.rect(0, 0, 148, 8, "F");
-
-  // Header - App name with icon indicator
-  doc.setFontSize(20);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(45, 125, 90);
-  doc.text("SadaqahBox", 20, 22);
-
-  // Decorative line
-  doc.setDrawColor(45, 125, 90);
-  doc.setLineWidth(0.5);
-  doc.line(20, 25, 128, 25);
-
-  // Title
-  doc.setFontSize(14);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(60, 60, 60);
-  doc.text(title, 20, 35);
-
-  // Box name
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(100, 100, 100);
-  doc.text(`Box: ${boxName}`, 20, 42);
-}
-
-/**
- * Generate the common footer section of a collection PDF
- */
-function generatePDFFooter(doc: jsPDF, collectionId: string, pageY: number = 195): void {
-  // Decorative bottom bar
-  doc.setFillColor(240, 240, 240);
-  doc.rect(0, pageY - 12, 148, 0.5, "F");
-
-  doc.setFontSize(8);
-  doc.setTextColor(120, 120, 120);
-  doc.setFont("helvetica", "normal");
-  doc.text("SadaqahBox - Tracking your charitable giving", 20, pageY - 5);
+function drawCrescentMoon(
+  doc: jsPDF,
+  cx: number,
+  cy: number,
+  size: number,
+  color: [number, number, number]
+): void {
+  doc.setFillColor(color[0], color[1], color[2]);
+  doc.setDrawColor(color[0], color[1], color[2]);
   
-  // Collection ID in smaller, lighter text
-  doc.setFontSize(7);
-  doc.setTextColor(150, 150, 150);
-  doc.text(`ID: ${collectionId.slice(-12)}`, 20, pageY);
+  // Outer crescent (main moon shape)
+  const outerRadius = size;
+  const innerRadius = size * 0.75;
+  const offset = size * 0.35;
+  
+  // Draw crescent using arcs
+  doc.setLineWidth(0.5);
+  
+  // Outer arc
+  for (let angle = -Math.PI * 0.7; angle <= Math.PI * 0.7; angle += 0.1) {
+    const x1 = cx + outerRadius * Math.cos(angle);
+    const y1 = cy + outerRadius * Math.sin(angle) * 0.9; // Slight flattening
+    const x2 = cx + outerRadius * Math.cos(angle + 0.1);
+    const y2 = cy + outerRadius * Math.sin(angle + 0.1) * 0.9;
+    doc.line(x1, y1, x2, y2);
+  }
+  
+  // Inner arc (to create crescent)
+  for (let angle = Math.PI * 0.6; angle >= -Math.PI * 0.6; angle -= 0.1) {
+    const x1 = cx + offset + innerRadius * Math.cos(angle);
+    const y1 = cy + innerRadius * Math.sin(angle) * 0.9;
+    const x2 = cx + offset + innerRadius * Math.cos(angle - 0.1);
+    const y2 = cy + innerRadius * Math.sin(angle - 0.1) * 0.9;
+    doc.line(x1, y1, x2, y2);
+  }
+  
+  // Small star near crescent
+  const starX = cx - size * 0.3;
+  const starY = cy - size * 0.4;
+  const starSize = size * 0.25;
+  
+  doc.setFillColor(color[0], color[1], color[2]);
+  doc.circle(starX, starY, starSize * 0.4, "F");
 }
 
 /**
- * Generate extra values section of a collection PDF
+ * Draw elegant ornamental flourish divider
+ */
+function drawOrnamentalDivider(
+  doc: jsPDF,
+  y: number,
+  x1: number = 25,
+  x2: number = PAGE_WIDTH - 25,
+  color: [number, number, number] = COLOR_GOLD
+): void {
+  const centerX = (x1 + x2) / 2;
+  const width = x2 - x1;
+  
+  doc.setDrawColor(color[0], color[1], color[2]);
+  doc.setLineWidth(0.3);
+  
+  // Left flourish
+  const leftEnd = centerX - 12;
+  doc.line(x1, y, leftEnd - 5, y);
+  
+  // Small decorative curl on left
+  for (let i = 0; i <= 8; i++) {
+    const angle = (i / 8) * Math.PI;
+    const r = 2;
+    const px = leftEnd - 3 + r * Math.cos(angle + Math.PI);
+    const py = y + r * Math.sin(angle) * 0.5;
+    if (i === 0) {
+      doc.moveTo(px, py);
+    } else {
+      doc.lineTo(px, py);
+    }
+  }
+  doc.stroke();
+  
+  // Center ornament - small diamond shape
+  doc.setFillColor(color[0], color[1], color[2]);
+  const diamondSize = 2;
+  doc.triangle(centerX, y - diamondSize, centerX - diamondSize, y, centerX + diamondSize, y, "F");
+  doc.triangle(centerX, y + diamondSize, centerX - diamondSize, y, centerX + diamondSize, y, "F");
+  
+  // Small center dot
+  doc.circle(centerX, y, 0.8, "F");
+  
+  // Right flourish (mirror of left)
+  const rightEnd = centerX + 12;
+  doc.line(rightEnd + 5, y, x2, y);
+  
+  // Small decorative curl on right
+  for (let i = 0; i <= 8; i++) {
+    const angle = (i / 8) * Math.PI;
+    const r = 2;
+    const px = rightEnd + 3 + r * Math.cos(angle);
+    const py = y + r * Math.sin(angle) * 0.5;
+    if (i === 0) {
+      doc.moveTo(px, py);
+    } else {
+      doc.lineTo(px, py);
+    }
+  }
+  doc.stroke();
+}
+
+/**
+ * Draw simple elegant line with diamond center
+ */
+function drawElegantLine(
+  doc: jsPDF,
+  y: number,
+  x1: number = 20,
+  x2: number = PAGE_WIDTH - 20,
+  color: [number, number, number] = COLOR_GOLD
+): void {
+  const centerX = (x1 + x2) / 2;
+  
+  doc.setDrawColor(color[0], color[1], color[2]);
+  doc.setLineWidth(0.3);
+  
+  // Lines on each side
+  doc.line(x1, y, centerX - 4, y);
+  doc.line(centerX + 4, y, x2, y);
+  
+  // Center diamond
+  doc.setFillColor(color[0], color[1], color[2]);
+  doc.triangle(centerX, y - 2, centerX - 2, y, centerX + 2, y, "F");
+  doc.triangle(centerX, y + 2, centerX - 2, y, centerX + 2, y, "F");
+}
+
+/**
+ * Add header to all pages
+ */
+function addHeaderToAllPages(doc: jsPDF, title: string): void {
+  const pageCount = (doc as unknown as { getNumberOfPages(): number }).getNumberOfPages();
+  
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    
+    // Elegant top border - thicker gold line
+    doc.setFillColor(COLOR_GOLD[0], COLOR_GOLD[1], COLOR_GOLD[2]);
+    doc.rect(0, 0, PAGE_WIDTH, 3, "F");
+    
+    // App name with elegant spacing
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(COLOR_PRIMARY[0], COLOR_PRIMARY[1], COLOR_PRIMARY[2]);
+    doc.text("SadaqahBox", 20, 16);
+    
+    // Crescent moon ornament instead of star
+    drawCrescentMoon(doc, PAGE_WIDTH - 28, 12, 5, COLOR_GOLD);
+    
+    // Subtitle
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(COLOR_TEXT_LIGHT[0], COLOR_TEXT_LIGHT[1], COLOR_TEXT_LIGHT[2]);
+    doc.text("Tracking your charitable giving", 20, 22);
+    
+    // Report title
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(COLOR_TEXT[0], COLOR_TEXT[1], COLOR_TEXT[2]);
+    doc.text(title, PAGE_WIDTH - 20, 22, { align: "right" });
+    
+    // Elegant divider below header
+    drawOrnamentalDivider(doc, 28);
+  }
+}
+
+/**
+ * Add footer to all pages
+ */
+function addFooterToAllPages(doc: jsPDF, collectionId?: string): void {
+  const pageCount = (doc as unknown as { getNumberOfPages(): number }).getNumberOfPages();
+  
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    
+    // Elegant divider above footer
+    drawElegantLine(doc, PAGE_HEIGHT - 22);
+    
+    // Bottom gold border
+    doc.setFillColor(COLOR_GOLD[0], COLOR_GOLD[1], COLOR_GOLD[2]);
+    doc.rect(0, PAGE_HEIGHT - 3, PAGE_WIDTH, 3, "F");
+    
+    // Hadith quote
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(COLOR_TEXT_LIGHT[0], COLOR_TEXT_LIGHT[1], COLOR_TEXT_LIGHT[2]);
+    const quote = '"The believer\'s shade on the Day of Resurrection will be his charity" — Tirmidhi';
+    doc.text(quote, PAGE_WIDTH / 2, PAGE_HEIGHT - 12, { align: "center" });
+    
+    // Page number
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(COLOR_TEXT_MUTED[0], COLOR_TEXT_MUTED[1], COLOR_TEXT_MUTED[2]);
+    doc.text(`Page ${i} of ${pageCount}`, PAGE_WIDTH - 20, PAGE_HEIGHT - 7, { align: "right" });
+    
+    // Collection ID if provided (only on last page)
+    if (collectionId && i === pageCount) {
+      doc.setFontSize(8);
+      doc.text(`ID: ${collectionId.slice(-12)}`, 20, PAGE_HEIGHT - 7);
+    }
+  }
+}
+
+/**
+ * Check if we need a new page and add one if necessary
+ */
+function ensureSpace(doc: jsPDF, currentY: number, requiredHeight: number): number {
+  if (currentY + requiredHeight > CONTENT_END) {
+    doc.addPage();
+    doc.setFillColor(COLOR_CREAM[0], COLOR_CREAM[1], COLOR_CREAM[2]);
+    doc.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, "F");
+    return CONTENT_START;
+  }
+  return currentY;
+}
+
+/**
+ * Generate extra values section - no boxes, clean layout
  */
 function generateExtraValuesSection(
   doc: jsPDF,
   extraValues: Record<string, { total: number; code: string; name: string }>,
   startY: number,
-  label: string = "Other Sadaqah:"
+  label: string = "Other Sadaqah"
 ): number {
   if (!extraValues || Object.keys(extraValues).length === 0) return startY;
 
-  // Section background
-  doc.setFillColor(248, 250, 248);
-  doc.roundedRect(15, startY - 5, 118, Object.keys(extraValues).length * 8 + 20, 3, 3, "F");
+  const items = Object.values(extraValues);
+  const lineHeight = 8;
+  const requiredHeight = items.length * lineHeight + 20;
+  
+  let yPos = ensureSpace(doc, startY, requiredHeight);
+  
+  if (yPos !== startY || yPos + requiredHeight > CONTENT_END) {
+    return generateExtraValuesSectionMultiPage(doc, items, yPos, label);
+  }
 
-  // Section title
+  // Section title with elegant styling
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(45, 125, 90);
-  doc.text(label, 20, startY + 5);
+  doc.setTextColor(COLOR_PRIMARY[0], COLOR_PRIMARY[1], COLOR_PRIMARY[2]);
+  doc.text(label, 20, yPos);
+  
+  // Elegant divider under title
+  drawElegantLine(doc, yPos + 3, 20, 80, COLOR_GOLD);
 
-  let yPos = startY + 15;
+  yPos += 14;
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(60, 60, 60);
+  doc.setTextColor(COLOR_TEXT[0], COLOR_TEXT[1], COLOR_TEXT[2]);
   
-  Object.values(extraValues).forEach((extra) => {
+  items.forEach((extra) => {
     doc.text(
-      `• ${formatValueForPDF(extra.total)} ${extra.code} (${extra.name})`,
+      `${extra.code}: ${formatValueForPDF(extra.total)} (${extra.name})`,
       25,
       yPos
     );
-    yPos += 8;
+    yPos += lineHeight;
   });
+
+  return yPos + 6;
+}
+
+/**
+ * Generate extra values section across multiple pages
+ */
+function generateExtraValuesSectionMultiPage(
+  doc: jsPDF,
+  items: { total: number; code: string; name: string }[],
+  startY: number,
+  label: string
+): number {
+  const lineHeight = 8;
+  let yPos = startY;
+  let itemIndex = 0;
+  let isFirstPage = true;
+
+  while (itemIndex < items.length) {
+    const headerHeight = isFirstPage ? 18 : 5;
+    const availableHeight = CONTENT_END - yPos - headerHeight - 10;
+    const itemsPerPage = Math.floor(availableHeight / lineHeight);
+    const itemsToRender = Math.min(itemsPerPage, items.length - itemIndex);
+    
+    if (itemsToRender <= 0) {
+      doc.addPage();
+      doc.setFillColor(COLOR_CREAM[0], COLOR_CREAM[1], COLOR_CREAM[2]);
+      doc.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, "F");
+      yPos = CONTENT_START;
+      isFirstPage = false;
+      continue;
+    }
+
+    if (isFirstPage) {
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(COLOR_PRIMARY[0], COLOR_PRIMARY[1], COLOR_PRIMARY[2]);
+      doc.text(label, 20, yPos);
+      
+      drawElegantLine(doc, yPos + 3, 20, 80, COLOR_GOLD);
+      yPos += 14;
+    } else {
+      yPos += 5;
+    }
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(COLOR_TEXT[0], COLOR_TEXT[1], COLOR_TEXT[2]);
+
+    for (let i = 0; i < itemsToRender; i++) {
+      const extra = items[itemIndex]!;
+      doc.text(
+        `${extra.code}: ${formatValueForPDF(extra.total)} (${extra.name})`,
+        25,
+        yPos
+      );
+      yPos += lineHeight;
+      itemIndex++;
+    }
+
+    yPos += 5;
+
+    if (itemIndex < items.length) {
+      doc.addPage();
+      doc.setFillColor(COLOR_CREAM[0], COLOR_CREAM[1], COLOR_CREAM[2]);
+      doc.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, "F");
+      yPos = CONTENT_START;
+      isFirstPage = false;
+    }
+  }
 
   return yPos + 5;
 }
 
 /**
  * Generate a single collection receipt PDF
- * 
- * @param collection - Collection data
- * @param boxName - Name of the box
- * @param preferredCurrency - User's preferred currency for conversion
- * @param options.label - Optional custom label for the total value (default: "Total Sadaqah:")
- * @returns Base64 data URL of the PDF
  */
 export function generateCollectionReceiptPDF(
   collection: CollectionPDFData,
@@ -203,7 +467,7 @@ export function generateCollectionReceiptPDF(
     title?: string;
   } = {}
 ): string {
-  const { label = "Total Sadaqah:", title = "Collection Report" } = options;
+  const { label = "Total Sadaqah", title = "Collection Report" } = options;
 
   const doc = new jsPDF({
     orientation: "portrait",
@@ -211,39 +475,50 @@ export function generateCollectionReceiptPDF(
     format: "a5",
   });
 
-  // Header
-  generatePDFHeader(doc, title, boxName);
+  // Clean cream background
+  doc.setFillColor(COLOR_CREAM[0], COLOR_CREAM[1], COLOR_CREAM[2]);
+  doc.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, "F");
 
-  // Date with icon indicator
+  let yPos = CONTENT_START + 8;
+
+  // Box info section - clean, no box
   doc.setFontSize(10);
-  doc.setTextColor(100, 100, 100);
   doc.setFont("helvetica", "normal");
-  doc.text(`Date: ${formatDateForPDF(collection.emptiedAt)}`, 20, 50);
+  doc.setTextColor(COLOR_TEXT_LIGHT[0], COLOR_TEXT_LIGHT[1], COLOR_TEXT_LIGHT[2]);
+  doc.text(`Box: ${boxName}`, 20, yPos);
+  
+  yPos += 8;
+  doc.text(`Date: ${formatDateForPDF(collection.emptiedAt)}`, 20, yPos);
+  
+  yPos += 20;
 
-  // Main value section with background highlight
   const currencyCode = getCurrencyCode(collection);
 
   // Value label
-  doc.setTextColor(60, 60, 60);
+  doc.setTextColor(COLOR_TEXT[0], COLOR_TEXT[1], COLOR_TEXT[2]);
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
-  doc.text(label, 20, 65);
+  doc.text(label, 20, yPos);
 
-  // Main value - Large and prominent
-  doc.setFontSize(28);
+  yPos += 14;
+
+  // Main value - prominent, no box background, just elegant presentation
+  doc.setFontSize(26);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(45, 125, 90);
-  doc.text(`${formatValueForPDF(collection.totalValue)} ${currencyCode}`, 20, 80);
+  doc.setTextColor(COLOR_PRIMARY[0], COLOR_PRIMARY[1], COLOR_PRIMARY[2]);
+  doc.text(`${formatValueForPDF(collection.totalValue)} ${currencyCode}`, PAGE_WIDTH / 2, yPos, { align: "center" });
+  
+  // Elegant line below value
+  drawElegantLine(doc, yPos + 6, 40, PAGE_WIDTH - 40, COLOR_GOLD);
 
-  let yPos = 92;
+  yPos += 22;
 
-  // Converted value section - use stored conversions from metadata
+  // Converted value section - no boxes
   const conversions = collection.metadata?.conversions || [];
   const preferredConversion = preferredCurrency
     ? conversions.find(c => c.code === preferredCurrency.code)
     : undefined;
 
-  // Also check if the preferred currency was stored as the preferred one at collection time
   const storedPreferredCode = collection.metadata?.preferredCurrencyCode;
   const storedPreferredConversion = storedPreferredCode && storedPreferredCode !== currencyCode
     ? conversions.find(c => c.code === storedPreferredCode) || preferredConversion
@@ -252,30 +527,32 @@ export function generateCollectionReceiptPDF(
   const conversionToShow = storedPreferredConversion || preferredConversion;
 
   if (conversionToShow && conversionToShow.code !== currencyCode) {
-    // Conversion box
-    doc.setFillColor(245, 250, 247);
-    doc.roundedRect(15, yPos - 5, 118, 32, 4, 4, "F");
+    yPos = ensureSpace(doc, yPos, 30);
     
     // "Approximately" label
     doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Approximately in ${conversionToShow.name}:`, 25, yPos + 5);
-
-    // Converted value
-    doc.setFontSize(18);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(60, 60, 60);
-    const prefSymbol = conversionToShow.symbol || "";
-    doc.text(`${prefSymbol}${formatValueForPDF(conversionToShow.value)} ${conversionToShow.code}`, 25, yPos + 18);
-
-    // Exchange rate note
-    doc.setFontSize(7);
     doc.setFont("helvetica", "italic");
-    doc.setTextColor(150, 150, 150);
-    doc.text(`1 ${currencyCode} ≈ ${formatValueForPDF(conversionToShow.rate)} ${conversionToShow.code}`, 25, yPos + 25);
+    doc.setTextColor(COLOR_TEXT_LIGHT[0], COLOR_TEXT_LIGHT[1], COLOR_TEXT_LIGHT[2]);
+    doc.text(`Approximately in ${conversionToShow.name}:`, 20, yPos);
 
-    yPos += 40;
+    yPos += 10;
+    
+    // Converted value
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(COLOR_TEXT[0], COLOR_TEXT[1], COLOR_TEXT[2]);
+    const prefSymbol = conversionToShow.symbol || "";
+    doc.text(`${prefSymbol}${formatValueForPDF(conversionToShow.value)} ${conversionToShow.code}`, 20, yPos);
+
+    yPos += 8;
+    
+    // Exchange rate note
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(COLOR_TEXT_MUTED[0], COLOR_TEXT_MUTED[1], COLOR_TEXT_MUTED[2]);
+    doc.text(`1 ${currencyCode} = ${formatValueForPDF(conversionToShow.rate)} ${conversionToShow.code}`, 20, yPos);
+
+    yPos += 16;
   }
 
   // Extra values if any
@@ -283,16 +560,15 @@ export function generateCollectionReceiptPDF(
     yPos = generateExtraValuesSection(doc, collection.totalValueExtra, yPos);
   }
 
-  // Footer
-  generatePDFFooter(doc, collection.id);
+  // Add header and footer
+  addHeaderToAllPages(doc, title);
+  addFooterToAllPages(doc, collection.id);
 
-  // Return as base64 data URL
   return doc.output("dataurlstring");
 }
 
 /**
- * Generate a PDF for a single collection (alias for generateCollectionReceiptPDF)
- * with default labels suitable for viewing
+ * Generate a PDF for a single collection
  */
 export function generateSingleCollectionPDF(
   collection: CollectionPDFData,
@@ -300,23 +576,18 @@ export function generateSingleCollectionPDF(
   preferredCurrency?: PreferredCurrencyInfo | null
 ): string {
   return generateCollectionReceiptPDF(collection, boxName, preferredCurrency, {
-    label: "Total Sadaqah:",
+    label: "Total Sadaqah",
     title: "Collection Report",
   });
 }
 
 /**
  * Generate a PDF report for all collections
- * 
- * @param collections - Array of collection data
- * @param boxName - Name of the box or report title
- * @param preferredCurrency - User's preferred currency for conversion
- * @returns Base64 data URL of the PDF
  */
 export function generateAllCollectionsPDF(
   collections: CollectionPDFData[],
   boxName: string = "Collection Report",
-  preferredCurrency?: PreferredCurrencyInfo | null
+  _preferredCurrency?: PreferredCurrencyInfo | null
 ): string {
   const doc = new jsPDF({
     orientation: "portrait",
@@ -324,111 +595,93 @@ export function generateAllCollectionsPDF(
     format: "a5",
   });
 
-  // Decorative top bar
-  doc.setFillColor(45, 125, 90);
-  doc.rect(0, 0, 148, 8, "F");
+  // Clean cream background
+  doc.setFillColor(COLOR_CREAM[0], COLOR_CREAM[1], COLOR_CREAM[2]);
+  doc.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, "F");
 
-  // Header
-  doc.setFontSize(20);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(45, 125, 90);
-  doc.text("SadaqahBox", 20, 20);
+  let yPos = CONTENT_START + 5;
 
-  doc.setDrawColor(45, 125, 90);
-  doc.setLineWidth(0.5);
-  doc.line(20, 23, 128, 23);
-
-  doc.setFontSize(14);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(60, 60, 60);
-  doc.text(boxName, 20, 32);
-
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(100, 100, 100);
-  doc.text(`Generated: ${new Date().toLocaleDateString()}`, 20, 39);
-
-  // Summary section with background
-  doc.setFillColor(248, 250, 248);
-  doc.roundedRect(15, 44, 118, 22, 3, 3, "F");
-
+  // Summary section - no boxes, clean layout
   const totalCollected = collections.reduce((sum, c) => sum + c.totalValue, 0);
-  doc.setTextColor(60, 60, 60);
+  const baseCurrency = collections.length > 0 ? getCurrencyCode(collections[0]!) : "XAU";
+
+  doc.setTextColor(COLOR_TEXT[0], COLOR_TEXT[1], COLOR_TEXT[2]);
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  doc.text(`Total Collections:`, 20, 52);
+  doc.text(`Total Collections:`, 20, yPos);
   doc.setFont("helvetica", "bold");
-  doc.text(`${collections.length}`, 60, 52);
+  doc.text(`${collections.length}`, 65, yPos);
 
+  yPos += 10;
   doc.setFont("helvetica", "normal");
-  doc.text(`Total Value:`, 20, 60);
+  doc.text(`Total Value:`, 20, yPos);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(45, 125, 90);
-  
-  // Show first collection's currency as the base currency
-  const baseCurrency = collections.length > 0 ? getCurrencyCode(collections[0]!) : "XAU";
-  doc.text(`${formatValueForPDF(totalCollected)} ${baseCurrency}`, 60, 60);
+  doc.setTextColor(COLOR_PRIMARY[0], COLOR_PRIMARY[1], COLOR_PRIMARY[2]);
+  doc.text(`${formatValueForPDF(totalCollected)} ${baseCurrency}`, 65, yPos);
 
-  // Table header
-  let yPos = 75;
-  doc.setFillColor(45, 125, 90);
-  doc.roundedRect(15, yPos - 6, 118, 10, 2, 2, "F");
+  yPos += 6;
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "italic");
+  doc.setTextColor(COLOR_TEXT_MUTED[0], COLOR_TEXT_MUTED[1], COLOR_TEXT_MUTED[2]);
+  doc.text(`Generated: ${new Date().toLocaleDateString()}`, 20, yPos);
+
+  yPos += 12;
   
+  // Divider
+  drawElegantLine(doc, yPos, 20, PAGE_WIDTH - 20, COLOR_GOLD);
+  yPos += 10;
+
+  // Table header - clean, no background
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(255, 255, 255);
+  doc.setTextColor(COLOR_PRIMARY[0], COLOR_PRIMARY[1], COLOR_PRIMARY[2]);
   doc.text("Date", 20, yPos);
   doc.text("Value", 70, yPos);
-  doc.text("Currency", 100, yPos);
+  doc.text("Currency", 108, yPos);
+  
+  // Line under headers
+  doc.setDrawColor(COLOR_GOLD[0], COLOR_GOLD[1], COLOR_GOLD[2]);
+  doc.setLineWidth(0.3);
+  doc.line(20, yPos + 2, PAGE_WIDTH - 20, yPos + 2);
 
   yPos += 10;
 
   // Table rows
   doc.setFont("helvetica", "normal");
-  let isAlternate = false;
   
-  collections.forEach((collection, index) => {
-    if (yPos > 180) {
+  collections.forEach((collection) => {
+    if (yPos > CONTENT_END - 10) {
       doc.addPage();
-      yPos = 20;
+      doc.setFillColor(COLOR_CREAM[0], COLOR_CREAM[1], COLOR_CREAM[2]);
+      doc.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, "F");
       
-      // Header on new page
-      doc.setFillColor(45, 125, 90);
-      doc.roundedRect(15, yPos - 6, 118, 10, 2, 2, "F");
+      yPos = CONTENT_START;
+      
+      // Table header on new page
       doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(255, 255, 255);
+      doc.setTextColor(COLOR_PRIMARY[0], COLOR_PRIMARY[1], COLOR_PRIMARY[2]);
       doc.text("Date", 20, yPos);
       doc.text("Value", 70, yPos);
-      doc.text("Currency", 100, yPos);
+      doc.text("Currency", 108, yPos);
+      doc.setDrawColor(COLOR_GOLD[0], COLOR_GOLD[1], COLOR_GOLD[2]);
+      doc.setLineWidth(0.3);
+      doc.line(20, yPos + 2, PAGE_WIDTH - 20, yPos + 2);
       yPos += 10;
     }
 
-    // Alternate row background
-    if (isAlternate) {
-      doc.setFillColor(248, 250, 248);
-      doc.rect(15, yPos - 5, 118, 8, "F");
-    }
-    isAlternate = !isAlternate;
-
-    doc.setTextColor(60, 60, 60);
-    doc.setFontSize(8);
+    doc.setTextColor(COLOR_TEXT[0], COLOR_TEXT[1], COLOR_TEXT[2]);
+    doc.setFontSize(9);
     doc.text(formatDateShortForPDF(collection.emptiedAt), 20, yPos);
     doc.text(formatValueForPDF(collection.totalValue), 70, yPos);
-    doc.text(getCurrencyCode(collection), 100, yPos);
+    doc.text(getCurrencyCode(collection), 108, yPos);
 
     yPos += 8;
   });
 
-  // Footer
-  doc.setFillColor(240, 240, 240);
-  doc.rect(0, 195, 148, 0.5, "F");
-  
-  doc.setFontSize(8);
-  doc.setTextColor(120, 120, 120);
-  doc.setFont("helvetica", "normal");
-  doc.text("SadaqahBox - Tracking your charitable giving", 20, 202);
+  // Add header and footer
+  addHeaderToAllPages(doc, boxName);
+  addFooterToAllPages(doc);
 
-  // Return as base64 data URL
   return doc.output("dataurlstring");
 }

@@ -1,1 +1,0 @@
-ALTER TABLE `users` ADD `default_box_id` text;

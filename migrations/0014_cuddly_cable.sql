@@ -1,1 +1,0 @@
-ALTER TABLE `Box` ADD `totalValueExtra` text;

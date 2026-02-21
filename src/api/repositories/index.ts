@@ -55,3 +55,10 @@ export {
   type CreateCollectionData,
   type CollectionWithRelations,
 } from "./collection.repository";
+
+// API Rate Call Repository
+export {
+  ApiRateCallRepository,
+  API_ENDPOINTS,
+  type ApiEndpoint,
+} from "./api-rate-call.repository";

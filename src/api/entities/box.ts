@@ -193,7 +193,7 @@ export class BoxEntity {
 
 		const timestamp = new Date();
 		const collectionId = generateCollectionId();
-		const currencyId = box.currencyId || "cur_default";
+		const currencyId = box.baseCurrencyId || box.currencyId || "cur_default";
 		const boxUserId = box.userId;
 
 		// Get user's preferred currency
