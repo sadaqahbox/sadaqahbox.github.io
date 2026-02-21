@@ -1,0 +1,36 @@
+/**
+ * API Constants
+ * 
+ * Centralized configuration values for the API layer.
+ * All API-wide defaults, limits, and constants should be defined here.
+ */
+
+// ============== Pagination ==============
+
+export const DEFAULT_PAGE = 1;
+export const DEFAULT_LIMIT = 20;
+export const MAX_LIMIT = 100;
+
+// ============== Rate Limiting ==============
+
+export const DEFAULT_RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
+export const DEFAULT_RATE_LIMIT_MAX_REQUESTS = 100;
+
+export const STRICT_RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
+export const STRICT_RATE_LIMIT_MAX_REQUESTS = 10;
+
+// ============== Validation ==============
+
+export const MAX_BOX_NAME_LENGTH = 100;
+export const MAX_TAG_NAME_LENGTH = 50;
+export const MAX_CURRENCY_CODE_LENGTH = 3;
+export const MAX_CURRENCY_NAME_LENGTH = 100;
+
+// ============== Caching ==============
+
+export const DEFAULT_CACHE_TTL_SECONDS = 300; // 5 minutes
+
+// ============== Security ==============
+
+export const CSRF_TOKEN_LENGTH = 32;
+export const CSRF_COOKIE_NAME = "csrf-token";

@@ -1,65 +1,55 @@
 /**
- * Currency endpoints
+ * Currency endpoints - Refactored
+ * 
+ * Uses CRUD factory for standard operations.
  */
 
-import type { Context } from "hono";
-import { CurrencySchema, CreateCurrencyBodySchema } from "../domain/schemas";
+import { z } from "@hono/zod-openapi";
+import { requireAuth } from "../middleware";
 import { getCurrencyEntity } from "../entities";
-import { requireAuth, requireAdmin } from "../middleware";
+import { CurrencySchema, CreateCurrencyBodySchema } from "../dtos";
 import { createCrud } from "../shared/crud-factory";
 import type { RouteDefinition } from "../shared/route-builder";
-import type { Currency, CreateCurrencyOptions } from "../domain/types";
+import type { CurrencyDto, CreateCurrencyBodyDto } from "../dtos";
 
-// ============== CRUD Routes (Factory Generated) ==============
-
-const crud = createCrud<Currency, CreateCurrencyOptions, unknown>({
-    resourceName: "Currency",
-    tagName: "Currencies",
-    path: "/api/currencies",
-    idParam: "currencyId",
-    itemsKey: "currencies",  // Proper pluralization
-    schemas: {
-        item: CurrencySchema,
-        create: CreateCurrencyBodySchema,
-    },
-    getEntity: getCurrencyEntity,
-    getCreateInput: (body, _c) => ({
-        code: String(body.code),
-        name: String(body.name),
-        symbol: body.symbol ? String(body.symbol) : undefined,
-        currencyTypeId: body.currencyTypeId ? String(body.currencyTypeId) : undefined,
-    }),
-    checkDuplicate: {
-        field: "code",
-        method: "getByCode",
-    },
-    auth: {
-        list: false,
-        create: true,
-        get: false,
-        delete: true,
-    },
+const currencyCrud = createCrud<CurrencyDto, CreateCurrencyBodyDto>({
+	resourceName: "Currency",
+	tagName: "Currencies",
+	path: "/api/currencies",
+	idParam: "currencyId",
+	itemsKey: "currencies", // Proper pluralization
+	schemas: {
+		item: CurrencySchema,
+		create: CreateCurrencyBodySchema,
+	},
+	getEntity: getCurrencyEntity,
+	getCreateInput: (body) => body as CreateCurrencyBodyDto,
+	checkDuplicate: { field: "code", method: "getByCode" },
+	auth: {
+		list: false, // Public
+		create: true,
+		get: false, // Public
+		delete: true,
+	},
 });
 
-// Export all routes and handlers
+export const currencyRouteDefinitions: RouteDefinition[] = currencyCrud.routes.map(r => {
+	// Only require auth for create and delete
+	const needsAuth = r.route.method === "post" || r.route.method === "delete";
+	return {
+		...r,
+		middleware: needsAuth ? [requireAuth] : undefined,
+	};
+});
+
+// Re-export for direct use if needed
 export const {
-    listRoute,
-    createRoute,
-    getRoute,
-    deleteRoute,
-    listHandler,
-    createHandler,
-    getHandler,
-    deleteHandler,
-} = crud;
-
-// ============== Combined Route Definitions ==============
-
-export const currencyRouteDefinitions: RouteDefinition[] = [
-    // Public routes
-    { route: listRoute, handler: listHandler },
-    { route: getRoute, handler: getHandler },
-    // Admin routes
-    { route: createRoute, handler: createHandler, middleware: [requireAuth, requireAdmin] },
-    { route: deleteRoute, handler: deleteHandler, middleware: [requireAuth, requireAdmin] },
-];
+	listRoute,
+	createRoute,
+	getRoute,
+	deleteRoute,
+	listHandler,
+	createHandler,
+	getHandler,
+	deleteHandler,
+} = currencyCrud;

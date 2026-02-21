@@ -3,6 +3,9 @@
  * 
  * Generates standard CRUD routes and handlers for simple resources.
  * Reduces boilerplate for entities with standard list/create/get/delete operations.
+ * 
+ * NOTE: This module intentionally avoids importing from middleware to prevent
+ * circular dependencies. Auth middleware should be applied at registration time.
  */
 
 import { z } from "@hono/zod-openapi";
@@ -17,27 +20,38 @@ import {
     jsonSuccess,
     createIdParamSchema,
     createPaginatedResponse,
+    createItemResponseSchema,
     create200Response,
     create201Response,
     create404Response,
     create409Response,
     type RouteDefinition,
 } from "./route-builder";
-import { createItemResponseSchema } from "../domain/schemas";
 
 // ============== Types ==============
 
-export interface CrudEntity<T, CreateInput, EntityContext> {
+/**
+ * Standard CRUD entity interface
+ * Entities must implement these methods for CRUD factory to work
+ */
+export interface CrudEntity<T, CreateInput, UpdateInput = Partial<T>> {
     list(): Promise<T[]>;
     create(data: CreateInput): Promise<T>;
     get(id: string): Promise<T | null>;
-    update?(id: string, data: Partial<T>): Promise<T | null>;
+    update?(id: string, data: UpdateInput): Promise<T | null>;
     delete(id: string): Promise<boolean>;
     getByName?(name: string): Promise<T | null>;
     getByCode?(code: string): Promise<T | null>;
 }
 
-export interface CrudConfig<T, CreateInput, EntityContext> {
+/**
+ * Configuration for CRUD factory
+ */
+export interface CrudConfig<
+    T,
+    CreateInput,
+    UpdateInput = Partial<T>,
+> {
     /** Resource name (e.g., "Tag", "Currency") */
     resourceName: string;
     /** OpenAPI tag name (defaults to resourceName + "s" with proper pluralization) */
@@ -55,15 +69,19 @@ export interface CrudConfig<T, CreateInput, EntityContext> {
         update?: ZodType;
     };
     /** Function to get entity instance from context */
-    getEntity: (c: Context<{ Bindings: Env }>) => CrudEntity<T, CreateInput, EntityContext>;
+    getEntity: (c: Context<{ Bindings: Env }>) => CrudEntity<T, CreateInput, UpdateInput>;
     /** Function to extract create input from request body (can use context for user info) */
     getCreateInput: (body: Record<string, unknown>, c: Context<{ Bindings: Env }>) => CreateInput | Promise<CreateInput>;
     /** Check for duplicates on create */
     checkDuplicate?: boolean | {
         field: string;
-        method: string;
+        method: keyof CrudEntity<T, CreateInput, UpdateInput>;
     };
-    /** Auth requirements per action */
+    /** 
+     * Auth requirements per action.
+     * Note: These flags are for documentation only. 
+     * Actual auth middleware is applied at registration time.
+     */
     auth?: {
         list?: boolean;
         create?: boolean;
@@ -93,9 +111,11 @@ export interface CrudConfig<T, CreateInput, EntityContext> {
 
 // ============== Factory Function ==============
 
-export function createCrud<T, CreateInput = Record<string, unknown>, EntityContext = unknown>(
-    config: CrudConfig<T, CreateInput, EntityContext>
-) {
+export function createCrud<
+    T,
+    CreateInput = Record<string, unknown>,
+    UpdateInput = Partial<T>,
+>(config: CrudConfig<T, CreateInput, UpdateInput>) {
     const { resourceName, path, idParam, schemas, getEntity, getCreateInput } = config;
     const auth = config.auth ?? {};
     const overrides = config.overrides ?? {};
@@ -211,24 +231,28 @@ export function createCrud<T, CreateInput = Record<string, unknown>, EntityConte
                 : config.checkDuplicate;
 
             const value = (body[checkConfig.field] as string)?.trim();
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const checkMethod = (entity as unknown as Record<string, unknown>)[checkConfig.method];
-
-            if (value && typeof checkMethod === "function") {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const existing = await (checkMethod as (value: string) => Promise<any>)(value);
+            
+            // Type guard for entity methods
+            if (value && checkConfig.method === "getByName" && entity.getByName) {
+                const existing = await entity.getByName(value);
+                if (existing) {
+                    return conflict(`${resourceName} with this ${checkConfig.field} already exists`);
+                }
+            } else if (value && checkConfig.method === "getByCode" && entity.getByCode) {
+                const existing = await entity.getByCode(value);
                 if (existing) {
                     return conflict(`${resourceName} with this ${checkConfig.field} already exists`);
                 }
             }
         }
 
-        const item = await entity.create(input as CreateInput);
-        return jsonSuccess(c, { [resourceName.toLowerCase()]: item }, 201);
+        const item = await entity.create(input);
+        return jsonSuccess(c, { [itemKey]: item }, 201);
     });
 
     const getHandler = overrides.get ?? (async (c: Context<{ Bindings: Env }>) => {
-        const { [idParam]: id } = getParams<Record<string, string>>(c);
+        const params = getParams<Record<string, string>>(c);
+        const id = params[idParam];
         if (!id) {
             return notFound(resourceName, "unknown");
         }
@@ -238,11 +262,12 @@ export function createCrud<T, CreateInput = Record<string, unknown>, EntityConte
             return notFound(resourceName, id);
         }
 
-        return c.json(success({ [resourceName.toLowerCase()]: item }));
+        return c.json(success({ [itemKey]: item }));
     });
 
     const updateHandler = overrides.update ?? (async (c: Context<{ Bindings: Env }>) => {
-        const { [idParam]: id } = getParams<Record<string, string>>(c);
+        const params = getParams<Record<string, string>>(c);
+        const id = params[idParam];
         const body = getBody<Record<string, unknown>>(c);
         const entity = getEntity(c);
 
@@ -254,18 +279,18 @@ export function createCrud<T, CreateInput = Record<string, unknown>, EntityConte
             return notFound(resourceName, id);
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const item = await entity.update(id, body as unknown as Partial<T>);
+        const item = await entity.update(id, body as unknown as UpdateInput);
 
         if (!item) {
             return notFound(resourceName, id);
         }
 
-        return c.json(success({ [resourceName.toLowerCase()]: item }));
+        return c.json(success({ [itemKey]: item }));
     });
 
     const deleteHandler = overrides.delete ?? (async (c: Context<{ Bindings: Env }>) => {
-        const { [idParam]: id } = getParams<Record<string, string>>(c);
+        const params = getParams<Record<string, string>>(c);
+        const id = params[idParam];
         if (!id) {
             return notFound(resourceName, "unknown");
         }
@@ -281,11 +306,11 @@ export function createCrud<T, CreateInput = Record<string, unknown>, EntityConte
     // ============== Route Definitions ==============
 
     const routes: RouteDefinition[] = [
-        { route: listRoute, handler: listHandler, middleware: auth.list ? [requireAuth] : undefined },
-        { route: createRoute, handler: createHandler, middleware: auth.create !== false ? [requireAuth] : undefined },
-        { route: getRoute, handler: getHandler, middleware: auth.get ? [requireAuth] : undefined },
-        ...(updateRoute ? [{ route: updateRoute, handler: updateHandler, middleware: auth.update !== false ? [requireAuth] : undefined }] : []),
-        { route: deleteRoute, handler: deleteHandler, middleware: auth.delete !== false ? [requireAuth] : undefined },
+        { route: listRoute, handler: listHandler },
+        { route: createRoute, handler: createHandler },
+        { route: getRoute, handler: getHandler },
+        ...(updateRoute ? [{ route: updateRoute, handler: updateHandler }] : []),
+        { route: deleteRoute, handler: deleteHandler },
         ...(config.buildCustomRoutes ? config.buildCustomRoutes(path, idParam) : []),
     ];
 
@@ -305,6 +330,3 @@ export function createCrud<T, CreateInput = Record<string, unknown>, EntityConte
         deleteHandler,
     };
 }
-
-// Need to import this here to avoid circular dependency issues
-import { requireAuth } from "../middleware";

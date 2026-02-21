@@ -49,11 +49,6 @@ export interface TransactionContext {
     isRolledBack: () => boolean;
 }
 
-interface PendingQuery {
-    sql: string;
-    params: unknown[];
-}
-
 /**
  * Execute operations within a transaction
  *
@@ -75,13 +70,13 @@ export async function transaction<T>(
     options: TransactionOptions = {}
 ): Promise<T> {
     const opts = { ...DEFAULT_OPTIONS, ...options };
-    const pendingQueries: PendingQuery[] = [];
+    const pendingQueries: { toSQL(): { sql: string; params: unknown[] } }[] = [];
     let shouldRollback = false;
 
     const context: TransactionContext = {
         add: (query) => {
-            const { sql, params } = query.toSQL();
-            pendingQueries.push({ sql, params });
+            // Store the actual query object - D1 batch needs the drizzle query object
+            pendingQueries.push(query);
         },
 
         execute: async (fn) => {
@@ -110,17 +105,14 @@ export async function transaction<T>(
             const batchFn = getD1Batch(db);
 
             if (batchFn) {
-                // D1 batch execution
-                const stmts = pendingQueries.map((q) => ({
-                    sql: q.sql,
-                    params: q.params,
-                }));
-                await batchFn(stmts);
+                // D1 batch execution - pass the query objects directly to drizzle
+                await batchFn(pendingQueries);
             } else {
                 // Fallback: execute sequentially (not atomic)
                 console.warn("D1 batch not available, executing queries sequentially");
                 for (const query of pendingQueries) {
-                    await executeRaw(db, query.sql, query.params);
+                    const { sql, params } = query.toSQL();
+                    await executeRaw(db, sql, params);
                 }
             }
         } catch (error) {
@@ -159,15 +151,23 @@ export class TransactionRollbackError extends Error {
 
 /**
  * Get D1 batch function from database instance
+ * Returns a function that accepts drizzle query objects directly
  */
-function getD1Batch(db: Database): ((queries: Array<{ sql: string; params: unknown[] }>) => Promise<unknown>) | null {
-    // Access the underlying D1 database
+function getD1Batch(db: Database): ((queries: { toSQL(): { sql: string; params: unknown[] } }[]) => Promise<unknown>) | null {
+    // Access the underlying D1 database from drizzle instance
     const dbAny = db as unknown as {
-        batch?: (queries: Array<{ sql: string; params: unknown[] }>) => Promise<unknown>;
-        drizzle?: { batch?: (queries: Array<{ sql: string; params: unknown[] }>) => Promise<unknown> };
+        session?: {
+            batch?: (queries: { toSQL(): { sql: string; params: unknown[] } }[]) => Promise<unknown>;
+        };
     };
 
-    return dbAny.batch ?? dbAny.drizzle?.batch ?? null;
+    const batchFn = dbAny.session?.batch;
+    
+    if (batchFn && typeof batchFn === 'function') {
+        return batchFn.bind(dbAny.session);
+    }
+
+    return null;
 }
 
 /**

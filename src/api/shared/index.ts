@@ -14,6 +14,9 @@ export * from "./validators";
 // Response helpers
 export * from "./response";
 
+// Schema helpers (moved from route-builder)
+export * from "./schema-helpers";
+
 // Route builder utilities
 export * from "./route-builder";
 

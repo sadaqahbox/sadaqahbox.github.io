@@ -1,250 +1,177 @@
 /**
- * Sadaqah endpoints
+ * Sadaqah endpoints - Refactored
+ * 
+ * Uses service layer for business logic and DTOs for type safety.
  */
 
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import { 
-    SadaqahSchema, 
-    AddSadaqahBodySchema, 
-    BoxSchema,
-    createItemResponseSchema,
-} from "../domain/schemas";
-import { getSadaqahEntity, getBoxEntity, getCurrencyEntity } from "../entities";
-import { getCurrentUser, requireAuth } from "../middleware";
-import { success, notFound, validationError } from "../shared/response";
+import { requireAuth, getCurrentUser } from "../middleware";
+import { getSadaqahService, type AddSadaqahInput } from "../services";
 import {
-    buildRoute,
-    getParams,
-    getQuery,
-    getBody,
-    createIdParamSchema,
-    createPaginatedResponse,
-    PaginationQuerySchema,
-    create200Response,
-    create400Response,
-    create404Response,
-    type RouteDefinition,
+	SadaqahSchema,
+	AddSadaqahBodySchema,
+	ListSadaqahsResponseSchema,
+} from "../dtos";
+import {
+	buildRoute,
+	getParams,
+	getQuery,
+	getBody,
+	createIdParamSchema,
+	create200Response,
+	create201Response,
+	create404Response,
+	type RouteDefinition,
 } from "../shared/route-builder";
-import { DEFAULT_CURRENCY_CODE, MAX_SADAQAH_AMOUNT } from "../domain/constants";
+import { jsonSuccess } from "../shared/route-builder";
 
 // ============== Schemas ==============
 
-const SadaqahParamsSchema = z.object({
-    boxId: z.string(),
-    sadaqahId: z.string(),
+const BoxIdParamSchema = createIdParamSchema("boxId");
+
+const SadaqahIdParamSchema = createIdParamSchema("sadaqahId");
+
+const AddSadaqahResponseSchema = z.object({
+	success: z.boolean(),
+	sadaqah: SadaqahSchema,
+	updatedBox: z.object({
+		id: z.string(),
+		name: z.string(),
+		count: z.number(),
+		totalValue: z.number(),
+		currencyId: z.string().optional(),
+	}),
 });
 
-const BoxCoreSchema = BoxSchema.pick({
-    id: true,
-    name: true,
-    count: true,
-    totalValue: true,
-    createdAt: true,
-    updatedAt: true,
-}).extend({
-    currency: z.any().nullable(),
+const DeleteSadaqahResponseSchema = z.object({
+	success: z.boolean(),
+	deleted: z.boolean(),
+	updatedBox: z.object({
+		id: z.string(),
+		name: z.string(),
+		count: z.number(),
+		totalValue: z.number(),
+		currencyId: z.string().optional(),
+	}).optional(),
 });
 
-const ListQuerySchema = PaginationQuerySchema.extend({
-    from: z.string().optional(),
-    to: z.string().optional(),
-});
-
-// ============== Routes ==============
+// ============== Routes & Handlers ==============
 
 // List Sadaqahs
-const ListResponseSchema = createPaginatedResponse(SadaqahSchema, "sadaqahs").extend({
-    summary: z.object({
-        totalSadaqahs: z.number(),
-        totalValue: z.number(),
-        currency: z.any(),
-    }),
-});
-
 export const listRoute = buildRoute({
-    method: "get",
-    path: "/api/boxes/{boxId}/sadaqahs",
-    tags: ["Sadaqahs"],
-    summary: "List sadaqahs in a box",
-    params: createIdParamSchema("boxId"),
-    query: ListQuerySchema,
-    responses: {
-        ...create200Response(ListResponseSchema, "Returns sadaqahs"),
-        ...create404Response("Box not found"),
-    },
-    requireAuth: true,
+	method: "get",
+	path: "/api/boxes/{boxId}/sadaqahs",
+	tags: ["Sadaqahs"],
+	summary: "List all sadaqahs in a box",
+	params: BoxIdParamSchema,
+	query: z.object({
+		page: z.coerce.number().int().positive().default(1),
+		limit: z.coerce.number().int().positive().max(100).default(20),
+	}),
+	responses: {
+		...create200Response(ListSadaqahsResponseSchema, "Returns sadaqahs in the box"),
+		...create404Response("Box not found"),
+	},
+	requireAuth: true,
 });
 
 export const listHandler = async (c: Context<{ Bindings: Env }>) => {
-    const user = getCurrentUser(c);
-    const { boxId } = getParams<{ boxId: string }>(c);
-    const { page, limit, from, to } = getQuery<{ page: number; limit: number; from?: string; to?: string }>(c);
+	const { boxId } = getParams<{ boxId: string }>(c);
+	const query = getQuery<{ page: number; limit: number }>(c);
 
-    const box = await getBoxEntity(c).get(boxId, user.id);
-    if (!box) {
-        return notFound("Box", boxId);
-    }
+	const result = await getSadaqahService(c).listSadaqahs(boxId, {
+		page: query.page,
+		limit: query.limit,
+	});
 
-    const result = await getSadaqahEntity(c).list(boxId, { page, limit, from, to }, user.id);
-    return c.json(success({
-        sadaqahs: result.sadaqahs,
-        total: result.total,
-        summary: result.summary,
-    }));
+	return jsonSuccess(c, {
+		sadaqahs: result.sadaqahs,
+		total: result.total,
+	});
 };
 
 // Add Sadaqah
-const AddResponseSchema = z.object({
-    success: z.boolean(),
-    sadaqahs: SadaqahSchema.array(),
-    box: BoxCoreSchema,
-    message: z.string(),
+export const createRoute = buildRoute({
+	method: "post",
+	path: "/api/boxes/{boxId}/sadaqahs",
+	tags: ["Sadaqahs"],
+	summary: "Add a sadaqah to a box",
+	params: BoxIdParamSchema,
+	body: AddSadaqahBodySchema,
+	responses: {
+		...create201Response(AddSadaqahResponseSchema, "Returns the created sadaqah and updated box"),
+		...create404Response("Box not found"),
+	},
+	requireAuth: true,
 });
 
-export const addRoute = buildRoute({
-    method: "post",
-    path: "/api/boxes/{boxId}/sadaqahs",
-    tags: ["Sadaqahs"],
-    summary: "Add sadaqah(s) to a box",
-    params: createIdParamSchema("boxId"),
-    body: AddSadaqahBodySchema,
-    responses: {
-        ...create200Response(AddResponseSchema, "Returns created sadaqahs and updated box"),
-        ...create400Response("Invalid input"),
-        ...create404Response("Box not found"),
-    },
-    requireAuth: true,
-});
+export const createHandler = async (c: Context<{ Bindings: Env }>) => {
+	const user = getCurrentUser(c);
+	const { boxId } = getParams<{ boxId: string }>(c);
+	const body = getBody<AddSadaqahInput>(c);
 
-export const addHandler = async (c: Context<{ Bindings: Env }>) => {
-    const user = getCurrentUser(c);
-    const { boxId } = getParams<{ boxId: string }>(c);
-    const { amount, value, currencyCode, metadata } = getBody<{
-        amount?: number;
-        value?: number;
-        currencyCode?: string;
-        metadata?: Record<string, string>;
-    }>(c);
+	const result = await getSadaqahService(c).addSadaqah(boxId, body, user.id);
 
-    const box = await getBoxEntity(c).get(boxId, user.id);
-    if (!box) {
-        return notFound("Box", boxId);
-    }
+	if (!result) {
+		return c.json({ success: false, error: "Box not found", code: "NOT_FOUND" }, 404);
+	}
 
-    const sadaqahAmount = amount !== undefined 
-        ? Math.min(Math.max(1, amount), MAX_SADAQAH_AMOUNT)
-        : undefined;
-
-    const currency = await getCurrencyEntity(c).getOrCreate({
-        code: (currencyCode || DEFAULT_CURRENCY_CODE).toUpperCase(),
-    });
-
-    const result = await getSadaqahEntity(c).addMultiple({
-        boxId,
-        amount: sadaqahAmount,
-        value,
-        currencyId: currency.id,
-        userId: user.id,
-        metadata,
-    });
-
-    if (!result) {
-        return validationError("Failed to add sadaqahs");
-    }
-
-    const sadaqahCount = result.sadaqahs.length;
-    const sadaqahCurrencyCode = currencyCode || DEFAULT_CURRENCY_CODE;
-    const totalValue = result.sadaqahs[0]?.value || 0;
-
-    return c.json(success({
-        sadaqahs: result.sadaqahs,
-        box: {
-            id: result.box.id,
-            name: result.box.name,
-            count: result.box.count,
-            totalValue: result.box.totalValue,
-            createdAt: result.box.createdAt,
-            updatedAt: result.box.updatedAt,
-            currency,
-        },
-        message: `Added 1 sadaqah (${totalValue} ${sadaqahCurrencyCode}) to "${box.name}"`,
-    }));
-};
-
-// Get Sadaqah
-const GetResponseSchema = createItemResponseSchema(SadaqahSchema, "sadaqah");
-
-export const getRoute = buildRoute({
-    method: "get",
-    path: "/api/boxes/{boxId}/sadaqahs/{sadaqahId}",
-    tags: ["Sadaqahs"],
-    summary: "Get a specific sadaqah",
-    params: SadaqahParamsSchema,
-    responses: {
-        ...create200Response(GetResponseSchema, "Returns the sadaqah"),
-        ...create404Response("Sadaqah not found"),
-    },
-    requireAuth: true,
-});
-
-export const getHandler = async (c: Context<{ Bindings: Env }>) => {
-    const user = getCurrentUser(c);
-    const { boxId, sadaqahId } = getParams<{ boxId: string; sadaqahId: string }>(c);
-
-    const box = await getBoxEntity(c).get(boxId, user.id);
-    if (!box) {
-        return notFound("Box", boxId);
-    }
-
-    const sadaqah = await getSadaqahEntity(c).get(boxId, sadaqahId);
-    if (!sadaqah) {
-        return notFound("Sadaqah", sadaqahId);
-    }
-
-    return c.json(success({ sadaqah }));
+	return jsonSuccess(c, {
+		sadaqah: result.sadaqah,
+		updatedBox: {
+			id: result.updatedBox.id,
+			name: result.updatedBox.name,
+			count: result.updatedBox.count,
+			totalValue: result.updatedBox.totalValue,
+			currencyId: result.updatedBox.currencyId,
+		},
+	}, 201);
 };
 
 // Delete Sadaqah
-const DeleteResponseSchema = createItemResponseSchema(z.object({ deleted: z.boolean() }), "data");
-
 export const deleteRoute = buildRoute({
-    method: "delete",
-    path: "/api/boxes/{boxId}/sadaqahs/{sadaqahId}",
-    tags: ["Sadaqahs"],
-    summary: "Delete a sadaqah",
-    params: SadaqahParamsSchema,
-    responses: {
-        ...create200Response(DeleteResponseSchema, "Sadaqah deleted"),
-        ...create404Response("Sadaqah not found"),
-    },
-    requireAuth: true,
+	method: "delete",
+	path: "/api/boxes/{boxId}/sadaqahs/{sadaqahId}",
+	tags: ["Sadaqahs"],
+	summary: "Delete a sadaqah",
+	params: z.object({
+		boxId: z.string(),
+		sadaqahId: z.string(),
+	}),
+	responses: {
+		...create200Response(DeleteSadaqahResponseSchema, "Sadaqah deleted"),
+		...create404Response("Sadaqah not found"),
+	},
+	requireAuth: true,
 });
 
 export const deleteHandler = async (c: Context<{ Bindings: Env }>) => {
-    const user = getCurrentUser(c);
-    const { boxId, sadaqahId } = getParams<{ boxId: string; sadaqahId: string }>(c);
+	const user = getCurrentUser(c);
+	const { sadaqahId } = getParams<{ sadaqahId: string }>(c);
 
-    const box = await getBoxEntity(c).get(boxId, user.id);
-    if (!box) {
-        return notFound("Box", boxId);
-    }
+	const result = await getSadaqahService(c).deleteSadaqah(sadaqahId, user.id);
 
-    const deleted = await getSadaqahEntity(c).delete(boxId, sadaqahId, user.id);
-    if (!deleted) {
-        return notFound("Sadaqah", sadaqahId);
-    }
+	if (!result.deleted) {
+		return c.json({ success: false, error: "Sadaqah not found", code: "NOT_FOUND" }, 404);
+	}
 
-    return c.json(success({ deleted: true }));
+	return jsonSuccess(c, {
+		deleted: true,
+		updatedBox: result.updatedBox ? {
+			id: result.updatedBox.id,
+			name: result.updatedBox.name,
+			count: result.updatedBox.count,
+			totalValue: result.updatedBox.totalValue,
+			currencyId: result.updatedBox.currencyId,
+		} : undefined,
+	});
 };
 
-// ============== Route Definitions ==============
+// ============== Route Definitions Export ==============
 
 export const sadaqahRouteDefinitions: RouteDefinition[] = [
-    { route: listRoute, handler: listHandler, middleware: [requireAuth] },
-    { route: addRoute, handler: addHandler, middleware: [requireAuth] },
-    { route: getRoute, handler: getHandler, middleware: [requireAuth] },
-    { route: deleteRoute, handler: deleteHandler, middleware: [requireAuth] },
+	{ route: listRoute, handler: listHandler, middleware: [requireAuth] },
+	{ route: createRoute, handler: createHandler, middleware: [requireAuth] },
+	{ route: deleteRoute, handler: deleteHandler, middleware: [requireAuth] },
 ];
-
-// addHandler is already exported above

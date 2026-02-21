@@ -263,4 +263,29 @@ export class SadaqahEntity {
 
 		return { sadaqahs: [createdSadaqah], box: updatedBox };
 	}
+
+	// ============== Service Helper Methods ==============
+
+	async listByBox(boxId: string, page = 1, limit = 20): Promise<{ sadaqahs: Sadaqah[]; total: number }> {
+		const result = await this.list(boxId, { page, limit });
+		return { sadaqahs: result.sadaqahs, total: result.total };
+	}
+
+	async listByUser(userId: string): Promise<Sadaqah[]> {
+		const result = await this.db
+			.select()
+			.from(sadaqahs)
+			.where(eq(sadaqahs.userId, userId))
+			.orderBy(desc(sadaqahs.createdAt));
+		
+		const currencyIds = [...new Set(result.map((s) => s.currencyId))];
+		const currencyMap = await new CurrencyEntity(this.db).getMany(currencyIds);
+
+		return result.map((s) => {
+			const sadaqah = mapSadaqah(s);
+			const currency = currencyMap.get(s.currencyId);
+			if (currency) sadaqah.currency = currency;
+			return sadaqah;
+		});
+	}
 }

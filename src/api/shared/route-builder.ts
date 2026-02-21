@@ -1,137 +1,46 @@
 /**
- * Route builder utilities for standardized OpenAPI route creation
- * Reduces boilerplate and ensures consistency across endpoints
+ * Route Builder
+ * 
+ * Simplified OpenAPI route creation utilities.
+ * Schema helpers have been moved to schema-helpers.ts to avoid circular dependencies.
  */
 
 import { createRoute, z, type OpenAPIHono } from "@hono/zod-openapi";
 import type { Context, Next } from "hono";
-import { success } from "./response";
 import type { MiddlewareHandler } from "hono";
 
-// ============== Common Response Schemas ==============
+// Re-export schema helpers for convenience
+export {
+	SuccessResponseSchema,
+	ErrorResponseSchema,
+	NotFoundResponseSchema,
+	PaginationQuerySchema,
+	PaginationSchema,
+	createIdParamSchema,
+	createPaginatedResponse,
+	createItemResponseSchema,
+	create200Response,
+	create201Response,
+	create204Response,
+	create400Response,
+	create401Response,
+	create403Response,
+	create404Response,
+	create409Response,
+	create422Response,
+	create429Response,
+	create500Response,
+	IsoDateSchema,
+	IdSchema,
+	NonEmptyStringSchema,
+	OptionalStringSchema,
+	MetadataSchema,
+	ErrorCodeSchema,
+	type Pagination,
+	type ErrorCode,
+} from "./schema-helpers";
 
-export const SuccessResponseSchema = z.object({
-	success: z.boolean(),
-});
-
-export const ErrorResponseSchema = z.object({
-	success: z.boolean(),
-	error: z.string(),
-	code: z.string().optional(),
-});
-
-export const NotFoundResponseSchema = z.object({
-	success: z.boolean(),
-	error: z.string(),
-});
-
-// ============== Standard Response Helpers ==============
-
-/**
- * Creates a standard 200 response config
- */
-export function create200Response<T extends z.ZodType>(
-	schema: T,
-	description = "Success"
-) {
-	return {
-		200: {
-			description,
-			content: { "application/json": { schema } },
-		},
-	};
-}
-
-/**
- * Creates a standard 201 response config
- */
-export function create201Response<T extends z.ZodType>(
-	schema: T,
-	description = "Created"
-) {
-	return {
-		201: {
-			description,
-			content: { "application/json": { schema } },
-		},
-	};
-}
-
-/**
- * Creates a standard 404 response config
- */
-export function create404Response(description = "Not found") {
-	return {
-		404: {
-			description,
-			content: { "application/json": { schema: ErrorResponseSchema } },
-		},
-	};
-}
-
-/**
- * Creates a standard 400 response config
- */
-export function create400Response(description = "Bad request") {
-	return {
-		400: {
-			description,
-			content: { "application/json": { schema: ErrorResponseSchema } },
-		},
-	};
-}
-
-/**
- * Creates a standard 409 response config
- */
-export function create409Response(description = "Conflict") {
-	return {
-		409: {
-			description,
-			content: { "application/json": { schema: ErrorResponseSchema } },
-		},
-	};
-}
-
-// ============== Pagination Helpers ==============
-
-export const PaginationQuerySchema = z.object({
-	page: z.coerce.number().int().positive().default(1),
-	limit: z.coerce.number().int().positive().max(100).default(20),
-});
-
-export const PaginationSchema = z.object({
-	page: z.number(),
-	limit: z.number(),
-	total: z.number(),
-	totalPages: z.number(),
-});
-
-/**
- * Creates paginated response schema
- */
-export function createPaginatedResponse<T extends z.ZodType>(
-	itemSchema: T,
-	itemName: string
-) {
-	return z.object({
-		success: z.boolean(),
-		[itemName]: itemSchema.array(),
-		total: z.number(),
-	});
-}
-
-// ============== ID Parameter Helpers ==============
-
-export function createIdParamSchema(paramName: string, description?: string) {
-	return z.object({
-		[paramName]: z.string().openapi({
-			description: description || `${paramName} ID`,
-		}),
-	});
-}
-
-// ============== Route Builder ==============
+// ============== Route Configuration ==============
 
 export interface RouteConfig<
 	P extends z.ZodType | undefined = undefined,
@@ -142,6 +51,7 @@ export interface RouteConfig<
 	path: string;
 	tags: string[];
 	summary: string;
+	description?: string;
 	params?: P;
 	query?: Q;
 	body?: B;
@@ -173,6 +83,7 @@ export function buildRoute<
 		path: config.path,
 		tags: config.tags,
 		summary: config.summary,
+		description: config.description,
 		request: Object.keys(request).length > 0 ? request : undefined,
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		responses: config.responses as Record<string, any>,
@@ -183,6 +94,14 @@ export function buildRoute<
 			],
 		} : {}),
 	});
+}
+
+// ============== Route Definition Type ==============
+
+export interface RouteDefinition {
+	route: ReturnType<typeof createRoute>;
+	handler: (c: Context<{ Bindings: Env }>) => Promise<Response>;
+	middleware?: MiddlewareHandler<{ Bindings: Env }>[];
 }
 
 // ============== Handler Helpers ==============
@@ -208,58 +127,48 @@ export function getQuery<T extends Record<string, unknown>>(
 /**
  * Type-safe wrapper for extracting validated body
  */
-export function getBody<T extends Record<string, unknown>>(
-	c: Context
-): T {
+export function getBody<T>(c: Context): T {
 	return (c.req.valid as (type: string) => T)("json");
 }
 
 /**
- * Creates a success JSON response
+ * Creates a success JSON response helper
  */
-export function jsonSuccess<T extends Record<string, unknown>>(
-	c: Context,
-	data: T,
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	status: any = 200
-) {
-	return c.json(success(data), status);
+export function jsonSuccess<T>(c: Context, data: T, status: 200 | 201 = 200): Response {
+	return c.json({ success: true, ...data }, status);
 }
 
-// ============== Route Registration Helper ==============
-
-export interface RouteDefinition {
-	route: ReturnType<typeof createRoute>;
-	handler: (c: Context) => Promise<Response | void>;
-	middleware?: MiddlewareHandler<{ Bindings: Env }>[];
-}
+// ============== Route Registration ==============
 
 /**
- * Registers a route with the app (with type workaround for params mismatch)
- */
-export function registerRoute(
-	app: OpenAPIHono<{ Bindings: Env }>,
-	definition: RouteDefinition
-): void {
-	const { route, handler, middleware } = definition;
-	
-	// Middleware should be passed as part of the route config object
-	const routeWithMiddleware = middleware && middleware.length > 0
-		? { ...route, middleware }
-		: route;
-	
-	// @ts-expect-error - Type mismatch for routes without params
-	app.openapi(routeWithMiddleware, handler);
-}
-
-/**
- * Registers multiple routes with the app
+ * Registers a group of routes with optional middleware
  */
 export function registerRoutes(
 	app: OpenAPIHono<{ Bindings: Env }>,
-	definitions: RouteDefinition[]
+	routes: RouteDefinition[]
 ): void {
-	for (const def of definitions) {
-		registerRoute(app, def);
+	for (const { route, handler, middleware } of routes) {
+		if (middleware && middleware.length > 0) {
+			// Apply middleware then route handler
+			app.use(route.getRoutingPath(), ...middleware);
+		}
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		app.openapi(route as any, handler);
 	}
+}
+
+// ============== Middleware Composition ==============
+
+/**
+ * Composes multiple middleware handlers into a single handler
+ */
+export function composeMiddleware(
+	...handlers: MiddlewareHandler<{ Bindings: Env }>[]
+): MiddlewareHandler<{ Bindings: Env }> {
+	return async (c: Context<{ Bindings: Env }>, next: Next) => {
+		for (const handler of handlers) {
+			await handler(c, async () => {});
+		}
+		await next();
+	};
 }

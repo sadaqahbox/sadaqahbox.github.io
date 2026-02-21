@@ -1,91 +1,55 @@
 /**
- * Currency Type endpoints
+ * Currency Type endpoints - Refactored
+ * 
+ * Uses CRUD factory for standard operations.
  */
 
 import { z } from "@hono/zod-openapi";
-import type { Context } from "hono";
-import { CurrencyTypeSchema, CreateCurrencyTypeBodySchema } from "../domain/schemas";
+import { requireAuth } from "../middleware";
 import { getCurrencyTypeEntity } from "../entities";
-import { requireAuth, requireAdmin } from "../middleware";
-import { success } from "../shared/response";
-import {
-    buildRoute,
-    create200Response,
-    type RouteDefinition,
-} from "../shared/route-builder";
+import { CurrencyTypeSchema, CreateCurrencyTypeBodySchema } from "../dtos";
 import { createCrud } from "../shared/crud-factory";
-import type { CurrencyType, CreateCurrencyTypeOptions } from "../domain/types";
+import type { RouteDefinition } from "../shared/route-builder";
+import type { CurrencyTypeDto, CreateCurrencyTypeBodyDto } from "../dtos";
 
-// ============== CRUD Routes (Factory Generated) ==============
-
-const crud = createCrud<CurrencyType, CreateCurrencyTypeOptions, unknown>({
-    resourceName: "CurrencyType",
-    tagName: "Currency Types",
-    path: "/api/currency-types",
-    idParam: "currencyTypeId",
-    schemas: {
-        item: CurrencyTypeSchema,
-        create: CreateCurrencyTypeBodySchema,
-    },
-    getEntity: getCurrencyTypeEntity,
-    getCreateInput: (body, _c) => ({
-        name: String(body.name),
-        description: body.description ? String(body.description) : undefined,
-    }),
-    checkDuplicate: true,
-    auth: {
-        list: false,
-        create: true,
-        get: false,
-        delete: true,
-    },
+const currencyTypeCrud = createCrud<CurrencyTypeDto, CreateCurrencyTypeBodyDto>({
+	resourceName: "CurrencyType",
+	tagName: "Currency Types",
+	path: "/api/currency-types",
+	idParam: "currencyTypeId",
+	itemsKey: "currencyTypes", // Proper camelCase
+	schemas: {
+		item: CurrencyTypeSchema,
+		create: CreateCurrencyTypeBodySchema,
+	},
+	getEntity: getCurrencyTypeEntity,
+	getCreateInput: (body) => body as CreateCurrencyTypeBodyDto,
+	checkDuplicate: { field: "name", method: "getByName" },
+	auth: {
+		list: false, // Public
+		create: true,
+		get: false, // Public
+		delete: true,
+	},
 });
 
-// Export CRUD routes
+export const currencyTypeRouteDefinitions: RouteDefinition[] = currencyTypeCrud.routes.map(r => {
+	// Only require auth for create and delete
+	const needsAuth = r.route.method === "post" || r.route.method === "delete";
+	return {
+		...r,
+		middleware: needsAuth ? [requireAuth] : undefined,
+	};
+});
+
+// Re-export for direct use if needed
 export const {
-    listRoute,
-    createRoute,
-    getRoute,
-    deleteRoute,
-    listHandler,
-    createHandler,
-    getHandler,
-    deleteHandler,
-} = crud;
-
-// ============== Custom Route: Initialize Defaults ==============
-
-const InitializeResponseSchema = z.object({
-    success: z.boolean(),
-    currencyTypes: CurrencyTypeSchema.array(),
-    message: z.string(),
-});
-
-export const initializeRoute = buildRoute({
-    method: "post",
-    path: "/api/currency-types/initialize",
-    tags: ["Currency Types"],
-    summary: "Initialize default currency types (Fiat, Crypto, Commodity)",
-    responses: create200Response(InitializeResponseSchema, "Default currency types initialized"),
-    requireAuth: true,
-});
-
-export const initializeHandler = async (c: Context<{ Bindings: Env }>) => {
-    const currencyTypes = await getCurrencyTypeEntity(c).initializeDefaults();
-    return c.json(success({
-        currencyTypes,
-        message: "Default currency types initialized successfully",
-    }));
-};
-
-// ============== Combined Route Definitions ==============
-
-export const currencyTypeRouteDefinitions: RouteDefinition[] = [
-    // Public routes
-    { route: listRoute, handler: listHandler },
-    { route: getRoute, handler: getHandler },
-    // Admin routes
-    { route: createRoute, handler: createHandler, middleware: [requireAuth, requireAdmin] },
-    { route: deleteRoute, handler: deleteHandler, middleware: [requireAuth, requireAdmin] },
-    { route: initializeRoute, handler: initializeHandler, middleware: [requireAuth, requireAdmin] },
-];
+	listRoute,
+	createRoute,
+	getRoute,
+	deleteRoute,
+	listHandler,
+	createHandler,
+	getHandler,
+	deleteHandler,
+} = currencyTypeCrud;
