@@ -160,6 +160,8 @@ To enable automated deployment, set the following in your GitHub Repository Sett
 
 - `CLOUDFLARE_API_TOKEN`: Your Cloudflare API token (with Workers edit permissions)
 - `CLOUDFLARE_ACCOUNT_ID`: Your Cloudflare Account ID
+- `BETTER_AUTH_SECRET`: Secret key for Better Auth (generate with `bunx better-auth secret`)
+- `BETTER_AUTH_URL`: The production URL of your API (e.g., `https://sadaqahbox.apps.erklab.com`)
 
 For detailed instructions, see the **[Deployment Guide](docs/DEPLOYMENT.md)**.
 

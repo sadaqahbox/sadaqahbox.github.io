@@ -170,6 +170,10 @@ Set secrets in Cloudflare (not in code):
 bunx wrangler secret put GOLD_API_TOKEN
 bunx wrangler secret put COINGECKO_API_KEY
 bunx wrangler secret put CRYPTOCOMPARE_API_KEY
+
+# Set Better Auth secrets (required for production)
+bunx wrangler secret put BETTER_AUTH_SECRET
+bunx wrangler secret put BETTER_AUTH_URL
 ```
 
 ### Available Secrets
@@ -179,6 +183,8 @@ bunx wrangler secret put CRYPTOCOMPARE_API_KEY
 | `GOLD_API_TOKEN` | No | GoldAPI.io token for gold prices |
 | `COINGECKO_API_KEY` | No | CoinGecko Pro API key |
 | `CRYPTOCOMPARE_API_KEY` | No | CryptoCompare API key |
+| `BETTER_AUTH_SECRET` | Yes | Base64 encoded secret for encryption |
+| `BETTER_AUTH_URL` | Yes | Production URL (e.g., https://sadaqahbox.com) |
 
 ### Setting Secrets via Dashboard
 

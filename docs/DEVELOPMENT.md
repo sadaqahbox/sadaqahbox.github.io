@@ -67,6 +67,8 @@ Create a `.dev.vars` file for local secrets:
 GOLD_API_TOKEN=your_gold_api_token
 COINGECKO_API_KEY=your_coingecko_key
 CRYPTOCOMPARE_API_KEY=your_cryptocompare_key
+BETTER_AUTH_SECRET=your_generated_secret
+BETTER_AUTH_URL=http://localhost:5173
 ```
 
 ### 3. Database Setup
@@ -368,7 +370,7 @@ import { useSession, SignedIn, SignedOut } from "@daveyplate/better-auth-ui";
 
 function MyComponent() {
   const session = useSession();
-  
+
   return (
     <>
       <SignedIn>
@@ -510,12 +512,12 @@ interface BoxCardProps {
 export function BoxCard({ box, onSelect }: BoxCardProps) {
   // Hooks at top
   const [isOpen, setIsOpen] = useState(false);
-  
+
   // Handlers
   const handleClick = () => {
     onSelect?.(box.id);
   };
-  
+
   // Render
   return (
     <div className="...">
@@ -597,9 +599,9 @@ Enable query logging in Drizzle:
 
 ```typescript
 // In auth/index.ts or db/index.ts
-const db = drizzle(env.DB, { 
-  schema, 
-  logger: process.env.NODE_ENV === "development" 
+const db = drizzle(env.DB, {
+  schema,
+  logger: process.env.NODE_ENV === "development"
 });
 ```
 

@@ -8,7 +8,13 @@ import { schema } from "../db";
 import { passkey } from "@better-auth/passkey"
 
 // Use KVNamespace from @cloudflare/workers-types to match better-auth-cloudflare
-type AuthEnv = { DB: D1Database; AUTH_KV?: KVNamespace<string> };
+type AuthEnv = {
+    DB: D1Database;
+    AUTH_KV?: KVNamespace<string>;
+    BETTER_AUTH_SECRET?: string;
+    BETTER_AUTH_URL?: string;
+    ALLOWED_ORIGINS?: string;
+};
 
 // Single auth configuration that handles both CLI and runtime scenarios
 function createAuth(env?: AuthEnv, cf?: IncomingRequestCfProperties) {
@@ -18,6 +24,7 @@ function createAuth(env?: AuthEnv, cf?: IncomingRequestCfProperties) {
     const db = env ? drizzle(env.DB, { schema, logger: enableLogging }) : ({} as any);
 
     return betterAuth({
+        trustedOrigins: env?.ALLOWED_ORIGINS ? env.ALLOWED_ORIGINS.split(",").map(o => o.trim()) : [],
         ...withCloudflare(
             {
                 autoDetectIpAddress: true,
@@ -35,7 +42,8 @@ function createAuth(env?: AuthEnv, cf?: IncomingRequestCfProperties) {
                 kv: env?.AUTH_KV,
             },
             {
-                baseURL: "https://sadaqahbox.apps.erklab.com",
+                baseURL: env?.BETTER_AUTH_URL,
+                secret: env?.BETTER_AUTH_SECRET,
                 emailAndPassword: {
                     enabled: true,
                 },
