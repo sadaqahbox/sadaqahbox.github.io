@@ -2,8 +2,9 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "./ModeToggle";
 import { SignedIn, SignedOut, UserButton } from "@daveyplate/better-auth-ui";
-import { GithubIcon, Icon, SunIcon } from "lucide-react";
-import { AlAqsaMosqueIcon, Mosque01Icon } from "@hugeicons/core-free-icons";
+import { GithubIcon } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Mosque01Icon } from "@hugeicons/core-free-icons";
 
 export function Header() {
   const location = useLocation();
@@ -14,7 +15,7 @@ export function Header() {
       <div className="container flex h-14 items-center justify-between mx-auto px-4 md:px-6">
         <Link to="/" className="flex items-center gap-2">
           <div className="bg-primary/10 flex h-8 w-8 items-center justify-center rounded-lg">
-            <span className="text-lg"></span>
+            <HugeiconsIcon icon={Mosque01Icon} className="text-primary size-5" />
           </div>
           <span className="font-bold text-xl">Sadaqah Box</span>
         </Link>

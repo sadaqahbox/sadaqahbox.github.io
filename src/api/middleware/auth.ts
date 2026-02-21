@@ -27,8 +27,8 @@ declare module "hono" {
  * Verifies the session token from cookies and adds user to context
  */
 export async function requireAuth(c: Context<{ Bindings: Env }>, next: Next) {
-  // Get session token from cookie
-  const cookieValue = getCookie(c, "better-auth.session_token") || 
+  // Get session token from cookie - using "sadaqahbox" prefix from auth config
+  const cookieValue = getCookie(c, "sadaqahbox.session_token") ||
                        getCookie(c, "session_token");
   
   if (!cookieValue) {

@@ -40,6 +40,8 @@ const BoxCoreSchema = BoxSchema.pick({
     name: true,
     count: true,
     totalValue: true,
+    createdAt: true,
+    updatedAt: true,
 }).extend({
     currency: z.any().nullable(),
 });
@@ -153,6 +155,7 @@ export const addHandler = async (c: Context<{ Bindings: Env }>) => {
 
     const sadaqahCount = result.sadaqahs.length;
     const sadaqahCurrencyCode = currencyCode || DEFAULT_CURRENCY_CODE;
+    const totalValue = result.sadaqahs[0]?.value || 0;
 
     return c.json(success({
         sadaqahs: result.sadaqahs,
@@ -161,9 +164,11 @@ export const addHandler = async (c: Context<{ Bindings: Env }>) => {
             name: result.box.name,
             count: result.box.count,
             totalValue: result.box.totalValue,
+            createdAt: result.box.createdAt,
+            updatedAt: result.box.updatedAt,
             currency,
         },
-        message: `Added ${sadaqahCount} sadaqah${sadaqahCount > 1 ? "s" : ""} (${value || 1} ${sadaqahCurrencyCode}) to "${box.name}"`,
+        message: `Added 1 sadaqah (${totalValue} ${sadaqahCurrencyCode}) to "${box.name}"`,
     }));
 };
 

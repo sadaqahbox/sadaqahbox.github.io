@@ -3,7 +3,7 @@ export interface Currency {
   code: string;
   name: string;
   symbol?: string;
-  createdAt: string;
+  currencyTypeId?: string;
 }
 
 export interface Tag {

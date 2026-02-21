@@ -206,38 +206,31 @@ export class SadaqahEntity {
 			Math.max(1, options.amount || DEFAULT_SADAQAH_AMOUNT),
 			MAX_SADAQAH_AMOUNT
 		);
-		const value = options.value || DEFAULT_SADAQAH_VALUE;
+		const valuePerUnit = options.value || DEFAULT_SADAQAH_VALUE;
+		// Total value is amount * value per unit (e.g., 5 items * $3 = $15 total)
+		const totalValue = valuePerUnit * amount;
 
 		const boxResult = await this.db.select().from(boxes).where(eq(boxes.id, options.boxId)).limit(1);
 		const box = boxResult[0];
 		if (!box) return null;
 
 		const timestamp = new Date();
-		const createdSadaqahs: Sadaqah[] = [];
+		const id = generateSadaqahId();
 
 		await dbBatch(this.db, async (b) => {
-			for (let i = 0; i < amount; i++) {
-				const id = generateSadaqahId(i);
-				b.add(this.db.insert(sadaqahs).values({
-					id,
-					boxId: options.boxId,
-					value,
-					currencyId: options.currencyId,
-					userId: options.userId,
-					createdAt: timestamp,
-				}));
-				createdSadaqahs.push({
-					id,
-					boxId: options.boxId,
-					value,
-					currencyId: options.currencyId,
-					userId: options.userId,
-					createdAt: timestamp.toISOString(),
-				});
-			}
+			// Create a single sadaqah with the total value representing the amount
+			b.add(this.db.insert(sadaqahs).values({
+				id,
+				boxId: options.boxId,
+				value: totalValue,
+				currencyId: options.currencyId,
+				userId: options.userId,
+				createdAt: timestamp,
+			}));
 
-			const newCount = box.count + amount;
-			const newTotalValue = box.totalValue + value * amount;
+			// Update box: increment count by 1 (one transaction), add total value
+			const newCount = box.count + 1;
+			const newTotalValue = box.totalValue + totalValue;
 			const currencyId = box.currencyId || options.currencyId;
 
 			b.add(this.db.update(boxes).set({
@@ -252,13 +245,22 @@ export class SadaqahEntity {
 			id: box.id,
 			name: box.name,
 			description: box.description || undefined,
-			count: box.count + amount,
-			totalValue: box.totalValue + value * amount,
+			count: box.count + 1,
+			totalValue: box.totalValue + totalValue,
 			currencyId: box.currencyId || options.currencyId,
 			createdAt: new Date(box.createdAt).toISOString(),
 			updatedAt: timestamp.toISOString(),
 		};
 
-		return { sadaqahs: createdSadaqahs, box: updatedBox };
+		const createdSadaqah: Sadaqah = {
+			id,
+			boxId: options.boxId,
+			value: totalValue,
+			currencyId: options.currencyId,
+			userId: options.userId,
+			createdAt: timestamp.toISOString(),
+		};
+
+		return { sadaqahs: [createdSadaqah], box: updatedBox };
 	}
 }

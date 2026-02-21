@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { boxesApi, currenciesApi } from "@/lib/api";
+import { boxesApi, currenciesApi } from "@/api/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,10 +31,10 @@ export function AddSadaqah({ boxId, onAdded, onCancel }: AddSadaqahProps) {
   useEffect(() => {
     const fetchCurrencies = async () => {
       try {
-        const data = await currenciesApi.getAll();
-        if (data.success && data.currencies.length > 0) {
-          setCurrencies(data.currencies);
-          setCurrencyCode(data.currencies[0].code);
+        const currencies = await currenciesApi.getAll();
+        if (currencies.length > 0) {
+          setCurrencies(currencies);
+          setCurrencyCode(currencies[0].code);
         }
       } catch {
         // Error handled by api.ts
@@ -51,14 +51,12 @@ export function AddSadaqah({ boxId, onAdded, onCancel }: AddSadaqahProps) {
 
     setLoading(true);
     try {
-      const data = await boxesApi.addSadaqah(boxId, {
+      await boxesApi.addSadaqah(boxId, {
         amount,
         value,
         currencyCode,
       });
-      if (data.success) {
-        onAdded();
-      }
+      onAdded();
     } catch {
       // Error handled by api.ts
     } finally {
@@ -122,7 +120,7 @@ export function AddSadaqah({ boxId, onAdded, onCancel }: AddSadaqahProps) {
               <Plus className="mr-2 h-4 w-4" />
               {loading
                 ? "Adding..."
-                : `Add ${amount} Sadaqah${amount > 1 ? "s" : ""}`}
+                : `Add ${amount > 1 ? `${amount} × ` : ""}${value} Sadaqah`}
             </Button>
           </div>
         </form>

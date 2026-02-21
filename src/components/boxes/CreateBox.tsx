@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { boxesApi, tagsApi } from "@/lib/api";
+import { boxesApi, tagsApi } from "@/api/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,10 +26,8 @@ export function CreateBox({ onCreated, onCancel }: CreateBoxProps) {
   useEffect(() => {
     const fetchTags = async () => {
       try {
-        const data = await tagsApi.getAll();
-        if (data.success) {
-          setAvailableTags(data.tags);
-        }
+        const tags = await tagsApi.getAll();
+        setAvailableTags(tags);
       } catch {
         // Error handled by api.ts
       } finally {
@@ -45,17 +43,15 @@ export function CreateBox({ onCreated, onCancel }: CreateBoxProps) {
 
     setLoading(true);
     try {
-      const data = await boxesApi.create({
+      const box = await boxesApi.create({
         name,
         description,
         tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
       });
-      if (data.success) {
-        onCreated(data.box);
-        setName("");
-        setDescription("");
-        setSelectedTagIds([]);
-      }
+      onCreated(box);
+      setName("");
+      setDescription("");
+      setSelectedTagIds([]);
     } catch {
       // Error handled by api.ts
     } finally {

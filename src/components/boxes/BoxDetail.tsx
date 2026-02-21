@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { boxesApi, tagsApi } from "@/lib/api";
+import { boxesApi, tagsApi, sadaqahsApi } from "@/api/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,10 +43,8 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
 
   const fetchSadaqahs = async () => {
     try {
-      const data = await boxesApi.getSadaqahs(box.id);
-      if (data.success) {
-        setSadaqahs(data.sadaqahs);
-      }
+      const sadaqahs = await boxesApi.getSadaqahs(box.id);
+      setSadaqahs(sadaqahs);
     } catch {
       // Error handled by api.ts
     }
@@ -54,10 +52,8 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
 
   const fetchCollections = async () => {
     try {
-      const data = await boxesApi.getCollections(box.id);
-      if (data.success) {
-        setCollections(data.collections);
-      }
+      const collections = await boxesApi.getCollections(box.id);
+      setCollections(collections);
     } catch {
       // Error handled by api.ts
     }
@@ -65,10 +61,8 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
 
   const fetchAvailableTags = async () => {
     try {
-      const data = await tagsApi.getAll();
-      if (data.success) {
-        setAvailableTags(data.tags);
-      }
+      const tags = await tagsApi.getAll();
+      setAvailableTags(tags);
     } catch {
       // Error handled by api.ts
     }
@@ -86,10 +80,8 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
   const handleSadaqahAdded = async () => {
     await fetchSadaqahs();
     try {
-      const data = await boxesApi.getById(box.id);
-      if (data.success) {
-        onBoxUpdated(data.box);
-      }
+      const updatedBox = await boxesApi.getById(box.id);
+      onBoxUpdated(updatedBox);
     } catch {
       // Error handled by api.ts
     }
@@ -98,12 +90,21 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
 
   const handleCollect = async () => {
     try {
-      const data = await boxesApi.empty(box.id);
-      if (data.success) {
-        onBoxUpdated(data.box);
-        await fetchSadaqahs();
-        await fetchCollections();
-      }
+      const emptiedBox = await boxesApi.empty(box.id);
+      onBoxUpdated(emptiedBox);
+      await fetchSadaqahs();
+      await fetchCollections();
+    } catch {
+      // Error handled by api.ts
+    }
+  };
+
+  const handleDeleteSadaqah = async (sadaqahId: string) => {
+    try {
+      await sadaqahsApi.delete(box.id, sadaqahId);
+      await fetchSadaqahs();
+      const updatedBox = await boxesApi.getById(box.id);
+      onBoxUpdated(updatedBox);
     } catch {
       // Error handled by api.ts
     }
@@ -111,13 +112,9 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
 
   const handleAddTag = async (tagId: string) => {
     try {
-      const data = await boxesApi.addTag(box.id, tagId);
-      if (data.success) {
-        const boxData = await boxesApi.getById(box.id);
-        if (boxData.success) {
-          onBoxUpdated(boxData.box);
-        }
-      }
+      await boxesApi.addTag(box.id, tagId);
+      const updatedBox = await boxesApi.getById(box.id);
+      onBoxUpdated(updatedBox);
     } catch {
       // Error handled by api.ts
     }
@@ -125,13 +122,9 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
 
   const handleRemoveTag = async (tagId: string) => {
     try {
-      const data = await boxesApi.removeTag(box.id, tagId);
-      if (data.success) {
-        const boxData = await boxesApi.getById(box.id);
-        if (boxData.success) {
-          onBoxUpdated(boxData.box);
-        }
-      }
+      await boxesApi.removeTag(box.id, tagId);
+      const updatedBox = await boxesApi.getById(box.id);
+      onBoxUpdated(updatedBox);
     } catch {
       // Error handled by api.ts
     }
@@ -278,7 +271,7 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
           <TabsTrigger value="collections">Collections ({collections.length})</TabsTrigger>
         </TabsList>
         <TabsContent value="sadaqahs" className="mt-4">
-          <SadaqahList sadaqahs={sadaqahs} currency={box.currency} />
+          <SadaqahList sadaqahs={sadaqahs} currency={box.currency} onDelete={handleDeleteSadaqah} />
         </TabsContent>
         <TabsContent value="collections" className="mt-4">
           <CollectionHistory collections={collections} />

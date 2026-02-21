@@ -16,7 +16,8 @@
     "auth:format": "bunx prettier --write src/db/auth.schema.ts",
     "auth:update": "npm run auth:generate && npm run auth:format",
     "studio:dev": "drizzle-kit studio",
-    "studio:prd": "cross-env NODE_ENV=production drizzle-kit studio"
+    "studio:prd": "cross-env NODE_ENV=production drizzle-kit studio",
+    "generate:api": "bun run scripts/generate-api-client.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.1.0",
@@ -37,6 +38,7 @@
     "drizzle-orm": "^0.45.1",
     "hono": "^4.11.8",
     "lucide-react": "^0.563.0",
+    "motion": "^12.34.0",
     "next-themes": "^0.4.6",
     "radix-ui": "^1.4.3",
     "react": "^19.0.0",
