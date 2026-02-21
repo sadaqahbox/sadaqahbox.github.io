@@ -1,11 +1,11 @@
 /**
  * Currency Type endpoints - Refactored
- * 
+ *
  * Uses CRUD factory for standard operations.
  */
 
 import { z } from "@hono/zod-openapi";
-import { requireAuth } from "../middleware";
+import { requireAuth, requireAdmin } from "../middleware";
 import { getCurrencyTypeEntity } from "../entities";
 import { CurrencyTypeSchema, CreateCurrencyTypeBodySchema } from "../dtos";
 import { createCrud } from "../shared/crud-factory";
@@ -34,11 +34,19 @@ const currencyTypeCrud = createCrud<CurrencyTypeDto, CreateCurrencyTypeBodyDto>(
 });
 
 export const currencyTypeRouteDefinitions: RouteDefinition[] = currencyTypeCrud.routes.map(r => {
-	// Only require auth for create and delete
-	const needsAuth = r.route.method === "post" || r.route.method === "delete";
+	// Auth required for read operations (list, get)
+	// Admin required for write operations (create, delete)
+	const isWriteOperation = r.route.method === "post" || r.route.method === "delete";
+	if (isWriteOperation) {
+		return {
+			...r,
+			middleware: [requireAuth, requireAdmin],
+		};
+	}
+	// Read operations require authentication
 	return {
 		...r,
-		middleware: needsAuth ? [requireAuth] : undefined,
+		middleware: [requireAuth],
 	};
 });
 
