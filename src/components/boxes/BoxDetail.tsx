@@ -2,7 +2,6 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -24,12 +23,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { SadaqahList } from "@/components/sadaqah/SadaqahList";
 import { CollectionHistory } from "@/components/sadaqah/CollectionHistory";
 import { AddSadaqah } from "@/components/sadaqah/AddSadaqah";
@@ -40,17 +33,12 @@ import { generateCollectionReceiptPDF, type PreferredCurrencyInfo } from "@/lib/
 import {
     useSadaqahs,
     useCollections,
-    useTags,
     useCurrencies,
     useCreateSadaqah,
     useDeleteSadaqah,
     useEmptyBox,
-    useAddTagToBox,
-    useRemoveTagFromBox,
-    prefetchBox,
 } from "@/hooks";
-import { useQueryClient } from "@tanstack/react-query";
-import type { Box, Tag, Collection } from "@/types";
+import type { Box } from "@/types";
 import { authClient } from "@/lib/auth";
 
 interface BoxDetailProps {
@@ -59,7 +47,6 @@ interface BoxDetailProps {
 }
 
 export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
-  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"sadaqahs" | "collections">("sadaqahs");
   const [showAddForm, setShowAddForm] = useState(false);
   const [showPdfDialog, setShowPdfDialog] = useState(false);
@@ -69,7 +56,6 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
   // TanStack Query hooks for data fetching
   const { data: sadaqahs = [], isLoading: sadaqahsLoading } = useSadaqahs(box.id);
   const { data: collections = [], isLoading: collectionsLoading } = useCollections(box.id);
-  const { data: availableTags = [], isLoading: tagsLoading } = useTags();
   const { data: currencies = [] } = useCurrencies();
   const { data: session } = authClient.useSession();
 
@@ -91,10 +77,8 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
   const { mutate: createSadaqah, isPending: isCreatingSadaqah } = useCreateSadaqah();
   const { mutate: deleteSadaqah, isPending: isDeletingSadaqah } = useDeleteSadaqah();
   const { mutate: emptyBox, isPending: isEmptying } = useEmptyBox();
-  const { mutate: addTag, isPending: isAddingTag } = useAddTagToBox();
-  const { mutate: removeTag, isPending: isRemovingTag } = useRemoveTagFromBox();
 
-  const isLoading = sadaqahsLoading || collectionsLoading || tagsLoading;
+  const isLoading = sadaqahsLoading || collectionsLoading;
 
   const handleSadaqahAdded = (value: number, currencyId?: string) => {
     createSadaqah(
@@ -136,30 +120,6 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
             }
         },
     });
-  };
-
-  const handleAddTag = (tagId: string) => {
-    addTag(
-        { boxId: box.id, tagId },
-        {
-            onSuccess: async () => {
-                // Prefetch updated box data
-                await prefetchBox(queryClient, box.id);
-            },
-        }
-    );
-  };
-
-  const handleRemoveTag = (tagId: string) => {
-    removeTag(
-        { boxId: box.id, tagId },
-        {
-            onSuccess: async () => {
-                // Prefetch updated box data
-                await prefetchBox(queryClient, box.id);
-            },
-        }
-    );
   };
 
   const getCurrencyDisplay = () => {
@@ -225,8 +185,6 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
     );
   };
 
-  const unassignedTags = availableTags.filter((tag: Tag) => !box.tags?.some((t) => t.id === tag.id));
-
   if (isLoading) {
     return (
       <Card>
@@ -253,67 +211,6 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
               {box.description && (
                 <CardDescription className="mt-1">{box.description}</CardDescription>
               )}
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <AnimatePresence mode="popLayout">
-                  {box.tags?.map((tag) => (
-                    <motion.div
-                      key={tag.id}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.8 }}
-                      layout
-                    >
-                      <Badge
-                        variant="secondary"
-                        className="gap-1 pr-1"
-                        style={{
-                          backgroundColor: tag.color ? `${tag.color}30` : undefined,
-                          color: tag.color || undefined,
-                          borderColor: tag.color || undefined,
-                        }}
-                      >
-                        {tag.name}
-                        <button
-                          className="hover:bg-background/50 ml-1 rounded-full px-1 text-xs disabled:opacity-50"
-                          onClick={() => handleRemoveTag(tag.id)}
-                          disabled={isRemovingTag}
-                        >
-                          ×
-                        </button>
-                      </Badge>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-                {unassignedTags.length > 0 && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-6 text-xs disabled:opacity-50"
-                        disabled={isAddingTag}
-                      >
-                        + Add Tag
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start">
-                      {unassignedTags.map((tag: Tag) => (
-                        <DropdownMenuItem
-                          key={tag.id}
-                          onClick={() => handleAddTag(tag.id)}
-                          className="gap-2"
-                        >
-                          <span
-                            className="h-2 w-2 rounded-full"
-                            style={{ backgroundColor: tag.color || "#6366f1" }}
-                          />
-                          {tag.name}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-              </div>
             </div>
             <div className="flex gap-2">
               {box.count > 0 && (
@@ -385,7 +282,7 @@ export function BoxDetail({ box, onBoxUpdated }: BoxDetailProps) {
           >
             <AddSadaqah
               boxId={box.id}
-              defaultCurrencyId={box.baseCurrencyId || box.currencyId}
+              defaultCurrencyId={box.baseCurrencyId ?? box.currencyId ?? undefined}
               onAdded={handleSadaqahAdded}
               onCancel={() => setShowAddForm(false)}
               isLoading={isCreatingSadaqah}

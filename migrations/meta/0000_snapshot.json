@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "f78e3faf-047d-4456-bb2c-9a16be5e0660",
+  "id": "1292d195-c424-4638-90bc-f9f9f537a87d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "accounts": {
@@ -124,6 +124,67 @@
           "onUpdate": "no action"
         }
       },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "api_rate_call": {
+      "name": "api_rate_call",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "endpoint": {
+          "name": "endpoint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "lastAttemptAt": {
+          "name": "lastAttemptAt",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "lastSuccessAt": {
+          "name": "lastSuccessAt",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "errorCount": {
+          "name": "errorCount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        }
+      },
+      "indexes": {
+        "api_rate_call_endpoint_unique": {
+          "name": "api_rate_call_endpoint_unique",
+          "columns": [
+            "endpoint"
+          ],
+          "isUnique": true
+        },
+        "api_rate_call_endpoint_idx": {
+          "name": "api_rate_call_endpoint_idx",
+          "columns": [
+            "endpoint"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
@@ -307,72 +368,6 @@
           "tableTo": "users",
           "columnsFrom": [
             "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "box_tag": {
-      "name": "box_tag",
-      "columns": {
-        "boxId": {
-          "name": "boxId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "tagId": {
-          "name": "tagId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "box_tag_box_id_idx": {
-          "name": "box_tag_box_id_idx",
-          "columns": [
-            "boxId"
-          ],
-          "isUnique": false
-        },
-        "box_tag_tag_id_idx": {
-          "name": "box_tag_tag_id_idx",
-          "columns": [
-            "tagId"
-          ],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "box_tag_boxId_box_id_fk": {
-          "name": "box_tag_boxId_box_id_fk",
-          "tableFrom": "box_tag",
-          "tableTo": "box",
-          "columnsFrom": [
-            "boxId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "box_tag_tagId_tag_id_fk": {
-          "name": "box_tag_tagId_tag_id_fk",
-          "tableFrom": "box_tag",
-          "tableTo": "tag",
-          "columnsFrom": [
-            "tagId"
           ],
           "columnsTo": [
             "id"
@@ -793,6 +788,103 @@
           "onUpdate": "no action"
         }
       },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "currency_rate_attempt": {
+      "name": "currency_rate_attempt",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "currencyCode": {
+          "name": "currencyCode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "lastAttemptAt": {
+          "name": "lastAttemptAt",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "lastSuccessAt": {
+          "name": "lastSuccessAt",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "usdValue": {
+          "name": "usdValue",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "sourceApi": {
+          "name": "sourceApi",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "attemptCount": {
+          "name": "attemptCount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "found": {
+          "name": "found",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        }
+      },
+      "indexes": {
+        "currency_rate_attempt_currencyCode_unique": {
+          "name": "currency_rate_attempt_currencyCode_unique",
+          "columns": [
+            "currencyCode"
+          ],
+          "isUnique": true
+        },
+        "currency_rate_attempt_code_idx": {
+          "name": "currency_rate_attempt_code_idx",
+          "columns": [
+            "currencyCode"
+          ],
+          "isUnique": false
+        },
+        "currency_rate_attempt_last_attempt_idx": {
+          "name": "currency_rate_attempt_last_attempt_idx",
+          "columns": [
+            "lastAttemptAt"
+          ],
+          "isUnique": false
+        },
+        "currency_rate_attempt_found_idx": {
+          "name": "currency_rate_attempt_found_idx",
+          "columns": [
+            "found"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
@@ -1263,59 +1355,6 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "tag": {
-      "name": "tag",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "color": {
-          "name": "color",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "createdAt": {
-          "name": "createdAt",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "tag_name_unique": {
-          "name": "tag_name_unique",
-          "columns": [
-            "name"
-          ],
-          "isUnique": true
-        },
-        "tag_name_idx": {
-          "name": "tag_name_idx",
-          "columns": [
-            "name"
-          ],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
     "users": {
       "name": "users",
       "columns": {
@@ -1400,14 +1439,6 @@
           "notNull": false,
           "autoincrement": false
         },
-        "is_anonymous": {
-          "name": "is_anonymous",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": false
-        },
         "default_box_id": {
           "name": "default_box_id",
           "type": "text",
@@ -1420,7 +1451,8 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": "'cur_279'"
         }
       },
       "indexes": {

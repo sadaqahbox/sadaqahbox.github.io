@@ -24,5 +24,3 @@ export const currencyTypesApi = {
     return r.currencyTypes;
   },
 };
-
-export type { CurrencyType };

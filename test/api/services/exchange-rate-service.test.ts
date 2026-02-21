@@ -296,6 +296,9 @@ describe("RateResult type", () => {
       usdRates: new Map([["USD", 1], ["EUR", 1.1]]),
       goldPriceUsd: 2000,
       errors: [],
+      fromCache: [],
+      newlyFetched: ["USD", "EUR"],
+      notFound: [],
     };
     
     expect(result.success).toBe(true);
@@ -310,6 +313,9 @@ describe("RateResult type", () => {
       usdRates: new Map(),
       goldPriceUsd: 0,
       errors: ["API failed", "Network error"],
+      fromCache: [],
+      newlyFetched: [],
+      notFound: ["USD"],
     };
     
     expect(result.success).toBe(false);

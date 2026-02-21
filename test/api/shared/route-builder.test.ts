@@ -107,7 +107,7 @@ describe("jsonSuccess", () => {
     const mockJson = (data: unknown, status: number) => ({ data, status });
     const mockContext = { json: mockJson } as any;
 
-    const response = jsonSuccess(mockContext, { id: "123", name: "Test" });
+    const response = jsonSuccess(mockContext, { id: "123", name: "Test" }) as unknown as { data: unknown; status: number };
 
     expect(response.status).toBe(200);
     expect(response.data).toEqual({ success: true, id: "123", name: "Test" });

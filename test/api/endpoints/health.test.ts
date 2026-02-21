@@ -14,7 +14,7 @@ describe("Health Endpoint", () => {
       const mockContext = createMockContext();
       
       const response = await healthHandler(mockContext);
-      const body = await response.json();
+      const body = await response.json() as { success: boolean; status: string; version: string; timestamp: string };
       
       expect(body.success).toBe(true);
       expect(body.status).toBe("healthy");
@@ -26,7 +26,7 @@ describe("Health Endpoint", () => {
       const mockContext = createMockContext();
       
       const response = await healthHandler(mockContext);
-      const body = await response.json();
+      const body = await response.json() as { timestamp: string };
       
       const timestamp = new Date(body.timestamp);
       expect(timestamp.toISOString()).toBe(body.timestamp);

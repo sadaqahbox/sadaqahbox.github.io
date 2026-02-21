@@ -3,11 +3,10 @@
  */
 
 import { z } from "@hono/zod-openapi";
-import { 
-	MAX_BOX_NAME_LENGTH, 
-	MAX_BOX_DESCRIPTION_LENGTH, 
-	MAX_TAG_NAME_LENGTH,
-	VALIDATION_PATTERNS 
+import {
+	MAX_BOX_NAME_LENGTH,
+	MAX_BOX_DESCRIPTION_LENGTH,
+	VALIDATION_PATTERNS
 } from "../domain/constants";
 
 // Note: isValidId is exported from ./id-generator, not here
@@ -82,11 +81,6 @@ export const BoxDescriptionSchema = z
 	.transform((val) => sanitizeString(val))
 	.optional();
 
-export const TagNameSchema = z
-	.string()
-	.min(1, "Tag name is required")
-	.max(MAX_TAG_NAME_LENGTH, `Tag name must be less than ${MAX_TAG_NAME_LENGTH} characters`)
-	.transform((val) => val.trim());
 
 export const ColorHexSchema = z
 	.string()

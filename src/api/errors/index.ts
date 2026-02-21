@@ -163,26 +163,6 @@ export class CurrencyNotFoundError extends EntityNotFoundError {
   }
 }
 
-/**
- * Error thrown when a tag operation fails
- */
-export class TagError extends AppError {
-  constructor(message: string, code: string = "TAG_ERROR", status: number = 400) {
-    super(message, code, status);
-    this.name = "TagError";
-  }
-}
-
-/**
- * Error thrown when a tag is not found
- */
-export class TagNotFoundError extends EntityNotFoundError {
-  constructor(id: string) {
-    super("Tag", id);
-    this.name = "TagNotFoundError";
-  }
-}
-
 // ============== Result Pattern ==============
 
 /**

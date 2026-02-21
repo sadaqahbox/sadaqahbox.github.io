@@ -10,9 +10,9 @@
 import { eq } from "drizzle-orm";
 import type { Context } from "hono";
 import { BaseService, createServiceFactory } from "./base-service";
-import { BoxRepository, SadaqahRepository, CurrencyRepository, TagRepository, CollectionRepository } from "../repositories";
+import { BoxRepository, SadaqahRepository, CurrencyRepository, CollectionRepository } from "../repositories";
 import type { BoxRecord } from "../repositories/box.repository";
-import type { Box, BoxStats, BoxSummary, Collection, Tag, Currency } from "../schemas";
+import type { Box, BoxStats, BoxSummary, Collection, Currency } from "../schemas";
 import { users } from "../../db/schema";
 import { DEFAULT_PAGE, DEFAULT_LIMIT, DEFAULT_BASE_CURRENCY_CODE, MAX_BOXES_PER_USER } from "../config/constants";
 import { sanitizeString } from "../shared/validators";
@@ -32,7 +32,6 @@ export interface CreateBoxInput {
   name: string;
   description?: string;
   metadata?: Record<string, string>;
-  tagIds?: string[];
   userId: string;
   baseCurrencyId?: string;
 }
@@ -85,10 +84,6 @@ export class BoxService extends BaseService {
     return new CurrencyRepository(this.db);
   }
 
-  private get tagRepo() {
-    return new TagRepository(this.db);
-  }
-
   private get collectionRepo() {
     return new CollectionRepository(this.db);
   }
@@ -129,11 +124,6 @@ export class BoxService extends BaseService {
       userId: input.userId,
       baseCurrencyId,
     });
-
-    // Add tags if provided
-    if (input.tagIds?.length) {
-      await this.boxRepo.setTags(box.id, input.tagIds);
-    }
 
     // Fetch the box with relations to return complete data
     const boxWithRelations = await this.boxRepo.findByIdWithRelations(box.id, input.userId);
@@ -417,46 +407,6 @@ export class BoxService extends BaseService {
       collections: result.collections,
       total: result.total,
     };
-  }
-
-  // ============== Tags ==============
-
-  /**
-   * Add a tag to a box
-   */
-  async addTagToBox(boxId: string, tagId: string, userId: string): Promise<boolean> {
-    // Verify box ownership
-    const box = await this.boxRepo.findById(boxId, userId);
-    if (!box) return false;
-
-    // Verify tag exists
-    const tag = await this.tagRepo.findById(tagId);
-    if (!tag) return false;
-
-    return this.boxRepo.addTag(boxId, tagId);
-  }
-
-  /**
-   * Remove a tag from a box
-   */
-  async removeTagFromBox(boxId: string, tagId: string, userId: string): Promise<boolean> {
-    // Verify box ownership
-    const box = await this.boxRepo.findById(boxId, userId);
-    if (!box) return false;
-
-    return this.boxRepo.removeTag(boxId, tagId);
-  }
-
-  /**
-   * Set all tags for a box
-   */
-  async setBoxTags(boxId: string, tagIds: string[], userId: string): Promise<boolean> {
-    // Verify box ownership
-    const box = await this.boxRepo.findById(boxId, userId);
-    if (!box) return false;
-
-    await this.boxRepo.setTags(boxId, tagIds);
-    return true;
   }
 }
 

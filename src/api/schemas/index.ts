@@ -69,24 +69,6 @@ export const CreateCurrencySchema = z.object({
 
 export type CreateCurrencyInput = z.infer<typeof CreateCurrencySchema>;
 
-// ============== Tag Schema ==============
-
-export const TagSchema = z.object({
-  id: z.string().openapi({ example: "tag_abc123" }),
-  name: z.string().openapi({ example: "Ramadan" }),
-  color: z.string().optional().openapi({ example: "#FF6B6B" }),
-  createdAt: IsoDateSchema,
-});
-
-export type Tag = z.infer<typeof TagSchema>;
-
-export const CreateTagSchema = z.object({
-  name: z.string().min(1).max(constants.MAX_TAG_NAME_LENGTH),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
-});
-
-export type CreateTagInput = z.infer<typeof CreateTagSchema>;
-
 // ============== Box Schema ==============
 
 const TotalValueExtraEntrySchema = z.object({
@@ -101,13 +83,13 @@ export const BoxSchema = z.object({
   description: z.string().optional(),
   metadata: MetadataSchema,
   count: z.number().int().nonnegative().openapi({ description: "Total sadaqahs in box" }),
-  totalValue: z.number().nonnegative().openapi({ 
-    description: "Total value in base currency" 
+  totalValue: z.number().nonnegative().openapi({
+    description: "Total value in base currency"
   }),
   totalValueExtra: z.record(z.string(), TotalValueExtraEntrySchema).nullable().optional().openapi({
     description: "Values that couldn't be converted to base currency, keyed by currencyId"
   }),
-  currencyId: z.string().optional(),
+  currencyId: z.string().nullable().optional(),
   currency: CurrencySchema.optional(),
   baseCurrencyId: z.string().optional().openapi({ 
     description: "Base currency ID for the box - cannot be changed after sadaqahs are added" 
@@ -115,7 +97,6 @@ export const BoxSchema = z.object({
   baseCurrency: CurrencySchema.optional().openapi({ 
     description: "Base currency for the box - all values are stored in this currency" 
   }),
-  tags: TagSchema.array().optional(),
   createdAt: IsoDateSchema,
   updatedAt: IsoDateSchema,
 });
@@ -129,7 +110,6 @@ export const CreateBoxSchema = z.object({
   }),
   description: z.string().optional(),
   metadata: MetadataSchema,
-  tagIds: z.array(z.string()).optional(),
   baseCurrencyId: z.string().optional().openapi({ 
     description: "Base currency ID for the box - defaults to USD if not provided. Cannot be changed after sadaqahs are added." 
   }),
@@ -191,12 +171,12 @@ export const CollectionSchema = z.object({
     total: z.number(),
     code: z.string(),
     name: z.string(),
-  })).optional(),
+  })).nullable().optional(),
   metadata: z.object({
     conversions: z.array(CollectionConversionSchema).optional(),
     preferredCurrencyId: z.string().optional(),
     preferredCurrencyCode: z.string().optional(),
-  }).optional(),
+  }).nullable().optional(),
   currencyId: z.string(),
   currency: CurrencySchema.optional(),
 });
@@ -233,7 +213,7 @@ export const CollectionResultSchema = z.object({
       total: z.number(),
       code: z.string(),
       name: z.string(),
-    })).optional(),
+    })).nullable().optional(),
     metadata: z.object({
       conversions: z.array(CollectionConversionSchema).optional(),
       preferredCurrencyId: z.string().optional(),
@@ -304,7 +284,6 @@ export const ApiResponseSchema = <T extends z.ZodTypeAny>(dataSchema: T) =>
 export {
   CurrencyTypeSchema as CurrencyTypeDtoSchema,
   CurrencySchema as CurrencyDtoSchema,
-  TagSchema as TagDtoSchema,
   BoxSchema as BoxDtoSchema,
   SadaqahSchema as SadaqahDtoSchema,
   CollectionSchema as CollectionDtoSchema,

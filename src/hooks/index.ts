@@ -30,9 +30,6 @@ export {
 // Collections
 export { useCollections } from "./useCollections";
 
-// Tags
-export { useTags, useAddTagToBox, useRemoveTagFromBox } from "./useTags";
-
 // Dashboard
 export { useDashboard } from "./useDashboard";
 

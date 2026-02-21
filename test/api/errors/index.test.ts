@@ -18,8 +18,6 @@ import {
   SadaqahNotFoundError,
   CurrencyError,
   CurrencyNotFoundError,
-  TagError,
-  TagNotFoundError,
   Result,
   tryAsync,
 } from "@/api/errors/index";
@@ -291,26 +289,6 @@ describe("CurrencyNotFoundError", () => {
   });
 });
 
-describe("TagError", () => {
-  test("should create error with default values", () => {
-    const error = new TagError("Tag operation failed");
-    
-    expect(error.message).toBe("Tag operation failed");
-    expect(error.code).toBe("TAG_ERROR");
-    expect(error.status).toBe(400);
-  });
-});
-
-describe("TagNotFoundError", () => {
-  test("should create error with tag id", () => {
-    const error = new TagNotFoundError("tag_123");
-    
-    expect(error.message).toBe('Tag with id "tag_123" not found');
-    expect(error.code).toBe("NOT_FOUND");
-    expect(error.status).toBe(404);
-  });
-});
-
 // ============== Result Pattern Tests ==============
 
 describe("Result", () => {
@@ -319,14 +297,18 @@ describe("Result", () => {
       const result = Result.ok({ id: "123" });
       
       expect(result.ok).toBe(true);
-      expect(result.value).toEqual({ id: "123" });
+      if (result.ok) {
+        expect(result.value).toEqual({ id: "123" });
+      }
     });
 
     test("should work with primitive values", () => {
       const result = Result.ok(42);
       
       expect(result.ok).toBe(true);
-      expect(result.value).toBe(42);
+      if (result.ok) {
+        expect(result.value).toBe(42);
+      }
     });
   });
 
@@ -336,7 +318,9 @@ describe("Result", () => {
       const result = Result.err(error);
       
       expect(result.ok).toBe(false);
-      expect(result.error).toBe(error);
+      if (!result.ok) {
+        expect(result.error).toBe(error);
+      }
     });
   });
 
@@ -379,11 +363,13 @@ describe("Result", () => {
 
     test("should not map error result", () => {
       const error = new AppError("Error", "ERROR");
-      const result = Result.err<number>(error);
+      const result = Result.err<number, AppError>(error);
       const mapped = Result.map(result, (x) => x * 2);
       
       expect(mapped.ok).toBe(false);
-      expect((mapped as { ok: false; error: AppError }).error).toBe(error);
+      if (!mapped.ok) {
+        expect(mapped.error).toBe(error);
+      }
     });
   });
 
@@ -398,12 +384,14 @@ describe("Result", () => {
 
     test("should map error result", () => {
       const error = new AppError("Error", "ERROR");
-      const result = Result.err<number>(error);
+      const result = Result.err<number, AppError>(error);
       const newError = new AppError("New error", "NEW_ERROR");
       const mapped = Result.mapErr(result, () => newError);
       
       expect(mapped.ok).toBe(false);
-      expect((mapped as { ok: false; error: AppError }).error).toBe(newError);
+      if (!mapped.ok) {
+        expect(mapped.error).toBe(newError);
+      }
     });
   });
 
@@ -431,7 +419,7 @@ describe("Result", () => {
 
     test("should return default for error result", () => {
       const error = new AppError("Error", "ERROR");
-      const result = Result.err<string>(error);
+      const result = Result.err<string, AppError>(error);
       
       expect(Result.unwrapOr(result, "default")).toBe("default");
     });
@@ -448,11 +436,13 @@ describe("Result", () => {
 
     test("should propagate error result", () => {
       const error = new AppError("Error", "ERROR");
-      const result = Result.err<number>(error);
+      const result = Result.err<number, AppError>(error);
       const chained = Result.andThen(result, (x) => Result.ok(x * 2));
       
       expect(chained.ok).toBe(false);
-      expect((chained as { ok: false; error: AppError }).error).toBe(error);
+      if (!chained.ok) {
+        expect(chained.error).toBe(error);
+      }
     });
 
     test("should handle chained error", () => {

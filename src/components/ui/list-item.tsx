@@ -43,7 +43,7 @@ const iconContainerVariants = cva(
 );
 
 export interface ListItemProps
-  extends React.HTMLAttributes<HTMLDivElement>,
+  extends Omit<React.HTMLAttributes<HTMLDivElement>, "title">,
     VariantProps<typeof listItemVariants> {
   /**
    * Icon to display - can be a React node, "logo" for logo.svg, or "numbered" with index
@@ -95,7 +95,7 @@ export function ListItem({
 }: ListItemProps) {
   const resolvedIconVariant = iconVariant || (variant === "selected" ? "selected" : "default");
 
-  const renderIcon = () => {
+  const renderIcon = (): React.ReactNode => {
     if (icon === "logo") {
       return (
         <Logo
@@ -108,17 +108,18 @@ export function ListItem({
     }
 
     if (typeof icon === "object" && icon !== null && "type" in icon && icon.type === "numbered") {
+      const numberedIcon = icon as { type: "numbered"; index: number };
       return (
         <span className={cn(
           "text-sm font-bold transition-colors duration-200",
           resolvedIconVariant === "selected" ? "text-primary-foreground" : "text-primary"
         )}>
-          #{icon.index}
+          #{numberedIcon.index}
         </span>
       );
     }
 
-    return icon;
+    return icon as React.ReactNode;
   };
 
   return (
@@ -130,7 +131,7 @@ export function ListItem({
       {...(props as any)}
     >
       {/* Icon Container */}
-      {icon && (
+      {icon !== null && icon !== undefined && (
         <div className={cn(iconContainerVariants({ variant: resolvedIconVariant }), iconClassName)}>
           {renderIcon()}
         </div>

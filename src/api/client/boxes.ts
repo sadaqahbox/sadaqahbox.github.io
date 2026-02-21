@@ -52,15 +52,9 @@ export const boxesApi = {
   },
 
   empty: async (id: string): Promise<{ box: Box; collection: Collection }> => {
-    const r = await api.post<{ box: Box; collection: Collection }>(`/boxes/${id}/empty`, EmptyBoxResponseSchema);
+    const r = await api.post(`/boxes/${id}/empty`, EmptyBoxResponseSchema);
     return { box: r.box, collection: r.collection };
   },
-
-  addTag: (boxId: string, tagId: string): Promise<{ success: boolean }> =>
-    api.post(`/boxes/${boxId}/tags`, SuccessResponseSchema, { tagId }),
-
-  removeTag: (boxId: string, tagId: string): Promise<{ success: boolean }> =>
-    api.del(`/boxes/${boxId}/tags/${tagId}`, SuccessResponseSchema),
 
   addSadaqah: (boxId: string, data: AddSadaqahBody): Promise<{ success: boolean; sadaqahs: Sadaqah[]; box: Box; message: string }> => {
     const validated = AddSadaqahBodySchema.parse(data);

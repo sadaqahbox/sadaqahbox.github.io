@@ -81,11 +81,6 @@ export const queryKeys = {
         lists: ["collections", "list"] as const,
         list: (boxId: string) => ["collections", "list", boxId] as const,
     },
-    // Tags
-    tags: {
-        all: ["tags"] as const,
-        list: ["tags", "list"] as const,
-    },
     // Currencies
     currencies: {
         all: ["currencies"] as const,

@@ -183,7 +183,7 @@ export function AddSadaqah({ boxId, defaultCurrencyId, onAdded, onCancel, isLoad
                   }
                   // Only update for user input events
                   const reason = eventDetails?.reason;
-                  if (reason === "input-change" || reason === "input-paste" || reason === "input-clear" || reason === "clear-press") {
+                  if (reason === "input-change" || reason === "input-clear" || reason === "clear-press") {
                     setSearchQuery(val);
                   }
                 }}

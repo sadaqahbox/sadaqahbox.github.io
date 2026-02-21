@@ -24,9 +24,6 @@ import { currencyRouteDefinitions } from "./endpoints/currencies";
 // Currency Type endpoints (CRUD factory generated)
 import { currencyTypeRouteDefinitions } from "./endpoints/currency-types";
 
-// Tag endpoints (CRUD factory generated)
-import { tagRouteDefinitions } from "./endpoints/tags";
-
 /**
  * All route definitions for the API
  */
@@ -39,7 +36,6 @@ export const allRouteDefinitions: RouteDefinition[] = [
 	...sadaqahRouteDefinitions,
 	...currencyTypeRouteDefinitions,
 	...currencyRouteDefinitions,
-	...tagRouteDefinitions,
 ];
 
 /**

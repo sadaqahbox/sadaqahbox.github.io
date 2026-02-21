@@ -44,15 +44,6 @@ export {
 	type UpdateCurrencyTypeInput,
 } from "./currency-type-service";
 
-// Tag service
-export {
-	TagService,
-	getTagService,
-	type CreateTagInput,
-	type UpdateTagInput,
-	type ListTagsOptions,
-} from "./tag-service";
-
 // Collection service
 export {
 	CollectionService,

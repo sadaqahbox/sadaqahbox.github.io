@@ -52,13 +52,13 @@ export interface CrudConfig<
     CreateInput,
     UpdateInput = Partial<T>,
 > {
-    /** Resource name (e.g., "Tag", "Currency") */
+    /** Resource name (e.g., "Currency") */
     resourceName: string;
     /** OpenAPI tag name (defaults to resourceName + "s" with proper pluralization) */
     tagName?: string;
-    /** API path prefix (e.g., "/api/tags") */
+    /** API path prefix (e.g., "/api/currency") */
     path: string;
-    /** URL parameter name for ID (e.g., "tagId") */
+    /** URL parameter name for ID (e.g., "currencyId") */
     idParam: string;
     /** Parent resource parameter (for nested routes like /api/boxes/{boxId}/sadaqahs) */
     parentIdParam?: string;

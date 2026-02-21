@@ -16,6 +16,16 @@ CREATE TABLE `accounts` (
 );
 --> statement-breakpoint
 CREATE INDEX `accounts_userId_idx` ON `accounts` (`user_id`);--> statement-breakpoint
+CREATE TABLE `api_rate_call` (
+	`id` text PRIMARY KEY NOT NULL,
+	`endpoint` text NOT NULL,
+	`lastAttemptAt` integer NOT NULL,
+	`lastSuccessAt` integer,
+	`errorCount` integer DEFAULT 0 NOT NULL
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `api_rate_call_endpoint_unique` ON `api_rate_call` (`endpoint`);--> statement-breakpoint
+CREATE INDEX `api_rate_call_endpoint_idx` ON `api_rate_call` (`endpoint`);--> statement-breakpoint
 CREATE TABLE `apikeys` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text,
@@ -43,15 +53,6 @@ CREATE TABLE `apikeys` (
 --> statement-breakpoint
 CREATE INDEX `apikeys_key_idx` ON `apikeys` (`key`);--> statement-breakpoint
 CREATE INDEX `apikeys_userId_idx` ON `apikeys` (`user_id`);--> statement-breakpoint
-CREATE TABLE `box_tag` (
-	`boxId` text NOT NULL,
-	`tagId` text NOT NULL,
-	FOREIGN KEY (`boxId`) REFERENCES `box`(`id`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`tagId`) REFERENCES `tag`(`id`) ON UPDATE no action ON DELETE cascade
-);
---> statement-breakpoint
-CREATE INDEX `box_tag_box_id_idx` ON `box_tag` (`boxId`);--> statement-breakpoint
-CREATE INDEX `box_tag_tag_id_idx` ON `box_tag` (`tagId`);--> statement-breakpoint
 CREATE TABLE `box` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
@@ -108,6 +109,21 @@ CREATE TABLE `currency` (
 CREATE UNIQUE INDEX `currency_code_unique` ON `currency` (`code`);--> statement-breakpoint
 CREATE INDEX `currency_code_idx` ON `currency` (`code`);--> statement-breakpoint
 CREATE INDEX `currency_currency_type_id_idx` ON `currency` (`currencyTypeId`);--> statement-breakpoint
+CREATE TABLE `currency_rate_attempt` (
+	`id` text PRIMARY KEY NOT NULL,
+	`currencyCode` text NOT NULL,
+	`lastAttemptAt` integer NOT NULL,
+	`lastSuccessAt` integer,
+	`usdValue` real,
+	`sourceApi` text,
+	`attemptCount` integer DEFAULT 0 NOT NULL,
+	`found` integer DEFAULT false NOT NULL
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `currency_rate_attempt_currencyCode_unique` ON `currency_rate_attempt` (`currencyCode`);--> statement-breakpoint
+CREATE INDEX `currency_rate_attempt_code_idx` ON `currency_rate_attempt` (`currencyCode`);--> statement-breakpoint
+CREATE INDEX `currency_rate_attempt_last_attempt_idx` ON `currency_rate_attempt` (`lastAttemptAt`);--> statement-breakpoint
+CREATE INDEX `currency_rate_attempt_found_idx` ON `currency_rate_attempt` (`found`);--> statement-breakpoint
 CREATE TABLE `currency_type` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
@@ -175,15 +191,6 @@ CREATE TABLE `sessions` (
 --> statement-breakpoint
 CREATE UNIQUE INDEX `sessions_token_unique` ON `sessions` (`token`);--> statement-breakpoint
 CREATE INDEX `sessions_userId_idx` ON `sessions` (`user_id`);--> statement-breakpoint
-CREATE TABLE `tag` (
-	`id` text PRIMARY KEY NOT NULL,
-	`name` text NOT NULL,
-	`color` text,
-	`createdAt` integer NOT NULL
-);
---> statement-breakpoint
-CREATE UNIQUE INDEX `tag_name_unique` ON `tag` (`name`);--> statement-breakpoint
-CREATE INDEX `tag_name_idx` ON `tag` (`name`);--> statement-breakpoint
 CREATE TABLE `users` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
@@ -196,9 +203,8 @@ CREATE TABLE `users` (
 	`banned` integer DEFAULT false,
 	`ban_reason` text,
 	`ban_expires` integer,
-	`is_anonymous` integer DEFAULT false,
 	`default_box_id` text,
-	`preferred_currency_id` text
+	`preferred_currency_id` text DEFAULT 'cur_279'
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `users_email_unique` ON `users` (`email`);--> statement-breakpoint

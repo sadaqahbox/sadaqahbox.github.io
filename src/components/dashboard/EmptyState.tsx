@@ -36,8 +36,7 @@ export function EmptyState() {
                         transition={{ delay: 0.3 }}
                         className="text-muted-foreground max-w-sm"
                     >
-                        Choose a box from the sidebar to view its sadaqahs, collections, and manage
-                        tags. Or create a new box to get started.
+                        Choose a box from the sidebar to view its sadaqahs, and collections. Or create a new box to get started.
                     </motion.p>
                 </CardContent>
             </Card>

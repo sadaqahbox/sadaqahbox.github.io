@@ -109,7 +109,7 @@ describe("jsonError", () => {
     const response = jsonError("Bad request");
     
     expect(response.status).toBe(400);
-    const body = await response.json();
+    const body = await response.json() as { success: boolean; error: string };
     expect(body.success).toBe(false);
     expect(body.error).toBe("Bad request");
   });
@@ -118,7 +118,7 @@ describe("jsonError", () => {
     const response = jsonError("Internal error", 500);
     
     expect(response.status).toBe(500);
-    const body = await response.json();
+    const body = await response.json() as { error: string };
     expect(body.error).toBe("Internal error");
   });
 });
@@ -130,7 +130,7 @@ describe("notFound", () => {
     const response = notFound("Box");
     
     expect(response.status).toBe(404);
-    const body = await response.json();
+    const body = await response.json() as { success: boolean; error: string; code: string };
     expect(body.success).toBe(false);
     expect(body.error).toBe("Box not found");
     expect(body.code).toBe("NOT_FOUND");
@@ -139,7 +139,7 @@ describe("notFound", () => {
   test("should include ID in message when provided", async () => {
     const response = notFound("Box", "box_123");
     
-    const body = await response.json();
+    const body = await response.json() as { error: string };
     expect(body.error).toBe('Box with id "box_123" not found');
   });
 });
@@ -151,7 +151,7 @@ describe("validationError", () => {
     const response = validationError("Invalid input");
     
     expect(response.status).toBe(400);
-    const body = await response.json();
+    const body = await response.json() as { success: boolean; error: string; code: string };
     expect(body.success).toBe(false);
     expect(body.error).toBe("Invalid input");
     expect(body.code).toBe("VALIDATION_ERROR");
@@ -161,7 +161,7 @@ describe("validationError", () => {
     const details = { fields: ["name", "email"] };
     const response = validationError("Validation failed", details);
     
-    const body = await response.json();
+    const body = await response.json() as { details: typeof details };
     expect(body.details).toEqual(details);
   });
 });
@@ -173,7 +173,7 @@ describe("conflict", () => {
     const response = conflict("Resource already exists");
     
     expect(response.status).toBe(409);
-    const body = await response.json();
+    const body = await response.json() as { success: boolean; error: string; code: string };
     expect(body.success).toBe(false);
     expect(body.error).toBe("Resource already exists");
     expect(body.code).toBe("CONFLICT");

@@ -38,13 +38,15 @@ export function CurrencySelectField({
   const isSelectingRef = useRef(false);
   
   // Get current user session to access preferredCurrencyId
-  const { data: session, isLoading: isLoadingSession } = authClient.useSession();
+  const sessionQuery = authClient.useSession() as { data: { user: { preferredCurrencyId?: string | null } } | null; isPending: boolean };
+  const session = sessionQuery.data;
+  const isLoadingSession = sessionQuery.isPending;
   
   const { data: currencies = [], isLoading: isLoadingCurrencies } = useCurrencies();
   const { data: currencyTypes = [] } = useCurrencyTypes();
 
   // Current value from session
-  const currentValue = session?.user?.preferredCurrencyId || null;
+  const currentValue = session?.user?.preferredCurrencyId ?? null;
 
   // Create a lookup map for currency types
   const currencyTypeMap = useMemo(() => {
@@ -153,7 +155,7 @@ export function CurrencySelectField({
             return;
           }
           const reason = eventDetails?.reason;
-          if (reason === "input-change" || reason === "input-paste" || reason === "input-clear" || reason === "clear-press") {
+          if (reason === "input-change" || reason === "input-clear" || reason === "clear-press") {
             setSearchQuery(val);
           }
         }}

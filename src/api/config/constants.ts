@@ -22,7 +22,6 @@ export const STRICT_RATE_LIMIT_MAX_REQUESTS = 10;
 // ============== Validation ==============
 
 export const MAX_BOX_NAME_LENGTH = 100;
-export const MAX_TAG_NAME_LENGTH = 50;
 export const MAX_CURRENCY_CODE_LENGTH = 3;
 export const MAX_CURRENCY_NAME_LENGTH = 100;
 

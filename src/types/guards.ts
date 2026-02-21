@@ -4,7 +4,7 @@
  * Type-safe runtime checks for API responses and domain types.
  */
 
-import type { Box, Sadaqah, Tag, Currency, Collection, ApiResponse } from "./index";
+import type { Box, Sadaqah, Currency, Collection, ApiResponse } from "./index";
 
 /**
  * Check if value is a non-null object
@@ -45,19 +45,6 @@ export function isCurrency(value: unknown): value is Currency {
         hasString(value, "name") &&
         hasOptionalString(value, "symbol") &&
         hasOptionalString(value, "currencyTypeId")
-    );
-}
-
-/**
- * Type guard for Tag
- */
-export function isTag(value: unknown): value is Tag {
-    if (!isObject(value)) return false;
-    return (
-        hasString(value, "id") &&
-        hasString(value, "name") &&
-        hasOptionalString(value, "color") &&
-        hasString(value, "createdAt")
     );
 }
 

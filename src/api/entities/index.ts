@@ -16,7 +16,6 @@ export { BoxEntity } from "./box";
 export { SadaqahEntity } from "./sadaqah";
 export { CurrencyEntity } from "./currency";
 export { CurrencyTypeEntity } from "./currency-type";
-export { TagEntity } from "./tag";
 
 // Export mappers
 export { mapBox, mapBoxes, mapSadaqah, mapSadaqahs } from "./mappers";
@@ -27,7 +26,6 @@ import { BoxEntity } from "./box";
 import { SadaqahEntity } from "./sadaqah";
 import { CurrencyEntity } from "./currency";
 import { CurrencyTypeEntity } from "./currency-type";
-import { TagEntity } from "./tag";
 
 /** Creates a BoxEntity from Hono context */
 export function getBoxEntity(c: Context<{ Bindings: Env }>): BoxEntity {
@@ -49,11 +47,6 @@ export function getCurrencyTypeEntity(c: Context<{ Bindings: Env }>): CurrencyTy
 	return new CurrencyTypeEntity(getDbFromContext(c));
 }
 
-/** Creates a TagEntity from Hono context */
-export function getTagEntity(c: Context<{ Bindings: Env }>): TagEntity {
-	return new TagEntity(getDbFromContext(c));
-}
-
 // ============== Direct Database Factory ==============
 
 /** Creates entities directly from a database instance */
@@ -63,6 +56,5 @@ export function createEntities(db: Database) {
 		sadaqah: new SadaqahEntity(db),
 		currency: new CurrencyEntity(db),
 		currencyType: new CurrencyTypeEntity(db),
-		tag: new TagEntity(db),
 	};
 }

@@ -9,11 +9,6 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 
-const navLinks = [
-  { href: "/#features", label: "Features" },
-  { href: "/#about", label: "About" },
-];
-
 const userMenuLinks = [
   {
     href: "/dashboard",
@@ -57,20 +52,6 @@ export function Header() {
           <Logo className="h-16 w-16 transition-transform duration-300" />
           <span className="font-bold text-xl tracking-tight">Sadaqah Box</span>
         </Link>
-
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-1">
-          {isLanding &&
-            navLinks.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-muted"
-              >
-                {link.label}
-              </a>
-            ))}
-        </nav>
 
         {/* Desktop Actions */}
         <div className="hidden md:flex items-center gap-2">
@@ -150,22 +131,6 @@ export function Header() {
             className="md:hidden border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 overflow-hidden"
           >
             <div className="container mx-auto px-4 py-4 space-y-4">
-              {isLanding && (
-                <nav className="flex flex-col gap-1">
-                  {navLinks.map((link) => (
-                    <a
-                      key={link.href}
-                      href={link.href}
-                      className="px-3 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-                    >
-                      {link.label}
-                    </a>
-                  ))}
-                </nav>
-              )}
-
-              <div className="h-px bg-border" />
-
               <div className="flex flex-col gap-2">
                 <AuthLoading>
                   <div className="flex flex-col gap-2">

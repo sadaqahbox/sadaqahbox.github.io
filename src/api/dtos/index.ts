@@ -16,7 +16,6 @@ import {
   // Re-export schemas
   CurrencyTypeSchema,
   CurrencySchema,
-  TagSchema,
   BoxSchema,
   SadaqahSchema,
   CollectionSchema,
@@ -24,14 +23,12 @@ import {
   BoxSummarySchema,
   CreateCurrencyTypeSchema,
   CreateCurrencySchema,
-  CreateTagSchema,
   CreateBoxSchema,
   UpdateBoxSchema,
   AddSadaqahSchema,
   // Re-export types
   type CurrencyType,
   type Currency,
-  type Tag,
   type Box,
   type Sadaqah,
   type Collection,
@@ -40,7 +37,6 @@ import {
   type PaginationQuery,
   type CreateCurrencyTypeInput,
   type CreateCurrencyInput,
-  type CreateTagInput,
   type CreateBoxInput,
   type UpdateBoxInput,
   type AddSadaqahInput,
@@ -52,7 +48,6 @@ export {
   // Schemas
   CurrencyTypeSchema,
   CurrencySchema,
-  TagSchema,
   BoxSchema,
   SadaqahSchema,
   CollectionSchema,
@@ -62,14 +57,12 @@ export {
   // Input schemas
   CreateCurrencyTypeSchema,
   CreateCurrencySchema,
-  CreateTagSchema,
   CreateBoxSchema,
   UpdateBoxSchema,
   AddSadaqahSchema,
   // Types
   type CurrencyType,
   type Currency,
-  type Tag,
   type Box,
   type Sadaqah,
   type Collection,
@@ -78,7 +71,6 @@ export {
   type PaginationQuery,
   type CreateCurrencyTypeInput,
   type CreateCurrencyInput,
-  type CreateTagInput,
   type CreateBoxInput,
   type UpdateBoxInput,
   type AddSadaqahInput,
@@ -89,7 +81,6 @@ export {
 
 export type CurrencyTypeDto = CurrencyType;
 export type CurrencyDto = Currency;
-export type TagDto = Tag;
 export type BoxDto = Box;
 export type SadaqahDto = Sadaqah;
 export type CollectionDto = Collection;
@@ -106,10 +97,6 @@ export type CreateCurrencyTypeBodyDto = z.infer<typeof CreateCurrencyTypeBodySch
 export const CreateCurrencyBodySchema = CreateCurrencySchema;
 
 export type CreateCurrencyBodyDto = z.infer<typeof CreateCurrencyBodySchema>;
-
-export const CreateTagBodySchema = CreateTagSchema;
-
-export type CreateTagBodyDto = z.infer<typeof CreateTagBodySchema>;
 
 export const CreateBoxBodySchema = CreateBoxSchema;
 
@@ -203,7 +190,6 @@ export const PaginationQueryDto = PaginationQuerySchema;
 export {
   CurrencyTypeSchema as CurrencyTypeDtoSchema,
   CurrencySchema as CurrencyDtoSchema,
-  TagSchema as TagDtoSchema,
   BoxSchema as BoxDtoSchema,
   SadaqahSchema as SadaqahDtoSchema,
   CollectionSchema as CollectionDtoSchema,

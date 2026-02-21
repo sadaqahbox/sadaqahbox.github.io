@@ -137,18 +137,6 @@ export const collections = sqliteTable(
   ]
 );
 
-// ============== Tag Table ==============
-export const tags = sqliteTable(
-  "tag",
-  {
-    id: text("id").primaryKey(),
-    name: text("name").notNull().unique(),
-    color: text("color"),
-    createdAt: integer("createdAt", { mode: "timestamp" }).notNull(),
-  },
-  (table) => [index("tag_name_idx").on(table.name)]
-);
-
 // ============== Currency Rate Attempts Table ==============
 // Tracks per-currency rate fetch attempts with granular control
 export const currencyRateAttempts = sqliteTable(
@@ -184,23 +172,6 @@ export const apiRateCalls = sqliteTable(
   (table) => [index("api_rate_call_endpoint_idx").on(table.endpoint)]
 );
 
-// ============== Box-Tag Junction Table ==============
-export const boxTags = sqliteTable(
-  "box_tag",
-  {
-    boxId: text("boxId")
-      .notNull()
-      .references(() => boxes.id, { onDelete: "cascade" }),
-    tagId: text("tagId")
-      .notNull()
-      .references(() => tags.id, { onDelete: "cascade" }),
-  },
-  (table) => [
-    index("box_tag_box_id_idx").on(table.boxId),
-    index("box_tag_tag_id_idx").on(table.tagId),
-  ]
-);
-
 // ============== Relations ==============
 export const currencyTypesRelations = relations(currencyTypes, ({ many }) => ({
   currencies: many(currencies),
@@ -216,21 +187,6 @@ export const currenciesRelations = relations(currencies, ({ one, many }) => ({
   baseCurrencyBoxes: many(boxes, { relationName: "boxBaseCurrency" }),
   collections: many(collections),
   preferredCurrencyUsers: many(users, { relationName: "userPreferredCurrency" }),
-}));
-
-export const tagsRelations = relations(tags, ({ many }) => ({
-  boxTags: many(boxTags),
-}));
-
-export const boxTagsRelations = relations(boxTags, ({ one }) => ({
-  box: one(boxes, {
-    fields: [boxTags.boxId],
-    references: [boxes.id],
-  }),
-  tag: one(tags, {
-    fields: [boxTags.tagId],
-    references: [tags.id],
-  }),
 }));
 
 export const boxesRelations = relations(boxes, ({ one, many }) => ({
@@ -249,7 +205,6 @@ export const boxesRelations = relations(boxes, ({ one, many }) => ({
   }),
   sadaqahs: many(sadaqahs),
   collections: many(collections),
-  boxTags: many(boxTags),
 }));
 
 export const sadaqahsRelations = relations(sadaqahs, ({ one }) => ({
@@ -293,10 +248,6 @@ export type Sadaqah = typeof sadaqahs.$inferSelect;
 export type NewSadaqah = typeof sadaqahs.$inferInsert;
 export type Collection = typeof collections.$inferSelect;
 export type NewCollection = typeof collections.$inferInsert;
-export type Tag = typeof tags.$inferSelect;
-export type NewTag = typeof tags.$inferInsert;
-export type BoxTag = typeof boxTags.$inferSelect;
-export type NewBoxTag = typeof boxTags.$inferInsert;
 export type ApiRateCall = typeof apiRateCalls.$inferSelect;
 export type NewApiRateCall = typeof apiRateCalls.$inferInsert;
 export type CurrencyRateAttempt = typeof currencyRateAttempts.$inferSelect;

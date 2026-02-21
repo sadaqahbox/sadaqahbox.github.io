@@ -9,7 +9,6 @@
 export type {
   CurrencyType,
   Currency,
-  Tag,
   Box,
   Sadaqah,
   Collection,
@@ -26,7 +25,6 @@ export type {
 export type {
   CreateCurrencyTypeInput,
   CreateCurrencyInput,
-  CreateTagInput,
   CreateBoxInput,
   UpdateBoxInput,
   AddSadaqahInput,

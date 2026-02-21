@@ -52,10 +52,6 @@ export function createMockDb() {
         findMany: mock(() => Promise.resolve([])),
         findFirst: mock(() => Promise.resolve(null)),
       },
-      tags: {
-        findMany: mock(() => Promise.resolve([])),
-        findFirst: mock(() => Promise.resolve(null)),
-      },
     },
   };
 }
@@ -156,25 +152,6 @@ export function createTestCurrency(overrides: Partial<{
     symbol: overrides.symbol ?? "$",
     currencyTypeId: overrides.currencyTypeId ?? null,
     goldValue: overrides.goldValue ?? null,
-    createdAt: overrides.createdAt ?? new Date(),
-    updatedAt: overrides.updatedAt ?? new Date(),
-  };
-}
-
-/**
- * Creates a test tag record
- */
-export function createTestTag(overrides: Partial<{
-  id: string;
-  name: string;
-  color: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}> = {}) {
-  return {
-    id: overrides.id ?? "tag_1234567890_abc123",
-    name: overrides.name ?? "Test Tag",
-    color: overrides.color ?? "#6366F1",
     createdAt: overrides.createdAt ?? new Date(),
     updatedAt: overrides.updatedAt ?? new Date(),
   };

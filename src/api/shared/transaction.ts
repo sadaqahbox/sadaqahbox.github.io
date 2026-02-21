@@ -59,7 +59,6 @@ export interface TransactionContext {
  * ```typescript
  * await transaction(db, async (trx) => {
  *   trx.add(db.insert(boxes).values({ ... }));
- *   trx.add(db.insert(boxTags).values([ ... ]));
  *   return { id, name };
  * });
  * ```

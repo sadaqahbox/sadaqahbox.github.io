@@ -4,15 +4,14 @@
 
 import { eq, desc, count, and, sql, inArray } from "drizzle-orm";
 import type { Database } from "../../db";
-import { boxes, sadaqahs, collections, boxTags, tags, users } from "../../db/schema";
-import type { Box, BoxStats, CollectionResult, CollectionsListResult, DeleteBoxResult, Tag } from "../domain/types";
+import { boxes, sadaqahs, collections, users } from "../../db/schema";
+import type { Box, BoxStats, CollectionResult, CollectionsListResult, DeleteBoxResult } from "../domain/types";
 import type { CollectionConversion } from "../schemas";
 import { DEFAULT_PAGE, DEFAULT_LIMIT } from "../domain/constants";
 import { generateBoxId, generateCollectionId } from "../shared/id-generator";
 import { sanitizeString } from "../shared/validators";
 import { mapBox } from "./mappers";
 import { CurrencyEntity } from "./currency";
-import { TagEntity } from "./tag";
 import { dbBatch } from "../shared/transaction";
 
 export class BoxEntity {
@@ -20,11 +19,10 @@ export class BoxEntity {
 
 	// ============== CRUD Operations ==============
 
-	async create(data: { 
-		name: string; 
-		description?: string; 
-		metadata?: Record<string, string>; 
-		tagIds?: string[];
+	async create(data: {
+		name: string;
+		description?: string;
+		metadata?: Record<string, string>;
 		userId: string;
 	}): Promise<Box> {
 		const timestamp = new Date();
@@ -35,38 +33,29 @@ export class BoxEntity {
 			throw new Error("Box name is required");
 		}
 
-		return dbBatch(this.db, async (b) => {
-			b.add(this.db.insert(boxes).values({
-				id,
-				name,
-				description: sanitizeString(data.description) || null,
-				metadata: data.metadata ? JSON.stringify(data.metadata) : null,
-				count: 0,
-				totalValue: 0,
-				currencyId: null,
-				userId: data.userId,
-				createdAt: timestamp,
-				updatedAt: timestamp,
-			}));
-
-			if (data.tagIds?.length) {
-				b.add(this.db.insert(boxTags).values(
-					data.tagIds.map((tagId) => ({ boxId: id, tagId }))
-				));
-			}
-
-			return {
-				id,
-				name,
-				description: sanitizeString(data.description),
-				count: 0,
-				totalValue: 0,
-				currencyId: null,
-				userId: data.userId,
-				createdAt: timestamp.toISOString(),
-				updatedAt: timestamp.toISOString(),
-			};
+		await this.db.insert(boxes).values({
+			id,
+			name,
+			description: sanitizeString(data.description) || null,
+			metadata: data.metadata ? JSON.stringify(data.metadata) : null,
+			count: 0,
+			totalValue: 0,
+			currencyId: null,
+			userId: data.userId,
+			createdAt: timestamp,
+			updatedAt: timestamp,
 		});
+
+		return {
+			id,
+			name,
+			description: sanitizeString(data.description),
+			count: 0,
+			totalValue: 0,
+			currencyId: null,
+			createdAt: timestamp.toISOString(),
+			updatedAt: timestamp.toISOString(),
+		};
 	}
 
 	async getById(id: string, userId?: string): Promise<Box | null> {
@@ -142,7 +131,6 @@ export class BoxEntity {
 		// Delete related records first
 		await this.db.delete(sadaqahs).where(eq(sadaqahs.boxId, id));
 		await this.db.delete(collections).where(eq(collections.boxId, id));
-		await this.db.delete(boxTags).where(eq(boxTags.boxId, id));
 		
 		const result = await this.db.delete(boxes).where(eq(boxes.id, id)).returning({ id: boxes.id });
 		if (!result[0]) return null;
@@ -270,9 +258,6 @@ export class BoxEntity {
 
 		const updatedBoxResult = await this.db.select().from(boxes).where(eq(boxes.id, id)).limit(1);
 		const updatedBox = mapBox(updatedBoxResult[0]!);
-
-		const tagEntity = new TagEntity(this.db);
-		updatedBox.tags = await tagEntity.getTagsForBox(id);
 
 		if (currencyId !== "cur_default") {
 			const currency = await currencyEntity.get(currencyId);

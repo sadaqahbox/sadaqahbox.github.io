@@ -11,7 +11,6 @@
 export type {
   CurrencyType,
   Currency,
-  Tag,
   Box,
   Sadaqah,
   Collection,
@@ -28,7 +27,6 @@ export type {
 export type {
   CreateCurrencyTypeInput,
   CreateCurrencyInput,
-  CreateTagInput,
   CreateBoxInput,
   UpdateBoxInput,
   AddSadaqahInput,
@@ -65,11 +63,6 @@ export interface AddSadaqahOptions {
   currencyId: string;
   amount?: number;
   metadata?: Record<string, string>;
-}
-
-export interface CreateTagOptions {
-  name: string;
-  color?: string;
 }
 
 export interface CreateCurrencyOptions {

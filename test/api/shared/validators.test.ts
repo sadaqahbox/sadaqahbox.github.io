@@ -12,7 +12,6 @@ import {
   isNonNegativeNumber,
   BoxNameSchema,
   BoxDescriptionSchema,
-  TagNameSchema,
   ColorHexSchema,
   CurrencyCodeSchema,
   PaginationParamsSchema,
@@ -254,27 +253,6 @@ describe("BoxDescriptionSchema", () => {
   test("should reject description longer than 500 characters", async () => {
     const longDesc = "a".repeat(501);
     expect(BoxDescriptionSchema.safeParse(longDesc).success).toBe(false);
-  });
-});
-
-describe("TagNameSchema", () => {
-  test("should validate valid tag name", async () => {
-    const result = await TagNameSchema.parseAsync("My Tag");
-    expect(result).toBe("My Tag");
-  });
-
-  test("should trim whitespace", async () => {
-    const result = await TagNameSchema.parseAsync("  My Tag  ");
-    expect(result).toBe("My Tag");
-  });
-
-  test("should reject empty string", async () => {
-    expect(TagNameSchema.safeParse("").success).toBe(false);
-  });
-
-  test("should reject name longer than 50 characters", async () => {
-    const longName = "a".repeat(51);
-    expect(TagNameSchema.safeParse(longName).success).toBe(false);
   });
 });
 

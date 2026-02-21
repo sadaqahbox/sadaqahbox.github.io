@@ -191,7 +191,10 @@ describe("AddSadaqahResult type", () => {
 
 describe("DeleteSadaqahResult type", () => {
   test("should create successful delete result", () => {
-    const result = {
+    const result: {
+      deleted: boolean;
+      updatedBox?: { id: string; name: string; count: number; totalValue: number; createdAt: string; updatedAt: string };
+    } = {
       deleted: true,
       updatedBox: {
         id: "box_123",
@@ -208,7 +211,10 @@ describe("DeleteSadaqahResult type", () => {
   });
 
   test("should create failed delete result", () => {
-    const result = {
+    const result: {
+      deleted: boolean;
+      updatedBox?: { id: string; name: string; count: number; totalValue: number; createdAt: string; updatedAt: string };
+    } = {
       deleted: false,
     };
 

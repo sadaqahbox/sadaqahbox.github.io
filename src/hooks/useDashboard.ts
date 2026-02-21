@@ -85,7 +85,7 @@ export function useDashboard(): UseDashboardReturn {
         }
         
         // Fallback to first box
-        setSelectedBox(boxes[0]);
+        setSelectedBox(boxes[0] ?? null);
     }, [boxes, selectedBox, session.data?.user?.defaultBoxId]);
 
     const {

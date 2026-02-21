@@ -8,10 +8,10 @@
  * @module api/repositories/box
  */
 
-import { eq, desc, count, and, inArray, sql } from "drizzle-orm";
+import { eq, desc, count, and, sql } from "drizzle-orm";
 import type { Database } from "../../db";
-import { boxes, sadaqahs, collections, boxTags, tags, currencies, boxesRelations } from "../../db/schema";
-import type { Box, Tag, Currency, Collection } from "../schemas";
+import { boxes, sadaqahs, collections} from "../../db/schema";
+import type { Box, Currency, Collection } from "../schemas";
 import { generateBoxId, generateCollectionId } from "../shared/id-generator";
 
 // ============== Types ==============
@@ -60,7 +60,6 @@ export interface UpdateBoxData {
 export interface BoxWithRelations extends Box {
   currency?: Currency;
   baseCurrency?: Currency;
-  tags?: Tag[];
   totalValueExtra?: TotalValueExtra;
 }
 
@@ -131,11 +130,6 @@ export class BoxRepository {
       with: {
         currency: true,
         baseCurrency: true,
-        boxTags: {
-          with: {
-            tag: true,
-          },
-        },
       },
     });
 
@@ -180,16 +174,6 @@ export class BoxRepository {
       };
     }
 
-    // Map tags from boxTags relation
-    if (result.boxTags && result.boxTags.length > 0) {
-      box.tags = result.boxTags.map((bt) => ({
-        id: bt.tag.id,
-        name: bt.tag.name,
-        color: bt.tag.color || undefined,
-        createdAt: new Date(bt.tag.createdAt).toISOString(),
-      }));
-    }
-
     return box;
   }
 
@@ -205,11 +189,6 @@ export class BoxRepository {
       with: {
         currency: true,
         baseCurrency: true,
-        boxTags: {
-          with: {
-            tag: true,
-          },
-        },
       },
     });
 
@@ -251,16 +230,6 @@ export class BoxRepository {
           usdValue: result.baseCurrency.usdValue,
           lastRateUpdate: result.baseCurrency.lastRateUpdate ? new Date(result.baseCurrency.lastRateUpdate).toISOString() : null,
         };
-      }
-
-      // Map tags from boxTags relation
-      if (result.boxTags && result.boxTags.length > 0) {
-        box.tags = result.boxTags.map((bt) => ({
-          id: bt.tag.id,
-          name: bt.tag.name,
-          color: bt.tag.color || undefined,
-          createdAt: new Date(bt.tag.createdAt).toISOString(),
-        }));
       }
 
       return box;
@@ -366,74 +335,6 @@ export class BoxRepository {
         updatedAt: new Date(),
       })
       .where(eq(boxes.id, id));
-  }
-
-  // ============== Tag Operations ==============
-
-  /**
-   * Add a tag to a box
-   */
-  async addTag(boxId: string, tagId: string): Promise<boolean> {
-    try {
-      await this.db.insert(boxTags).values({ boxId, tagId });
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  /**
-   * Remove a tag from a box
-   */
-  async removeTag(boxId: string, tagId: string): Promise<boolean> {
-    await this.db
-      .delete(boxTags)
-      .where(and(eq(boxTags.boxId, boxId), eq(boxTags.tagId, tagId)));
-    return true;
-  }
-
-  /**
-   * Set all tags for a box
-   */
-  async setTags(boxId: string, tagIds: string[]): Promise<void> {
-    await this.db.delete(boxTags).where(eq(boxTags.boxId, boxId));
-    if (tagIds.length > 0) {
-      await this.db.insert(boxTags).values(tagIds.map((tagId) => ({ boxId, tagId })));
-    }
-  }
-
-  /**
-   * Get tags for multiple boxes (batch operation)
-   */
-  async getTagsForBoxes(boxIds: string[]): Promise<Map<string, Tag[]>> {
-    if (boxIds.length === 0) return new Map();
-
-    const result = await this.db
-      .select({
-        boxId: boxTags.boxId,
-        tagId: tags.id,
-        name: tags.name,
-        color: tags.color,
-        createdAt: tags.createdAt,
-      })
-      .from(boxTags)
-      .innerJoin(tags, eq(boxTags.tagId, tags.id))
-      .where(inArray(boxTags.boxId, boxIds));
-
-    const tagsByBox = new Map<string, Tag[]>();
-    for (const row of result) {
-      const tag: Tag = {
-        id: row.tagId,
-        name: row.name,
-        color: row.color || undefined,
-        createdAt: new Date(row.createdAt).toISOString(),
-      };
-      const existing = tagsByBox.get(row.boxId) || [];
-      existing.push(tag);
-      tagsByBox.set(row.boxId, existing);
-    }
-
-    return tagsByBox;
   }
 
   // ============== Collection Operations ==============

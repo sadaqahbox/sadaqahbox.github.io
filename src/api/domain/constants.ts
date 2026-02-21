@@ -26,10 +26,6 @@ export const MAX_SADAQAH_AMOUNT = 1000;
 export const MAX_BOX_NAME_LENGTH = 100;
 export const MAX_BOX_DESCRIPTION_LENGTH = 500;
 
-// ============== Tag Defaults ==============
-export const MAX_TAG_NAME_LENGTH = 50;
-export const DEFAULT_TAG_COLOR = "#6366F1";
-
 // ============== ID Prefixes ==============
 export const ID_PREFIXES = {
 	BOX: "box",
@@ -37,14 +33,12 @@ export const ID_PREFIXES = {
 	COLLECTION: "col",
 	CURRENCY: "cur",
 	CURRENCY_TYPE: "ctyp",
-	TAG: "tag",
 	RATE_CACHE: "rc",
 } as const;
 
 // ============== Cache TTLs (in milliseconds) ==============
 export const CACHE_TTL = {
 	CURRENCY: 5 * 60 * 1000, // 5 minutes
-	TAG: 5 * 60 * 1000, // 5 minutes
 	BOX_LIST: 30 * 1000, // 30 seconds
 } as const;
 
@@ -62,5 +56,5 @@ export const VALIDATION_PATTERNS = {
 	// ISO 4217 currency code (3 uppercase letters)
 	CURRENCY_CODE: /^[A-Z]{3}$/,
 	// ID format (prefix_timestamp_random)
-	ID_FORMAT: /^(box|sadaqah|col|cur|ctyp|tag)_[0-9]+_[a-z0-9]+$/,
+	ID_FORMAT: /^(box|sadaqah|col|cur|ctyp)_[0-9]+_[a-z0-9]+$/,
 } as const;

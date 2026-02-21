@@ -27,13 +27,6 @@ export const CurrencySchema = z.object({
   lastRateUpdate: z.string().nullable().optional(),
 });
 
-export const TagSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  color: z.string().optional(),
-  createdAt: z.string(),
-});
-
 const TotalValueExtraEntrySchema = z.object({
   total: z.number(),
   code: z.string(),
@@ -60,7 +53,6 @@ export const BoxSchema = z.object({
   currency: CurrencySchema.optional(),
   baseCurrencyId: z.string().optional(),
   baseCurrency: CurrencySchema.optional(),
-  tags: TagSchema.array().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -84,7 +76,7 @@ export const CollectionSchema = z.object({
     conversions: z.array(CollectionConversionSchema).optional(),
     preferredCurrencyId: z.string().optional(),
     preferredCurrencyCode: z.string().optional(),
-  }).optional(),
+  }).nullable().optional(),
   currencyId: z.string(),
   currency: CurrencySchema.optional(),
 });
@@ -110,7 +102,6 @@ export const StatsSchema = z.object({
 export const CreateBoxBodySchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
-  tagIds: z.string().array().optional(),
   baseCurrencyId: z.string().optional(),
 });
 
@@ -136,11 +127,6 @@ export const BoxesResponseSchema = z.object({
 export const BoxResponseSchema = z.object({
   success: z.boolean(),
   box: BoxSchema,
-});
-
-export const TagsResponseSchema = z.object({
-  success: z.boolean(),
-  tags: TagSchema.array(),
 });
 
 export const CurrenciesResponseSchema = z.object({
@@ -185,7 +171,7 @@ export const DeleteSadaqahResponseSchema = z.object({
 export const AddSadaqahResponseSchema = z.object({
   success: z.boolean(),
   sadaqahs: SadaqahSchema.array(),
-  box: BoxSchema.omit({ tags: true }).extend({
+  box: BoxSchema.extend({
     currency: z.any().nullable(),
     baseCurrency: z.any().nullable(),
     totalValueExtra: z.record(z.string(), TotalValueExtraEntrySchema).nullable().optional(),
@@ -196,7 +182,6 @@ export const AddSadaqahResponseSchema = z.object({
 // ============== Type Exports ==============
 
 export type Currency = z.infer<typeof CurrencySchema>;
-export type Tag = z.infer<typeof TagSchema>;
 export type Box = z.infer<typeof BoxSchema>;
 export type Sadaqah = z.infer<typeof SadaqahSchema>;
 export type Collection = z.infer<typeof CollectionSchema>;

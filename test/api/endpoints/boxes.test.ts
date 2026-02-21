@@ -3,7 +3,6 @@
  */
 
 import { describe, test, expect } from "bun:test";
-import { z } from "@hono/zod-openapi";
 import { BoxSchema, CreateBoxBodySchema, UpdateBoxBodySchema } from "@/api/dtos";
 
 // ============== Box Schema Tests ==============
@@ -52,7 +51,6 @@ describe("CreateBoxBodySchema", () => {
       name: "New Box",
       description: "A new box",
       metadata: { key: "value" },
-      tagIds: ["tag_1", "tag_2"],
     });
 
     expect(result.success).toBe(true);

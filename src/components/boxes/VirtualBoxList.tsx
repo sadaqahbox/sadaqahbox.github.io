@@ -8,7 +8,6 @@
 import { useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/components/layout/Logo";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -43,22 +42,11 @@ interface VirtualBoxListProps {
   containerHeight?: string;
 }
 
-/**
- * Calculate dynamic item height based on content
- * Accounts for tags which can increase item height
- */
-function estimateItemHeight(box: Box): number {
-  const baseHeight = 72; // Base height without tags
-  const tagHeight = box.tags && box.tags.length > 0 ? 28 : 0;
-  return baseHeight + tagHeight;
-}
-
 export function VirtualBoxList({
   boxes,
   selectedBoxId,
   onSelectBox,
   onBoxDeleted,
-  itemHeight = 90,
   containerHeight = "calc(100vh - 380px)",
 }: VirtualBoxListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
@@ -69,7 +57,7 @@ export function VirtualBoxList({
   const virtualizer = useVirtualizer({
     count: boxes.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: (index) => estimateItemHeight(boxes[index]!) || itemHeight,
+    estimateSize: (index) => 72,
     overscan: 5, // Render 5 items above/below viewport for smooth scrolling
   });
 
@@ -247,50 +235,6 @@ export function VirtualBoxList({
                         </div>
                       )}
                     </div>
-
-                    {/* Tags */}
-                    <AnimatePresence>
-                      {box.tags && box.tags.length > 0 && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="flex flex-wrap gap-1 mt-2"
-                        >
-                          {box.tags.slice(0, 3).map((tag, tagIndex) => (
-                            <motion.div
-                              key={tag.id}
-                              initial={{ opacity: 0, scale: 0.8 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              transition={{ delay: tagIndex * 0.05 }}
-                            >
-                              <Badge
-                                variant="secondary"
-                                className="text-[10px] px-1.5 py-0 h-4"
-                                style={{
-                                  backgroundColor: tag.color
-                                    ? `${tag.color}20`
-                                    : undefined,
-                                  color: tag.color || undefined,
-                                  borderColor: tag.color || undefined,
-                                }}
-                              >
-                                {tag.name}
-                              </Badge>
-                            </motion.div>
-                          ))}
-                          {box.tags.length > 3 && (
-                            <Badge
-                              variant="secondary"
-                              className="text-[10px] px-1.5 py-0 h-4"
-                            >
-                              +{box.tags.length - 3}
-                            </Badge>
-                          )}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
                   </div>
                 </div>
                 <Separator className="mx-3 w-auto" />

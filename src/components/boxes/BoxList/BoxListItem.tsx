@@ -5,7 +5,6 @@
  */
 
 import { motion } from "motion/react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -15,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Coins, MoreVertical, Star, Trash2 } from "lucide-react";
 import { cn, formatHighPrecision } from "@/lib/utils";
-import { listItemVariants, iconVariants, contentVariants, tagVariants } from "@/lib/animations";
+import { listItemVariants, iconVariants, contentVariants } from "@/lib/animations";
 import { Logo } from "@/components/layout/Logo";
 import type { Box } from "@/types";
 
@@ -166,55 +165,9 @@ export function BoxListItem({
               </div>
             )}
           </motion.div>
-
-          {/* Tags */}
-          {box.tags && box.tags.length > 0 && <BoxListItemTags tags={box.tags} />}
         </motion.div>
       </motion.div>
     </motion.div>
   );
 }
 
-/**
- * Tags component for box list item
- */
-function BoxListItemTags({ tags }: { tags: Box["tags"] }) {
-  if (!tags || tags.length === 0) return null;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, height: 0 }}
-      animate={{ opacity: 1, height: "auto" }}
-      exit={{ opacity: 0, height: 0 }}
-      transition={{ duration: 0.2 }}
-      className="flex flex-wrap gap-1 mt-2"
-    >
-      {tags.slice(0, 3).map((tag, tagIndex) => (
-        <motion.div
-          key={tag.id}
-          variants={tagVariants}
-          initial="hidden"
-          animate="visible"
-          transition={{ delay: tagIndex * 0.05 }}
-        >
-          <Badge
-            variant="secondary"
-            className="text-[10px] px-1.5 py-0 h-4"
-            style={{
-              backgroundColor: tag.color ? `${tag.color}20` : undefined,
-              color: tag.color || undefined,
-              borderColor: tag.color || undefined,
-            }}
-          >
-            {tag.name}
-          </Badge>
-        </motion.div>
-      ))}
-      {tags.length > 3 && (
-        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
-          +{tags.length - 3}
-        </Badge>
-      )}
-    </motion.div>
-  );
-}

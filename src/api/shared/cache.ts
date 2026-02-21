@@ -105,4 +105,3 @@ import { CACHE_TTL } from "../domain/constants";
 
 export const currencyCache = new Cache<unknown>(CACHE_TTL.CURRENCY);
 export const currencyTypeCache = new Cache<unknown>(CACHE_TTL.CURRENCY);
-export const tagCache = new Cache<unknown>(CACHE_TTL.TAG);

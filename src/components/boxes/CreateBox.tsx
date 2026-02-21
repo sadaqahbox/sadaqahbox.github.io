@@ -1,14 +1,12 @@
 import { useState, useEffect } from "react";
-import { tagsApi, currenciesApi } from "@/api/client";
+import { currenciesApi } from "@/api/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { X, Plus } from "lucide-react";
-import { cn } from "@/lib/utils";
-import type { Box, Tag, Currency } from "@/types";
+import type { Box, Currency } from "@/types";
 import type { CreateBoxBody } from "@/api/client";
 import { DEFAULT_BASE_CURRENCY_CODE } from "@/api/config";
 
@@ -22,26 +20,9 @@ interface CreateBoxProps {
 export function CreateBox({ onCreated, onCancel, createBox, isCreating = false }: CreateBoxProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [availableCurrencies, setAvailableCurrencies] = useState<Currency[]>([]);
   const [selectedBaseCurrencyId, setSelectedBaseCurrencyId] = useState<string>("");
-  const [fetchingTags, setFetchingTags] = useState(true);
   const [fetchingCurrencies, setFetchingCurrencies] = useState(true);
-
-  useEffect(() => {
-    const fetchTags = async () => {
-      try {
-        const tags = await tagsApi.getAll();
-        setAvailableTags(tags);
-      } catch {
-        // Error handled by api.ts
-      } finally {
-        setFetchingTags(false);
-      }
-    };
-    fetchTags();
-  }, []);
 
   useEffect(() => {
     const fetchCurrencies = async () => {
@@ -73,7 +54,6 @@ export function CreateBox({ onCreated, onCancel, createBox, isCreating = false }
       createBox({
         name,
         description,
-        tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
         baseCurrencyId: selectedBaseCurrencyId || undefined,
       });
     }
@@ -81,14 +61,7 @@ export function CreateBox({ onCreated, onCancel, createBox, isCreating = false }
     // Clear form
     setName("");
     setDescription("");
-    setSelectedTagIds([]);
     onCreated({} as Box); // Let parent handle the actual box from mutation
-  };
-
-  const toggleTag = (tagId: string) => {
-    setSelectedTagIds((prev) =>
-      prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]
-    );
   };
 
   return (
@@ -141,47 +114,12 @@ export function CreateBox({ onCreated, onCancel, createBox, isCreating = false }
             </p>
           </Field>
 
-          {availableTags.length > 0 && (
-            <Field>
-              <FieldLabel>Tags</FieldLabel>
-              <div className="flex flex-wrap gap-2">
-                {availableTags.map((tag) => {
-                  const isSelected = selectedTagIds.includes(tag.id);
-                  return (
-                    <Badge
-                      key={tag.id}
-                      variant={isSelected ? "default" : "outline"}
-                      className={cn(
-                        "cursor-pointer transition-colors",
-                        isSelected && "text-primary-foreground"
-                      )}
-                      style={
-                        isSelected
-                          ? {
-                              backgroundColor: tag.color || undefined,
-                              borderColor: tag.color || undefined,
-                            }
-                          : {
-                              borderColor: tag.color || undefined,
-                              color: tag.color || undefined,
-                            }
-                      }
-                      onClick={() => toggleTag(tag.id)}
-                    >
-                      {tag.name}
-                    </Badge>
-                  );
-                })}
-              </div>
-            </Field>
-          )}
-
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={onCancel} disabled={isCreating}>
               <X className="mr-2 h-4 w-4" />
               Cancel
             </Button>
-            <Button type="submit" disabled={isCreating || fetchingTags || !name.trim()}>
+            <Button type="submit" disabled={isCreating || !name.trim()}>
               <Plus className="mr-2 h-4 w-4" />
               {isCreating ? "Creating..." : "Create Box"}
             </Button>

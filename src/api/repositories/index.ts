@@ -32,14 +32,6 @@ export {
   type CurrencyWithRelations,
 } from "./currency.repository";
 
-// Tag Repository
-export {
-  TagRepository,
-  type TagRecord,
-  type CreateTagData,
-  type TagWithRelations,
-} from "./tag.repository";
-
 // Currency Type Repository
 export {
   CurrencyTypeRepository,

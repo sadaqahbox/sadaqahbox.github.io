@@ -35,17 +35,6 @@ export const CurrencySchema = z.object({
 
 export type CurrencySchema = z.infer<typeof CurrencySchema>;
 
-// ============== Tag ==============
-
-export const TagSchema = z.object({
-	id: z.string().openapi({ example: "tag_abc123" }),
-	name: z.string().openapi({ example: "Ramadan" }),
-	color: z.string().optional().openapi({ example: "#FF6B6B" }),
-	createdAt: IsoDate,
-});
-
-export type TagSchema = z.infer<typeof TagSchema>;
-
 // ============== Box ==============
 
 export const BoxSchema = z.object({
@@ -57,7 +46,6 @@ export const BoxSchema = z.object({
 	totalValue: z.number().openapi({ description: "Sum of all sadaqah values" }),
 	currencyId: z.optional(z.string()),
 	currency: CurrencySchema.optional(),
-	tags: z.optional(TagSchema.array()),
 	createdAt: IsoDate,
 	updatedAt: IsoDate,
 });
@@ -120,7 +108,6 @@ export const CreateBoxBodySchema = z.object({
 	}),
 	description: z.optional(z.string()),
 	metadata: z.any().optional(),
-	tagIds: z.array(z.string()).optional(),
 });
 
 export const UpdateBoxBodySchema = z.object({
@@ -134,11 +121,6 @@ export const AddSadaqahBodySchema = z.object({
 	value: z.optional(z.number()),
 	currencyCode: z.optional(z.string()),
 	metadata: z.any().optional(),
-});
-
-export const CreateTagBodySchema = z.object({
-	name: z.string(),
-	color: z.string().optional(),
 });
 
 export const CreateCurrencyBodySchema = z.object({

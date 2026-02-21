@@ -402,7 +402,7 @@ describe("IsoDateSchema", () => {
 
 describe("IdSchema", () => {
   test("should accept valid ID format", () => {
-    const validIds = ["box_abc123", "sadaqah_xyz789", "tag_test123"];
+    const validIds = ["box_abc123", "sadaqah_xyz789"];
     
     validIds.forEach(id => {
       expect(IdSchema.safeParse(id).success).toBe(true);

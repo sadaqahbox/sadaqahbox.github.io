@@ -51,8 +51,6 @@ export const generateCurrencyId = (): string => generateId(ID_PREFIXES.CURRENCY,
 
 export const generateCurrencyTypeId = (): string => generateId(ID_PREFIXES.CURRENCY_TYPE, 6);
 
-export const generateTagId = (): string => generateId(ID_PREFIXES.TAG, 6);
-
 export const generateRateCacheId = (): string => generateId(ID_PREFIXES.RATE_CACHE, 6);
 
 // Export the base generateId function for custom use cases

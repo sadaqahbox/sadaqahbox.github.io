@@ -18,7 +18,6 @@ import {
 	EmptyBoxResponseSchema,
 	DeleteBoxResponseSchema,
 	ListCollectionsResponseSchema,
-	TagSchema,
 } from "../dtos";
 import {
 	buildRoute,
@@ -37,11 +36,6 @@ import { jsonSuccess } from "../shared/route-builder";
 // ============== Schemas ==============
 
 const BoxIdParamSchema = createIdParamSchema("boxId");
-
-const BoxTagParamsSchema = z.object({
-	boxId: z.string(),
-	tagId: z.string(),
-});
 
 const ListQuerySchema = z.object({
 	sortBy: z.enum(["name", "createdAt", "count", "totalValue"]).default("createdAt"),
@@ -258,61 +252,6 @@ export const collectionsHandler = async (c: Context<{ Bindings: Env }>) => {
 	});
 };
 
-// Add Tag
-export const addTagRoute = buildRoute({
-	method: "post",
-	path: "/api/boxes/{boxId}/tags/{tagId}",
-	tags: ["Boxes"],
-	summary: "Add a tag to a box",
-	params: BoxTagParamsSchema,
-	responses: {
-		...create200Response(z.object({ success: z.boolean() }), "Tag added"),
-		...create404Response("Box or tag not found"),
-		...create409Response("Tag already added"),
-	},
-	requireAuth: true,
-});
-
-export const addTagHandler = async (c: Context<{ Bindings: Env }>) => {
-	const user = getCurrentUser(c);
-	const { boxId, tagId } = getParams<{ boxId: string; tagId: string }>(c);
-
-	const success = await getBoxService(c).addTagToBox(boxId, tagId, user.id);
-
-	if (!success) {
-		return c.json({ success: false, error: "Box or tag not found", code: "NOT_FOUND" }, 404);
-	}
-
-	return jsonSuccess(c, { success: true });
-};
-
-// Remove Tag
-export const removeTagRoute = buildRoute({
-	method: "delete",
-	path: "/api/boxes/{boxId}/tags/{tagId}",
-	tags: ["Boxes"],
-	summary: "Remove a tag from a box",
-	params: BoxTagParamsSchema,
-	responses: {
-		...create200Response(z.object({ success: z.boolean() }), "Tag removed"),
-		...create404Response("Box or tag not found"),
-	},
-	requireAuth: true,
-});
-
-export const removeTagHandler = async (c: Context<{ Bindings: Env }>) => {
-	const user = getCurrentUser(c);
-	const { boxId, tagId } = getParams<{ boxId: string; tagId: string }>(c);
-
-	const success = await getBoxService(c).removeTagFromBox(boxId, tagId, user.id);
-
-	if (!success) {
-		return c.json({ success: false, error: "Box or tag not found", code: "NOT_FOUND" }, 404);
-	}
-
-	return jsonSuccess(c, { success: true });
-};
-
 // ============== Route Definitions Export ==============
 
 export const boxRouteDefinitions: RouteDefinition[] = [
@@ -323,6 +262,4 @@ export const boxRouteDefinitions: RouteDefinition[] = [
 	{ route: deleteRoute, handler: deleteHandler, middleware: [requireAuth] },
 	{ route: emptyRoute, handler: emptyHandler, middleware: [requireAuth] },
 	{ route: collectionsRoute, handler: collectionsHandler, middleware: [requireAuth] },
-	{ route: addTagRoute, handler: addTagHandler, middleware: [requireAuth] },
-	{ route: removeTagRoute, handler: removeTagHandler, middleware: [requireAuth] },
 ];

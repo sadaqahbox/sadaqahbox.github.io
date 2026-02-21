@@ -3,7 +3,7 @@
  */
 
 import { describe, test, expect } from "bun:test";
-import { BoxService, type CreateBoxInput, type UpdateBoxInput, type ListBoxesOptions } from "@/api/services/box-service";
+import { type CreateBoxInput, type UpdateBoxInput, type ListBoxesOptions } from "@/api/services/box-service";
 import { MAX_BOX_NAME_LENGTH, MAX_BOX_DESCRIPTION_LENGTH } from "@/api/domain/constants";
 import { generateBoxId } from "@/api/shared/id-generator";
 import { sanitizeString } from "@/api/shared/validators";
@@ -93,13 +93,11 @@ describe("BoxService", () => {
         name: "My Box",
         description: "A description",
         metadata: { key: "value" },
-        tagIds: ["tag_1", "tag_2"],
         userId: "user_123",
       };
 
       expect(input.description).toBe("A description");
       expect(input.metadata).toEqual({ key: "value" });
-      expect(input.tagIds).toHaveLength(2);
     });
   });
 
@@ -144,7 +142,7 @@ describe("BoxService", () => {
     });
 
     test("should accept different sort fields", () => {
-      const sortFields: Array<ListBoxesOptions["sortBy"]> = ["name", "createdAt", "count", "totalValue"];
+      const sortFields: Array<NonNullable<ListBoxesOptions["sortBy"]> > = ["name", "createdAt", "count", "totalValue"];
       
       sortFields.forEach(field => {
         expect(["name", "createdAt", "count", "totalValue"]).toContain(field);
@@ -152,7 +150,7 @@ describe("BoxService", () => {
     });
 
     test("should accept sort orders", () => {
-      const orders: Array<ListBoxesOptions["sortOrder"]> = ["asc", "desc"];
+      const orders: Array<NonNullable<ListBoxesOptions["sortOrder"]> > = ["asc", "desc"];
       
       orders.forEach(order => {
         expect(["asc", "desc"]).toContain(order);
@@ -180,7 +178,16 @@ describe("BoxService", () => {
     });
 
     test("should handle optional fields", () => {
-      const box = {
+      const box: {
+        id: string;
+        name: string;
+        count: number;
+        totalValue: number;
+        createdAt: string;
+        updatedAt: string;
+        description?: string;
+        currencyId?: string;
+      } = {
         id: "box_1234567890_abc123",
         name: "My Box",
         count: 0,
@@ -193,22 +200,18 @@ describe("BoxService", () => {
       expect(box.currencyId).toBeUndefined();
     });
 
-    test("should handle tags", () => {
+    test("should create box without optional fields", () => {
       const box = {
         id: "box_1234567890_abc123",
         name: "My Box",
         count: 0,
         totalValue: 0,
-        tags: [
-          { id: "tag_1", name: "Important", color: "#FF0000" },
-          { id: "tag_2", name: "Personal", color: "#00FF00" },
-        ],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
 
-      expect(box.tags).toHaveLength(2);
-      expect(box.tags?.[0].name).toBe("Important");
+      expect(box.name).toBe("My Box");
+      expect(box.count).toBe(0);
     });
   });
 });
