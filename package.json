@@ -1,10 +1,10 @@
 {
-  "name": "cloudflare-workers-openapi",
+  "name": "sadaqahbox",
   "version": "0.0.1",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bunx vite dev",
+    "dev": "bunx vite",
     "preview": "bun run build && bunx wrangler dev",
     "build": "bunx vite build",
     "deploy": "bun run build && bunx wrangler deploy",
@@ -31,6 +31,8 @@
     "@scalar/openapi-to-markdown": "^0.3.40",
     "@tailwindcss/postcss": "^4.0.0",
     "@tailwindcss/vite": "^4.1.18",
+    "@tanstack/react-query": "^5.90.20",
+    "@tanstack/react-virtual": "^3.13.18",
     "better-auth": "^1.4.18",
     "better-auth-cloudflare": "^0.2.9",
     "class-variance-authority": "^0.7.1",

@@ -2,9 +2,9 @@
  * Box entity - Database operations only
  */
 
-import { eq, desc, count, and, sql } from "drizzle-orm";
+import { eq, desc, count, and, sql, inArray } from "drizzle-orm";
 import type { Database } from "../../db";
-import { boxes, sadaqahs, collections, boxTags } from "../../db/schema";
+import { boxes, sadaqahs, collections, boxTags, tags } from "../../db/schema";
 import type { Box, BoxStats, CollectionResult, CollectionsListResult, DeleteBoxResult, Tag } from "../domain/types";
 import { DEFAULT_PAGE, DEFAULT_LIMIT } from "../domain/constants";
 import { generateBoxId, generateCollectionId } from "../shared/id-generator";
@@ -76,40 +76,33 @@ export class BoxEntity {
 
 		const box = mapBox(result[0]);
 		
-		if (box.currencyId) {
-			const currency = await new CurrencyEntity(this.db).get(box.currencyId);
-			if (currency) box.currency = currency;
-		}
+		// Fetch currency and tags in parallel
+		const [currency, boxTags] = await Promise.all([
+			box.currencyId ? new CurrencyEntity(this.db).get(box.currencyId) : Promise.resolve(null),
+			this.getTagsForBoxes([id]),
+		]);
 
-		box.tags = await new TagEntity(this.db).getTagsForBox(id);
+		if (currency) box.currency = currency;
+		box.tags = boxTags.get(id);
 		return box;
 	}
 
 	async list(userId?: string): Promise<Box[]> {
-		const query = userId 
+		// Query boxes with user filter
+		const query = userId
 			? this.db.select().from(boxes).where(eq(boxes.userId, userId)).orderBy(desc(boxes.createdAt))
 			: this.db.select().from(boxes).orderBy(desc(boxes.createdAt));
 		const result = await query;
 		if (result.length === 0) return [];
 
-		const [allCurrencies, allTags, relations] = await Promise.all([
-			new CurrencyEntity(this.db).list(),
-			new TagEntity(this.db).list(),
-			this.db.select().from(boxTags),
+		const boxIds = result.map((b) => b.id);
+		const currencyIds = [...new Set(result.map((b) => b.currencyId).filter(Boolean))] as string[];
+
+		// Batch fetch only needed currencies and tags (N+1 fix)
+		const [currencyMap, tagsByBox] = await Promise.all([
+			new CurrencyEntity(this.db).getMany(currencyIds),
+			this.getTagsForBoxes(boxIds),
 		]);
-
-		const currencyMap = new Map(allCurrencies.map((c) => [c.id, c]));
-		const tagMap = new Map(allTags.map((t) => [t.id, t]));
-
-		const tagsByBox = new Map<string, Tag[]>();
-		for (const r of relations) {
-			const tag = tagMap.get(r.tagId);
-			if (tag) {
-				const existing = tagsByBox.get(r.boxId) || [];
-				existing.push(tag);
-				tagsByBox.set(r.boxId, existing);
-			}
-		}
 
 		return result.map((box) => {
 			const mapped = mapBox(box);
@@ -120,6 +113,40 @@ export class BoxEntity {
 			mapped.tags = tagsByBox.get(box.id);
 			return mapped;
 		});
+	}
+
+	/**
+	 * Batch fetch tags for multiple boxes (N+1 optimization)
+	 */
+	private async getTagsForBoxes(boxIds: string[]): Promise<Map<string, Tag[]>> {
+		if (boxIds.length === 0) return new Map();
+
+		const result = await this.db
+			.select({
+				boxId: boxTags.boxId,
+				tagId: tags.id,
+				name: tags.name,
+				color: tags.color,
+				createdAt: tags.createdAt,
+			})
+			.from(boxTags)
+			.innerJoin(tags, eq(boxTags.tagId, tags.id))
+			.where(inArray(boxTags.boxId, boxIds));
+
+		const tagsByBox = new Map<string, Tag[]>();
+		for (const row of result) {
+			const tag: Tag = {
+				id: row.tagId,
+				name: row.name,
+				color: row.color || undefined,
+				createdAt: new Date(row.createdAt).toISOString(),
+			};
+			const existing = tagsByBox.get(row.boxId) || [];
+			existing.push(tag);
+			tagsByBox.set(row.boxId, existing);
+		}
+
+		return tagsByBox;
 	}
 
 	async update(id: string, updates: Partial<Box> & { metadata?: Record<string, string> | null }, userId?: string): Promise<Box | null> {

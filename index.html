@@ -2,12 +2,85 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sadaqah Box - Track Your Charity</title>
+
+    <!-- Primary Meta Tags -->
+    <title>Sadaqah Box - Track Your Charity & Sadaqah Contributions</title>
+    <meta name="description" content="Sadaqah Box helps you track your charity contributions, manage donation boxes, and organize your sadaqah giving. Simple, secure, and designed for Muslims worldwide." />
+    <meta name="keywords" content="sadaqah, charity, donation, zakat, islamic finance, muslim, giving, track donations" />
+    <meta name="author" content="Sadaqah Box" />
+    <meta name="robots" content="index, follow" />
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://sadaqahbox.com" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="apple-touch-icon" href="/vite.svg" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://sadaqahbox.com" />
+    <meta property="og:title" content="Sadaqah Box - Track Your Charity & Sadaqah Contributions" />
+    <meta property="og:description" content="Sadaqah Box helps you track your charity contributions, manage donation boxes, and organize your sadaqah giving. Simple, secure, and designed for Muslims worldwide." />
+    <meta property="og:image" content="https://sadaqahbox.com/og-image.png" />
+    <meta property="og:site_name" content="Sadaqah Box" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://sadaqahbox.com" />
+    <meta property="twitter:title" content="Sadaqah Box - Track Your Charity & Sadaqah Contributions" />
+    <meta property="twitter:description" content="Sadaqah Box helps you track your charity contributions, manage donation boxes, and organize your sadaqah giving. Simple, secure, and designed for Muslims worldwide." />
+    <meta property="twitter:image" content="https://sadaqahbox.com/og-image.png" />
+
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#10b981" />
+    <meta name="msapplication-TileColor" content="#10b981" />
+
+    <!-- Preconnect for Performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Sadaqah Box",
+      "description": "Track your charity contributions, manage donation boxes, and organize your sadaqah giving.",
+      "url": "https://sadaqahbox.com",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Any",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+    </script>
   </head>
   <body>
+    <!-- SEO-friendly noscript content -->
+    <noscript>
+      <main>
+        <h1>Sadaqah Box - Track Your Charity</h1>
+        <p>Welcome to Sadaqah Box, your personal charity tracking application. Manage your sadaqah contributions, create donation boxes, and keep track of your giving.</p>
+        <p><strong>JavaScript is required</strong> to use this application. Please enable JavaScript in your browser settings to continue.</p>
+        <h2>Features</h2>
+        <ul>
+          <li>Create and manage multiple sadaqah boxes</li>
+          <li>Track your charity contributions over time</li>
+          <li>Organize donations by tags and categories</li>
+          <li>View statistics and insights on your giving</li>
+          <li>Secure and private - your data stays with you</li>
+        </ul>
+      </main>
+    </noscript>
+
+    <!-- React mount point -->
     <div id="root"></div>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

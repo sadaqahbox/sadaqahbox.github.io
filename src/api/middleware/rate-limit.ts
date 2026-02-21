@@ -50,18 +50,25 @@ function defaultKeyGenerator(c: Context): string {
 
 /**
  * Clean up expired entries periodically
+ * Called lazily during request handling to avoid global scope restrictions
  */
+let lastCleanup = 0;
+const CLEANUP_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
 function cleanupExpiredEntries(): void {
     const now = Date.now();
+    // Only run cleanup every 5 minutes
+    if (now - lastCleanup < CLEANUP_INTERVAL) {
+        return;
+    }
+    lastCleanup = now;
+
     for (const [key, record] of requestStore.entries()) {
         if (record.resetTime <= now) {
             requestStore.delete(key);
         }
     }
 }
-
-// Cleanup every 5 minutes
-setInterval(cleanupExpiredEntries, 5 * 60 * 1000);
 
 /**
  * Rate limiting middleware factory
@@ -71,6 +78,9 @@ export function rateLimit(config: Partial<RateLimitConfig> = {}) {
     const keyGen = fullConfig.keyGenerator || defaultKeyGenerator;
 
     return async function rateLimitMiddleware(c: Context, next: Next) {
+        // Run cleanup lazily during request handling (avoiding global scope restrictions)
+        cleanupExpiredEntries();
+
         // Skip rate limiting for configured paths
         if (fullConfig.skipPaths?.some(path => c.req.path.startsWith(path))) {
             return next();

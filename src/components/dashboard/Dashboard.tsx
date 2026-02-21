@@ -1,9 +1,9 @@
+import React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Header } from "@/components/layout";
-import { Stats } from "@/components/stats";
 import { BoxList, BoxDetail, CreateBox } from "@/components/boxes";
 import { SignedIn, SignedOut, RedirectToSignIn, AuthLoading } from "@daveyplate/better-auth-ui";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -15,12 +15,12 @@ import { LoadingFallback } from "./LoadingFallback";
 import { EmptyState } from "./EmptyState";
 import type { Box } from "@/types";
 
-export function Dashboard() {
+// Inner component that uses the dashboard data - wrapped in React.memo
+const DashboardContent = React.memo(function DashboardContent() {
     const {
         boxes,
         selectedBox,
         showCreateForm,
-        stats,
         loading,
         setSelectedBox,
         setShowCreateForm,
@@ -44,11 +44,6 @@ export function Dashboard() {
                     animate="visible"
                     className="mx-auto max-w-7xl space-y-6"
                 >
-                    {/* Stats Section */}
-                    <motion.div variants={itemVariants}>
-                        <Stats stats={stats} />
-                    </motion.div>
-
                     {/* Main Content Grid */}
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
                         {/* Sidebar - Box List */}
@@ -73,7 +68,7 @@ export function Dashboard() {
             </main>
         </div>
     );
-}
+});
 
 interface BoxListSectionProps {
     boxes: Box[];
@@ -210,8 +205,11 @@ export function ProtectedDashboard() {
                 <RedirectToSignIn />
             </SignedOut>
             <SignedIn>
-                <Dashboard />
+                <DashboardContent />
             </SignedIn>
         </>
     );
 }
+
+// Keep Dashboard export for backward compatibility
+export { DashboardContent as Dashboard };

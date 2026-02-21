@@ -115,6 +115,7 @@ export class CurrencyEntity {
 		const result = new Map<string, Currency>();
 		const missingIds: string[] = [];
 
+		// Check cache first
 		for (const id of uniqueIds) {
 			const cached = currencyCache.get(`id:${id}`) as Currency | undefined;
 			if (cached) {
@@ -124,12 +125,17 @@ export class CurrencyEntity {
 			}
 		}
 
+		// Batch fetch missing currencies from DB (N+1 fix)
 		if (missingIds.length > 0) {
-			const all = await this.list();
-			for (const currency of all) {
-				if (missingIds.includes(currency.id)) {
-					result.set(currency.id, currency);
-				}
+			const dbCurrencies = await this.db
+				.select()
+				.from(currencies)
+				.where(inArray(currencies.id, missingIds));
+			
+			for (const c of dbCurrencies) {
+				const currency = this.mapCurrency(c);
+				result.set(c.id, currency);
+				this.cacheCurrency(currency);
 			}
 		}
 

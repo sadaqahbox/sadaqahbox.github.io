@@ -13,7 +13,9 @@ type AuthEnv = { DB: D1Database; AUTH_KV?: KVNamespace<string> };
 // Single auth configuration that handles both CLI and runtime scenarios
 function createAuth(env?: AuthEnv, cf?: IncomingRequestCfProperties) {
     // Use actual DB for runtime, empty object for CLI
-    const db = env ? drizzle(env.DB, { schema, logger: true }) : ({} as any);
+    // Disable logger for better performance (set to true only when debugging)
+    const enableLogging = false;
+    const db = env ? drizzle(env.DB, { schema, logger: enableLogging }) : ({} as any);
 
     return betterAuth({
         ...withCloudflare(
@@ -26,7 +28,7 @@ function createAuth(env?: AuthEnv, cf?: IncomingRequestCfProperties) {
                         db,
                         options: {
                             usePlural: true,
-                            debugLogs: true,
+                            debugLogs: enableLogging,
                         },
                     }
                     : undefined,
@@ -89,9 +91,6 @@ function createAuth(env?: AuthEnv, cf?: IncomingRequestCfProperties) {
             }),
     });
 }
-
-// Export for CLI schema generation
-export const auth = createAuth();
 
 // Export for runtime usage
 export { createAuth };

@@ -1,5 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
-import { boxesApi, statsApi } from "@/api/client";
+/**
+ * Dashboard hook using TanStack Query
+ * 
+ * Replaces manual state management with server state management
+ * for automatic caching, background refetching, and optimistic updates.
+ */
+
+import { useState, useCallback } from "react";
+import { useBoxes, useDashboardStats, useCreateBox, useDeleteBox } from "@/hooks";
 import type { Box } from "@/types";
 
 export interface DashboardStats {
@@ -21,71 +28,69 @@ export interface UseDashboardReturn {
     handleBoxDeleted: (boxId: string) => void;
     handleBoxUpdated: (updatedBox: Box) => void;
     refreshData: () => Promise<void>;
+    isCreating: boolean;
+    isDeleting: boolean;
 }
 
+// Stable default stats object to prevent re-renders
+const DEFAULT_STATS = { totalBoxes: 0, totalSadaqahs: 0, totalValue: 0 };
+
 export function useDashboard(): UseDashboardReturn {
-    const [boxes, setBoxes] = useState<Box[]>([]);
     const [selectedBox, setSelectedBox] = useState<Box | null>(null);
     const [showCreateForm, setShowCreateForm] = useState(false);
-    const [stats, setStats] = useState<DashboardStats>({
-        totalBoxes: 0,
-        totalSadaqahs: 0,
-        totalValue: 0,
-    });
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<Error | null>(null);
 
-    const fetchBoxes = useCallback(async () => {
-        try {
-            const boxes = await boxesApi.getAll();
-            setBoxes(boxes);
-        } catch (err) {
-            setError(err instanceof Error ? err : new Error("Failed to fetch boxes"));
-        }
-    }, []);
+    // Server state queries
+    const {
+        data: boxes = [],
+        isLoading: boxesLoading,
+        error: boxesError,
+        refetch: refetchBoxes,
+    } = useBoxes();
 
-    const fetchStats = useCallback(async () => {
-        try {
-            const stats = await statsApi.get();
-            setStats(stats);
-        } catch (err) {
-            setError(err instanceof Error ? err : new Error("Failed to fetch stats"));
-        }
-    }, []);
+    const {
+        data: stats = DEFAULT_STATS,
+        isLoading: statsLoading,
+        error: statsError,
+        refetch: refetchStats,
+    } = useDashboardStats();
+
+    // Mutations
+    const { mutate: createBox, isPending: isCreating } = useCreateBox();
+    const { mutate: deleteBox, isPending: isDeleting } = useDeleteBox();
+
+    const loading = boxesLoading || statsLoading;
+    const error = boxesError || statsError;
 
     const refreshData = useCallback(async () => {
-        setLoading(true);
-        await Promise.all([fetchBoxes(), fetchStats()]);
-        setLoading(false);
-    }, [fetchBoxes, fetchStats]);
-
-    useEffect(() => {
-        refreshData();
-    }, [refreshData]);
+        await Promise.all([refetchBoxes(), refetchStats()]);
+    }, [refetchBoxes, refetchStats]);
 
     const handleBoxCreated = useCallback(
         (box: Box) => {
-            setBoxes((prev) => [box, ...prev]);
+            // TanStack Query handles cache updates automatically via onSuccess
+            // Just close the form, no need to manually refetch
             setShowCreateForm(false);
-            fetchStats();
         },
-        [fetchStats]
+        []
     );
 
     const handleBoxDeleted = useCallback(
         (boxId: string) => {
-            setBoxes((prev) => prev.filter((b) => b.id !== boxId));
-            if (selectedBox?.id === boxId) {
-                setSelectedBox(null);
-            }
-            fetchStats();
+            deleteBox(boxId, {
+                onSuccess: () => {
+                    if (selectedBox?.id === boxId) {
+                        setSelectedBox(null);
+                    }
+                    // Stats will be automatically invalidated by the mutation
+                },
+            });
         },
-        [selectedBox, fetchStats]
+        [deleteBox, selectedBox]
     );
 
     const handleBoxUpdated = useCallback(
         (updatedBox: Box) => {
-            setBoxes((prev) => prev.map((b) => (b.id === updatedBox.id ? updatedBox : b)));
+            // TanStack Query handles cache updates automatically via optimistic updates
             if (selectedBox?.id === updatedBox.id) {
                 setSelectedBox(updatedBox);
             }
@@ -99,12 +104,14 @@ export function useDashboard(): UseDashboardReturn {
         showCreateForm,
         stats,
         loading,
-        error,
+        error: error as Error | null,
         setSelectedBox,
         setShowCreateForm,
         handleBoxCreated,
         handleBoxDeleted,
         handleBoxUpdated,
         refreshData,
+        isCreating,
+        isDeleting,
     };
 }

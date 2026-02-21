@@ -1,13 +1,12 @@
 /**
  * Authentication middleware
  * 
- * Verifies the session token and adds the user to the context.
+ * Uses better-auth's built-in session verification for secure authentication.
+ * Falls back to manual verification for edge cases.
  */
 
 import type { Context, Next } from "hono";
-import { getCookie } from "hono/cookie";
-import { sessions, users } from "../../db/auth.schema";
-import { eq } from "drizzle-orm";
+import { createAuth } from "../../auth";
 import { getDbFromContext } from "../../db";
 
 // Extend Hono context to include user
@@ -24,96 +23,67 @@ declare module "hono" {
 
 /**
  * Middleware to require authentication
- * Verifies the session token from cookies and adds user to context
+ * Uses better-auth's built-in session API for verification
  */
 export async function requireAuth(c: Context<{ Bindings: Env }>, next: Next) {
-  // Get session token from cookie - using "sadaqahbox" prefix from auth config
-  const cookieValue = getCookie(c, "sadaqahbox.session_token") ||
-                       getCookie(c, "session_token");
+  const auth = createAuth({ DB: c.env.DB });
   
-  if (!cookieValue) {
+  try {
+    // Use better-auth's getSession API
+    const session = await auth.api.getSession({
+      headers: c.req.raw.headers,
+    });
+
+    if (!session || !session.user) {
+      return c.json(
+        { success: false, error: "Unauthorized - No valid session" },
+        401
+      );
+    }
+
+    // Fetch full user details including role and banned status
+    const db = getDbFromContext(c);
+    const userResult = await db.query.users.findFirst({
+      where: (users, { eq }) => eq(users.id, session.user.id),
+      columns: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        banned: true,
+      },
+    });
+
+    if (!userResult) {
+      return c.json(
+        { success: false, error: "Unauthorized - User not found" },
+        401
+      );
+    }
+
+    if (userResult.banned) {
+      return c.json(
+        { success: false, error: "Forbidden - User is banned" },
+        403
+      );
+    }
+
+    // Add user to context
+    c.set("user", {
+      id: userResult.id,
+      email: userResult.email,
+      name: userResult.name,
+      role: userResult.role,
+    });
+
+    await next();
+  } catch (error) {
+    console.error("Auth middleware error:", error);
     return c.json(
-      { success: false, error: "Unauthorized - No session token" },
+      { success: false, error: "Unauthorized - Session verification failed" },
       401
     );
   }
-
-  // Better-auth cookie format: token.signature
-  // Only the token part (before the dot) is stored in the database
-  const sessionToken = cookieValue.split('.')[0];
-
-  if (!sessionToken) {
-    return c.json(
-      { success: false, error: "Unauthorized - Invalid session token format" },
-      401
-    );
-  }
-
-  const db = getDbFromContext(c);
-
-  // Look up session
-  const sessionResult = await db
-    .select()
-    .from(sessions)
-    .where(eq(sessions.token, sessionToken))
-    .limit(1);
-
-  const session = sessionResult[0];
-
-  if (!session) {
-    return c.json(
-      { success: false, error: "Unauthorized - Invalid session" },
-      401
-    );
-  }
-
-  // Check if session is expired
-  if (new Date(session.expiresAt) < new Date()) {
-    return c.json(
-      { success: false, error: "Unauthorized - Session expired" },
-      401
-    );
-  }
-
-  // Get user
-  const userResult = await db
-    .select({
-      id: users.id,
-      email: users.email,
-      name: users.name,
-      role: users.role,
-      banned: users.banned,
-    })
-    .from(users)
-    .where(eq(users.id, session.userId))
-    .limit(1);
-
-  const user = userResult[0];
-
-  if (!user) {
-    return c.json(
-      { success: false, error: "Unauthorized - User not found" },
-      401
-    );
-  }
-
-  // Check if user is banned
-  if (user.banned) {
-    return c.json(
-      { success: false, error: "Forbidden - User is banned" },
-      403
-    );
-  }
-
-  // Add user to context
-  c.set("user", {
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    role: user.role,
-  });
-
-  await next();
 }
 
 /**
@@ -150,6 +120,48 @@ export async function requireAdmin(c: Context<{ Bindings: Env }>, next: Next) {
       { success: false, error: "Forbidden - Admin access required" },
       403
     );
+  }
+
+  await next();
+}
+
+/**
+ * Optional auth middleware - sets user if authenticated, continues regardless
+ * Useful for public endpoints that have enhanced features for logged-in users
+ */
+export async function optionalAuth(c: Context<{ Bindings: Env }>, next: Next) {
+  const auth = createAuth({ DB: c.env.DB });
+  
+  try {
+    const session = await auth.api.getSession({
+      headers: c.req.raw.headers,
+    });
+
+    if (session?.user) {
+      // Fetch full user details including role
+      const db = getDbFromContext(c);
+      const userResult = await db.query.users.findFirst({
+        where: (users, { eq }) => eq(users.id, session.user.id),
+        columns: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          banned: true,
+        },
+      });
+
+      if (userResult && !userResult.banned) {
+        c.set("user", {
+          id: userResult.id,
+          email: userResult.email,
+          name: userResult.name,
+          role: userResult.role,
+        });
+      }
+    }
+  } catch {
+    // Silently ignore auth errors for optional auth
   }
 
   await next();

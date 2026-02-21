@@ -8,6 +8,9 @@ export * from "./id-generator";
 // Cache
 export * from "./cache";
 
+// API Cache (Cloudflare Cache API)
+export * from "./api-cache";
+
 // Validators
 export * from "./validators";
 

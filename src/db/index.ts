@@ -1,9 +1,8 @@
 import { drizzle } from "drizzle-orm/d1";
 import type { Context } from "hono";
-import { schema } from "./schema";
+import * as schema from "./schema";
 
-type Schema = typeof schema;
-export type Database = ReturnType<typeof drizzle<Schema>>;
+export type Database = ReturnType<typeof drizzle<typeof schema>>;
 
 declare module "hono" {
   interface ContextVariableMap {
