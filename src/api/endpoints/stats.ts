@@ -2,27 +2,15 @@
  * Stats endpoints - Refactored
  */
 
-import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { requireAuth, getCurrentUser } from "../middleware";
 import { getBoxEntity, getSadaqahEntity, getCurrencyEntity, getCurrencyTypeEntity } from "../entities";
-import {
-	buildRoute,
-	create200Response,
-	type RouteDefinition,
-} from "../shared/route-builder";
-import { StatsResponseSchema } from "../dtos";
+import { statsRoute } from "./stats.routes";
 import { jsonSuccess } from "../shared/route-builder";
 import type { TotalValueExtra } from "../repositories/box.repository";
+import type { RouteDefinition } from "../shared/route-builder";
 
-export const statsRoute = buildRoute({
-	method: "get",
-	path: "/api/stats",
-	tags: ["Stats"],
-	summary: "Get user statistics",
-	responses: create200Response(StatsResponseSchema, "User statistics"),
-	requireAuth: true,
-});
+export { statsRoute };
 
 export const statsHandler = async (c: Context<{ Bindings: Env }>) => {
 	const user = getCurrentUser(c);
@@ -36,7 +24,7 @@ export const statsHandler = async (c: Context<{ Bindings: Env }>) => {
 
 	// Calculate total value and get the most common base currency
 	const totalValue = boxes.reduce((sum, b) => sum + b.totalValue, 0);
-	
+
 	// Aggregate totalValueExtra from all boxes
 	const aggregatedExtra: TotalValueExtra = {};
 	for (const box of boxes) {
@@ -53,14 +41,14 @@ export const statsHandler = async (c: Context<{ Bindings: Env }>) => {
 			}
 		}
 	}
-	
+
 	// Get currency type IDs for comparison
 	const [fiatType, cryptoType, commodityType] = await Promise.all([
 		currencyTypeEntity.getFiatType(),
 		currencyTypeEntity.getCryptoType(),
 		currencyTypeEntity.getCommodityType(),
 	]);
-	
+
 	// Get base currencies from boxes
 	const baseCurrencyCounts = new Map<string, { id: string; code: string; name: string; symbol?: string; currencyTypeId?: string; currencyTypeName?: string; count: number }>();
 	for (const box of boxes) {
@@ -96,7 +84,7 @@ export const statsHandler = async (c: Context<{ Bindings: Env }>) => {
 			}
 		}
 	}
-	
+
 	// Find the most common base currency
 	let primaryCurrency: { id: string; code: string; name: string; symbol?: string; currencyTypeId?: string; currencyTypeName?: string } | null = null;
 	let maxCount = 0;

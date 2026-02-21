@@ -1,60 +1,25 @@
 /**
  * Box endpoints - Refactored
- * 
+ *
  * Uses service layer for business logic and DTOs for type safety.
  */
 
-import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { requireAuth, getCurrentUser } from "../middleware";
 import { getBoxService, type CreateBoxInput, type UpdateBoxInput } from "../services";
-import {
-	BoxSchema,
-	CreateBoxBodySchema,
-	UpdateBoxBodySchema,
-	BoxStatsSchema,
-	ListBoxesResponseSchema,
-	GetBoxResponseSchema,
-	EmptyBoxResponseSchema,
-	DeleteBoxResponseSchema,
-	ListCollectionsResponseSchema,
-} from "../dtos";
 import {
 	buildRoute,
 	getParams,
 	getQuery,
 	getBody,
-	createIdParamSchema,
-	create200Response,
-	create201Response,
-	create404Response,
-	create409Response,
+	jsonSuccess,
 	type RouteDefinition,
 } from "../shared/route-builder";
-import { jsonSuccess } from "../shared/route-builder";
+import * as routes from "./boxes.routes";
 
-// ============== Schemas ==============
-
-const BoxIdParamSchema = createIdParamSchema("boxId");
-
-const ListQuerySchema = z.object({
-	sortBy: z.enum(["name", "createdAt", "count", "totalValue"]).default("createdAt"),
-	sortOrder: z.enum(["asc", "desc"]).default("desc"),
-});
-
-// ============== Routes & Handlers ==============
+// ============== Handlers ==============
 
 // List
-export const listRoute = buildRoute({
-	method: "get",
-	path: "/api/boxes",
-	tags: ["Boxes"],
-	summary: "List all charity boxes",
-	query: ListQuerySchema,
-	responses: create200Response(ListBoxesResponseSchema, "Returns a list of boxes"),
-	requireAuth: true,
-});
-
 export const listHandler = async (c: Context<{ Bindings: Env }>) => {
 	const user = getCurrentUser(c);
 	const query = getQuery<{ sortBy: "name" | "createdAt" | "count" | "totalValue"; sortOrder: "asc" | "desc" }>(c);
@@ -68,19 +33,6 @@ export const listHandler = async (c: Context<{ Bindings: Env }>) => {
 };
 
 // Create
-export const createRoute = buildRoute({
-	method: "post",
-	path: "/api/boxes",
-	tags: ["Boxes"],
-	summary: "Create a new charity box",
-	body: CreateBoxBodySchema,
-	responses: create201Response(z.object({
-		success: z.boolean(),
-		box: BoxSchema,
-	}), "Returns the created box"),
-	requireAuth: true,
-});
-
 export const createHandler = async (c: Context<{ Bindings: Env }>) => {
 	const user = getCurrentUser(c);
 	const body = getBody<CreateBoxInput>(c);
@@ -94,19 +46,6 @@ export const createHandler = async (c: Context<{ Bindings: Env }>) => {
 };
 
 // Get
-export const getRoute = buildRoute({
-	method: "get",
-	path: "/api/boxes/{boxId}",
-	tags: ["Boxes"],
-	summary: "Get a box with detailed stats",
-	params: BoxIdParamSchema,
-	responses: {
-		...create200Response(GetBoxResponseSchema, "Returns the box"),
-		...create404Response("Box not found"),
-	},
-	requireAuth: true,
-});
-
 export const getHandler = async (c: Context<{ Bindings: Env }>) => {
 	const user = getCurrentUser(c);
 	const { boxId } = getParams<{ boxId: string }>(c);
@@ -123,20 +62,6 @@ export const getHandler = async (c: Context<{ Bindings: Env }>) => {
 };
 
 // Update
-export const updateRoute = buildRoute({
-	method: "patch",
-	path: "/api/boxes/{boxId}",
-	tags: ["Boxes"],
-	summary: "Update a box",
-	params: BoxIdParamSchema,
-	body: UpdateBoxBodySchema,
-	responses: {
-		...create200Response(z.object({ success: z.boolean(), box: BoxSchema }), "Returns the updated box"),
-		...create404Response("Box not found"),
-	},
-	requireAuth: true,
-});
-
 export const updateHandler = async (c: Context<{ Bindings: Env }>) => {
 	const user = getCurrentUser(c);
 	const { boxId } = getParams<{ boxId: string }>(c);
@@ -152,19 +77,6 @@ export const updateHandler = async (c: Context<{ Bindings: Env }>) => {
 };
 
 // Delete
-export const deleteRoute = buildRoute({
-	method: "delete",
-	path: "/api/boxes/{boxId}",
-	tags: ["Boxes"],
-	summary: "Delete a box",
-	params: BoxIdParamSchema,
-	responses: {
-		...create200Response(DeleteBoxResponseSchema, "Box deleted"),
-		...create404Response("Box not found"),
-	},
-	requireAuth: true,
-});
-
 export const deleteHandler = async (c: Context<{ Bindings: Env }>) => {
 	const user = getCurrentUser(c);
 	const { boxId } = getParams<{ boxId: string }>(c);
@@ -183,19 +95,6 @@ export const deleteHandler = async (c: Context<{ Bindings: Env }>) => {
 };
 
 // Empty Box
-export const emptyRoute = buildRoute({
-	method: "post",
-	path: "/api/boxes/{boxId}/empty",
-	tags: ["Boxes"],
-	summary: "Empty a box (collect all sadaqahs)",
-	params: BoxIdParamSchema,
-	responses: {
-		...create200Response(EmptyBoxResponseSchema, "Box emptied"),
-		...create404Response("Box not found"),
-	},
-	requireAuth: true,
-});
-
 export const emptyHandler = async (c: Context<{ Bindings: Env }>) => {
 	const user = getCurrentUser(c);
 	const { boxId } = getParams<{ boxId: string }>(c);
@@ -213,23 +112,6 @@ export const emptyHandler = async (c: Context<{ Bindings: Env }>) => {
 };
 
 // Get Collections
-export const collectionsRoute = buildRoute({
-	method: "get",
-	path: "/api/boxes/{boxId}/collections",
-	tags: ["Boxes"],
-	summary: "Get collection history for a box",
-	params: BoxIdParamSchema,
-	query: z.object({
-		page: z.coerce.number().int().positive().default(1),
-		limit: z.coerce.number().int().positive().max(100).default(20),
-	}),
-	responses: {
-		...create200Response(ListCollectionsResponseSchema, "Returns collection history"),
-		...create404Response("Box not found"),
-	},
-	requireAuth: true,
-});
-
 export const collectionsHandler = async (c: Context<{ Bindings: Env }>) => {
 	const user = getCurrentUser(c);
 	const { boxId } = getParams<{ boxId: string }>(c);
@@ -255,11 +137,11 @@ export const collectionsHandler = async (c: Context<{ Bindings: Env }>) => {
 // ============== Route Definitions Export ==============
 
 export const boxRouteDefinitions: RouteDefinition[] = [
-	{ route: listRoute, handler: listHandler, middleware: [requireAuth] },
-	{ route: createRoute, handler: createHandler, middleware: [requireAuth] },
-	{ route: getRoute, handler: getHandler, middleware: [requireAuth] },
-	{ route: updateRoute, handler: updateHandler, middleware: [requireAuth] },
-	{ route: deleteRoute, handler: deleteHandler, middleware: [requireAuth] },
-	{ route: emptyRoute, handler: emptyHandler, middleware: [requireAuth] },
-	{ route: collectionsRoute, handler: collectionsHandler, middleware: [requireAuth] },
+	{ route: routes.listRoute, handler: listHandler, middleware: [requireAuth] },
+	{ route: routes.createRoute, handler: createHandler, middleware: [requireAuth] },
+	{ route: routes.getRoute, handler: getHandler, middleware: [requireAuth] },
+	{ route: routes.updateRoute, handler: updateHandler, middleware: [requireAuth] },
+	{ route: routes.deleteRoute, handler: deleteHandler, middleware: [requireAuth] },
+	{ route: routes.emptyRoute, handler: emptyHandler, middleware: [requireAuth] },
+	{ route: routes.collectionsRoute, handler: collectionsHandler, middleware: [requireAuth] },
 ];

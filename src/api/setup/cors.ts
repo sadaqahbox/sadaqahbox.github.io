@@ -33,8 +33,8 @@ function createCorsMiddleware(): MiddlewareHandler {
         const requestOrigin = c.req.header("origin");
 
         // Build allowed origins list from env + dev defaults
-        const configuredOrigins = parseAllowedOrigins(c.env.ALLOWED_ORIGINS as string | undefined);
-        const isDev = (c.env.NODE_ENV as string | undefined) !== "production";
+        const configuredOrigins = parseAllowedOrigins(c.env?.ALLOWED_ORIGINS as string | undefined);
+        const isDev = (c.env?.NODE_ENV as string | undefined) !== "production";
         const allowedOrigins = isDev
             ? [...DEV_ORIGINS, ...configuredOrigins]
             : configuredOrigins;

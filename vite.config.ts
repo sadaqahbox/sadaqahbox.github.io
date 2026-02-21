@@ -147,4 +147,7 @@ export default defineConfig(({ mode }) => ({
       "@api": resolve(__dirname, "./src/api"),
     },
   },
+  optimizeDeps: {
+    include: ["@scalar/api-reference-react"],
+  },
 }));

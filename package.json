@@ -10,7 +10,6 @@
     "build": "bunx vite build",
     "deploy": "bun run build && bunx wrangler deploy",
     "cf-typegen": "bunx wrangler types",
-    
     "build:static": "bunx vite build --config vite.static.config.ts",
     "build:worker": "bunx wrangler deploy --config wrangler.worker.jsonc --dry-run --outdir=dist/worker",
     "deploy:worker": "bunx wrangler deploy --config wrangler.worker.jsonc",
@@ -35,6 +34,7 @@
     "@hono/zod-openapi": "^1.2.1",
     "@hugeicons/core-free-icons": "^3.1.1",
     "@hugeicons/react": "^1.1.5",
+    "@scalar/api-reference-react": "^0.8.62",
     "@scalar/hono-api-reference": "^0.9.40",
     "@scalar/openapi-to-markdown": "^0.3.40",
     "@tailwindcss/postcss": "^4.0.0",

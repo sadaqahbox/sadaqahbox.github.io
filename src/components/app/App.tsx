@@ -3,6 +3,7 @@ import { AuthPage } from "@/components/auth";
 import { AccountPage } from "@/components/account";
 import { ProtectedDashboard } from "@/components/dashboard";
 import { LandingPage } from "@/components/landing";
+import { DocsPage } from "@/components/docs";
 
 function App() {
   return (
@@ -11,6 +12,7 @@ function App() {
       <Route path="/dashboard" element={<ProtectedDashboard />} />
       <Route path="/auth/:pathname" element={<AuthPage />} />
       <Route path="/account/:pathname" element={<AccountPage />} />
+      <Route path="/api/docs" element={<DocsPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

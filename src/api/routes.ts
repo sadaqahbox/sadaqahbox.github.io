@@ -9,7 +9,7 @@ import type { OpenAPIHono } from "@hono/zod-openapi";
 import { registerRoutes as registerRouteGroup, type RouteDefinition } from "./shared/route-builder";
 
 // System endpoints
-import { healthRoute, healthHandler } from "./endpoints/health";
+import { healthRouteDefinitions } from "./endpoints/health";
 import { statsRouteDefinitions } from "./endpoints/stats";
 
 // Box endpoints (CRUD factory generated + custom)
@@ -29,7 +29,7 @@ import { currencyTypeRouteDefinitions } from "./endpoints/currency-types";
  */
 export const allRouteDefinitions: RouteDefinition[] = [
 	// System routes
-	{ route: healthRoute, handler: healthHandler },
+	...healthRouteDefinitions,
 	// Resource routes
 	...statsRouteDefinitions,
 	...boxRouteDefinitions,
@@ -46,7 +46,7 @@ export function registerRoutes(app: OpenAPIHono<{ Bindings: Env }>): void {
 }
 
 // Re-export for convenience
-export { healthRoute, healthHandler } from "./endpoints/health";
+export { healthRouteDefinitions } from "./endpoints/health";
 export { statsRouteDefinitions } from "./endpoints/stats";
 export { boxRouteDefinitions } from "./endpoints/boxes";
 export { sadaqahRouteDefinitions } from "./endpoints/sadaqahs";

@@ -23,6 +23,7 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: "autoUpdate",
       workbox: {
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest}"],
         runtimeCaching: [
           {
@@ -155,6 +156,9 @@ export default defineConfig(({ mode }) => ({
       "@": resolve(__dirname, "./src"),
       "@api": resolve(__dirname, "./src/api"),
     },
+  },
+  optimizeDeps: {
+    include: ["@scalar/api-reference-react"],
   },
   // Define environment variables that should be exposed to the client
   define: {
