@@ -9,7 +9,7 @@ import { eq, sql } from "drizzle-orm";
 import { BaseService, createServiceFactory } from "./base-service";
 import { SadaqahRepository, BoxRepository, CurrencyRepository } from "../repositories";
 import type { TotalValueExtra } from "../repositories/box.repository";
-import { GoldRateService } from "./gold-rate-service";
+import { ExchangeRateService } from "./exchange-rate-service";
 import { sadaqahs, boxes, currencies } from "../../db/schema";
 import type { Sadaqah, Box, Currency } from "../schemas";
 import { DEFAULT_PAGE, DEFAULT_LIMIT } from "../config/constants";
@@ -86,13 +86,13 @@ export class SadaqahService extends BaseService {
   }
 
   private get rateService() {
-    return GoldRateService.getInstance(this.db);
+    return ExchangeRateService.getInstance(this.db);
   }
 
   /**
    * Get currency with usdValue
-   * Only fetches rates if API rate limits allow (1 hour cooldown)
-   * @returns Currency with usdValue, or currency without usdValue if rate is not available or APIs are rate-limited
+   * Uses granular per-currency rate limiting
+   * @returns Currency with usdValue, or currency without usdValue if rate is not available
    */
   private async getCurrencyWithRate(currencyId: string): Promise<{ id: string; code: string; name: string; usdValue?: number | null }> {
     // First check if currency exists
@@ -101,16 +101,16 @@ export class SadaqahService extends BaseService {
       throw new ValidationError(`Currency not found: ${currencyId}`);
     }
     
-    // If usdValue exists, return it
+    // If usdValue exists in database, return it
     if (currency.usdValue !== null && currency.usdValue !== undefined) {
       return currency;
     }
     
-    // Check if API calls are allowed (rate limiting)
-    const canFetchRates = await this.rateService.canFetchRateForCurrency(currency.code);
+    // Check if we can fetch this specific currency (granular rate limiting)
+    const canFetch = await this.rateService.canFetchRateForCurrency(currency.code);
     
-    if (!canFetchRates) {
-      logger.info("API rate limit cooldown active, skipping rate fetch", {
+    if (!canFetch) {
+      logger.info("Currency rate fetch skipped (cooldown active)", {
         currencyId,
         code: currency.code
       });
@@ -118,25 +118,25 @@ export class SadaqahService extends BaseService {
       return currency;
     }
     
-    // Try to fetch rates (respects rate limiting internally)
-    logger.info("Currency missing usdValue, fetching rates", { currencyId, code: currency.code });
+    // Try to fetch rate for this specific currency
+    logger.info("Fetching rate for currency", { currencyId, code: currency.code });
     
     try {
-      // Fetch rates (this will skip APIs in cooldown)
-      const ratesResult = await this.rateService.fetchAllRates();
-      logger.info("Rates fetched", {
-        rateCount: ratesResult.usdRates.size,
-        errors: ratesResult.errors,
-        hasUsd: ratesResult.usdRates.has("USD"),
-        hasXau: ratesResult.usdRates.has("XAU"),
-        requestedCurrency: currency.code,
-        hasRequestedRate: ratesResult.usdRates.has(currency.code),
+      // Fetch rate for just this currency (granular approach)
+      const result = await this.rateService.fetchRatesForCurrencies([currency.code]);
+      
+      logger.info("Rate fetch result", {
+        code: currency.code,
+        fromCache: result.fromCache,
+        newlyFetched: result.newlyFetched,
+        notFound: result.notFound,
+        errors: result.errors,
       });
       
-      // Get the usdValue for this currency from the fresh rates
-      const usdValue = ratesResult.usdRates.get(currency.code);
+      // Check if we got the rate
+      const usdValue = result.usdRates.get(currency.code);
       
-      if (usdValue !== undefined && usdValue !== null) {
+      if (usdValue !== undefined) {
         // Update the database in the background
         this.rateService.updateCurrencyValues().catch(err => {
           logger.error("Background rate update failed", { currencyId }, err instanceof Error ? err : new Error(String(err)));
@@ -146,23 +146,21 @@ export class SadaqahService extends BaseService {
         const { currencyCache } = await import("../shared/cache");
         currencyCache.clear();
         
-        logger.info("Currency rate found", { code: currency.code, usdValue });
+        logger.info("Currency rate found", { code: currency.code, usdValue, source: result.fromCache.includes(currency.code) ? "cache" : "api" });
         
-        // Return the currency with the fresh usdValue
         return {
           ...currency,
           usdValue,
         };
       }
       
-      // Rate not available from APIs - return currency without usdValue
-      // The caller will handle storing in totalValueExtra
-      logger.warn("Currency rate not available from APIs, value will be stored in totalValueExtra", { code: currency.code, currencyId });
+      // Rate not found - this currency is now in cooldown for 1 hour
+      logger.warn("Currency rate not found, marked for cooldown", { code: currency.code, currencyId });
       return currency;
       
     } catch (error) {
       // Log error but return currency without usdValue
-      logger.error("Failed to fetch rates, value will be stored in totalValueExtra", { currencyId }, error instanceof Error ? error : new Error(String(error)));
+      logger.error("Failed to fetch rate, value will be stored in totalValueExtra", { currencyId }, error instanceof Error ? error : new Error(String(error)));
       return currency;
     }
   }

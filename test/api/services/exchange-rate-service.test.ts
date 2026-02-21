@@ -1,9 +1,9 @@
 /**
- * Tests for Gold Rate Service
+ * Tests for Exchange Rate Service
  * 
  * Includes both unit tests and functional tests for real API calls.
  * Functional tests are skipped by default to avoid hitting APIs during regular test runs.
- * To run functional tests, remove the .skip from the test or run with: bun test gold-rate-service
+ * To run functional tests, remove the .skip from the test or run with: bun test exchange-rate-service
  */
 
 import { describe, test, expect } from "bun:test";
@@ -11,9 +11,9 @@ import {
   calculateGoldValue,
   calculateGoldGrams,
   convertGoldToCurrency,
-  GoldRateService,
+  ExchangeRateService,
   type RateResult,
-} from "@/api/services/gold-rate-service";
+} from "@/api/services/exchange-rate-service";
 
 // ============== Unit Tests for Helper Functions ==============
 
@@ -161,15 +161,15 @@ describe("Round-trip conversion", () => {
   });
 });
 
-// ============== GoldRateService Unit Tests ==============
+// ============== ExchangeRateService Unit Tests ==============
 
-describe("GoldRateService", () => {
+describe("ExchangeRateService", () => {
   describe("getInstance", () => {
     test("should return singleton instance", () => {
       const mockDb = {} as any;
       
-      const instance1 = GoldRateService.getInstance(mockDb);
-      const instance2 = GoldRateService.getInstance(mockDb);
+      const instance1 = ExchangeRateService.getInstance(mockDb);
+      const instance2 = ExchangeRateService.getInstance(mockDb);
       
       expect(instance1).toBe(instance2);
     });
@@ -194,7 +194,7 @@ describe("GoldRateService", () => {
 // ============== Functional Tests (Real API Calls) ==============
 // These tests are skipped by default. Remove .skip to run them.
 
-describe.skip("GoldRateService - Functional Tests (Real API Calls)", () => {
+describe.skip("ExchangeRateService - Functional Tests (Real API Calls)", () => {
   test("should fetch rates from ExchangeRate-API", async () => {
     const response = await fetch("https://open.er-api.com/v6/latest/USD", {
       headers: { "Accept": "application/json" },

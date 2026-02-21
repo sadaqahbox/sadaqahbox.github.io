@@ -149,7 +149,28 @@ export const tags = sqliteTable(
   (table) => [index("tag_name_idx").on(table.name)]
 );
 
-// ============== API Rate Limiting Table ==============
+// ============== Currency Rate Attempts Table ==============
+// Tracks per-currency rate fetch attempts with granular control
+export const currencyRateAttempts = sqliteTable(
+  "currency_rate_attempt",
+  {
+    id: text("id").primaryKey(),
+    currencyCode: text("currencyCode").notNull().unique(), // e.g., "TRY", "BTC", "XAU"
+    lastAttemptAt: integer("lastAttemptAt", { mode: "timestamp" }).notNull(),
+    lastSuccessAt: integer("lastSuccessAt", { mode: "timestamp" }), // null if not found
+    usdValue: real("usdValue"), // cached USD value if found
+    sourceApi: text("sourceApi"), // which API provided the rate (e.g., "fawazahmed0", "frankfurter")
+    attemptCount: integer("attemptCount").notNull().default(0),
+    found: integer("found", { mode: "boolean" }).notNull().default(false), // whether rate was found
+  },
+  (table) => [
+    index("currency_rate_attempt_code_idx").on(table.currencyCode),
+    index("currency_rate_attempt_last_attempt_idx").on(table.lastAttemptAt),
+    index("currency_rate_attempt_found_idx").on(table.found),
+  ]
+);
+
+// ============== API Rate Limiting Table (Deprecated - kept for compatibility) ==============
 // Tracks when API calls were last attempted to prevent hitting rate limits
 export const apiRateCalls = sqliteTable(
   "api_rate_call",
@@ -278,3 +299,5 @@ export type BoxTag = typeof boxTags.$inferSelect;
 export type NewBoxTag = typeof boxTags.$inferInsert;
 export type ApiRateCall = typeof apiRateCalls.$inferSelect;
 export type NewApiRateCall = typeof apiRateCalls.$inferInsert;
+export type CurrencyRateAttempt = typeof currencyRateAttempts.$inferSelect;
+export type NewCurrencyRateAttempt = typeof currencyRateAttempts.$inferInsert;

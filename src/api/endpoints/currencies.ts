@@ -7,7 +7,7 @@
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { requireAuth, requireAdmin, getCurrentUser } from "../middleware";
-import { getCurrencyService, GoldRateService } from "../services";
+import { getCurrencyService, ExchangeRateService } from "../services";
 import { CurrencySchema, CreateCurrencyBodySchema } from "../dtos";
 import {
 	buildRoute,
@@ -148,9 +148,9 @@ export const updateGoldRatesRoute = buildRoute({
 
 export const updateGoldRatesHandler = async (c: Context<{ Bindings: Env }>) => {
 	const db = getDbFromContext(c);
-	const goldRateService = GoldRateService.getInstance(db);
+	const exchangeRateService = ExchangeRateService.getInstance(db);
 	
-	const result = await goldRateService.updateCurrencyValues();
+	const result = await exchangeRateService.updateCurrencyValues();
 	
 	return jsonSuccess(c, { 
 		updated: result.updated,

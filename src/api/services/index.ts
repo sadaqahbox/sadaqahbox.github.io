@@ -63,14 +63,14 @@ export {
 
 // Rate service (currency and gold rates)
 export {
-	GoldRateService,
+	ExchangeRateService,
 	scheduleRateUpdate,
 	calculateGoldValue,
 	calculateGoldGrams,
 	convertGoldToCurrency,
 	type RateResult,
 	type CurrencyRate,
-} from "./gold-rate-service";
+} from "./exchange-rate-service";
 
 // Re-export CurrencyWithRates for convenience
 export type { CurrencyWithRates, CurrencyWithGold } from "../entities/currency";

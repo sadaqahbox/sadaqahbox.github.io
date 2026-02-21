@@ -11,7 +11,7 @@ import { generateSadaqahId } from "../shared/id-generator";
 import { mapSadaqah } from "./mappers";
 import { CurrencyEntity } from "./currency";
 import { dbBatch } from "../shared/transaction";
-import { calculateGoldGrams } from "../services/gold-rate-service";
+import { calculateGoldGrams } from "../services/exchange-rate-service";
 
 export class SadaqahEntity {
 	constructor(private db: Database) {}

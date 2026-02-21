@@ -62,3 +62,9 @@ export {
   API_ENDPOINTS,
   type ApiEndpoint,
 } from "./api-rate-call.repository";
+
+// Currency Rate Attempt Repository
+export {
+  CurrencyRateAttemptRepository,
+  type CurrencyAttemptResult,
+} from "./currency-rate-attempt.repository";
