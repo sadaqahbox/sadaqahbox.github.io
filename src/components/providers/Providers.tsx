@@ -17,6 +17,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
         authClient={authClient}
         navigate={navigate}
         Link={LinkComponent}
+        apiKey={true}
+        passkey={true}
       >
         {children}
         <Toaster />

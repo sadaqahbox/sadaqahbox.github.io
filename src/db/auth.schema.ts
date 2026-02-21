@@ -16,11 +16,11 @@ export const users = sqliteTable("users", {
     .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
-  isAnonymous: integer("is_anonymous", { mode: "boolean" }).default(false),
   role: text("role"),
   banned: integer("banned", { mode: "boolean" }).default(false),
   banReason: text("ban_reason"),
   banExpires: integer("ban_expires", { mode: "timestamp_ms" }),
+  isAnonymous: integer("is_anonymous", { mode: "boolean" }).default(false),
 });
 
 export const sessions = sqliteTable(
@@ -124,10 +124,46 @@ export const passkeys = sqliteTable(
   ],
 );
 
+export const apikeys = sqliteTable(
+  "apikeys",
+  {
+    id: text("id").primaryKey(),
+    name: text("name"),
+    start: text("start"),
+    prefix: text("prefix"),
+    key: text("key").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    refillInterval: integer("refill_interval"),
+    refillAmount: integer("refill_amount"),
+    lastRefillAt: integer("last_refill_at", { mode: "timestamp_ms" }),
+    enabled: integer("enabled", { mode: "boolean" }).default(true),
+    rateLimitEnabled: integer("rate_limit_enabled", {
+      mode: "boolean",
+    }).default(true),
+    rateLimitTimeWindow: integer("rate_limit_time_window").default(86400000),
+    rateLimitMax: integer("rate_limit_max").default(10),
+    requestCount: integer("request_count").default(0),
+    remaining: integer("remaining"),
+    lastRequest: integer("last_request", { mode: "timestamp_ms" }),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+    permissions: text("permissions"),
+    metadata: text("metadata"),
+  },
+  (table) => [
+    index("apikeys_key_idx").on(table.key),
+    index("apikeys_userId_idx").on(table.userId),
+  ],
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   accounts: many(accounts),
   passkeys: many(passkeys),
+  apikeys: many(apikeys),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -147,6 +183,13 @@ export const accountsRelations = relations(accounts, ({ one }) => ({
 export const passkeysRelations = relations(passkeys, ({ one }) => ({
   users: one(users, {
     fields: [passkeys.userId],
+    references: [users.id],
+  }),
+}));
+
+export const apikeysRelations = relations(apikeys, ({ one }) => ({
+  users: one(users, {
+    fields: [apikeys.userId],
     references: [users.id],
   }),
 }));

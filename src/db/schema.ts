@@ -3,7 +3,7 @@ import { relations } from "drizzle-orm";
 import * as authSchema from "./auth.schema";
 
 // Re-export auth tables for drizzle-kit migrations
-export const { users, sessions, accounts, verifications, passkeys } = authSchema;
+export const { users, sessions, accounts, verifications, passkeys, apikeys } = authSchema;
 
 // Combine all schemas for drizzle-orm
 export const schema = {
