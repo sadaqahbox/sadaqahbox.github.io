@@ -8,6 +8,9 @@
 import type { Context } from "hono";
 import { getDbFromContext, type Database } from "../../db";
 
+// Export base entity
+export { BaseEntity } from "./base-entity";
+
 // Export entity classes
 export { BoxEntity } from "./box";
 export { SadaqahEntity } from "./sadaqah";

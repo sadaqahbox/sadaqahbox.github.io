@@ -121,14 +121,3 @@ export async function errorHandler(c: Context, next: Next) {
 		);
 	}
 }
-
-/**
- * Async handler wrapper - errors are caught by the middleware
- */
-export function asyncHandler<T extends Context>(
-	handler: (c: T) => Promise<Response | void>
-): (c: T) => Promise<Response | void> {
-	return async (c: T) => {
-		return handler(c);
-	};
-}

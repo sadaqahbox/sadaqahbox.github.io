@@ -245,8 +245,15 @@ export function registerRoute(
 	app: OpenAPIHono<{ Bindings: Env }>,
 	definition: RouteDefinition
 ): void {
+	const { route, handler, middleware } = definition;
+	
+	// Middleware should be passed as part of the route config object
+	const routeWithMiddleware = middleware && middleware.length > 0
+		? { ...route, middleware }
+		: route;
+	
 	// @ts-expect-error - Type mismatch for routes without params
-	app.openapi(definition.route, definition.handler, ...(definition.middleware || []));
+	app.openapi(routeWithMiddleware, handler);
 }
 
 /**
