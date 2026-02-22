@@ -138,6 +138,7 @@
 
 /* Accessibility: Respect prefers-reduced-motion for users who prefer minimal animation */
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -146,4 +147,56 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Premium Aesthetic Overrides for Third-Party Dropdowns (e.g. better-auth-ui) */
+[data-radix-popper-content-wrapper] [data-radix-menu-content],
+[data-slot="dropdown-menu-content"],
+[data-radix-menu-content] {
+  border-radius: 1.5rem !important;
+  border: 1px solid oklch(1 0 0 / 15%) !important;
+  background-color: oklch(var(--background) / 75%) !important;
+  background-image: linear-gradient(to bottom right, oklch(1 0 0 / 10%), transparent) !important;
+  backdrop-filter: blur(32px) saturate(1.2) !important;
+  padding: 0.625rem !important;
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.4) !important;
+  min-width: 12rem !important;
+}
+
+/* Force the actual wrapper that Radix/Popper uses to a high z-index */
+[data-radix-popper-content-wrapper] {
+  z-index: 100000 !important;
+}
+
+
+[data-radix-menu-content] [role="menuitem"],
+[data-radix-menu-content] [role="menuitemcheckbox"],
+[data-radix-menu-content] [role="menuitemradio"],
+[data-slot="dropdown-menu-item"] {
+  border-radius: 0.75rem !important;
+  padding: 0.625rem 0.75rem !important;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  margin-bottom: 2px !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.625rem !important;
+}
+
+/* Specific branding for active/hover states */
+[data-radix-menu-content] [role="menuitem"]:hover,
+[data-radix-menu-content] [role="menuitem"]:focus,
+[data-slot="dropdown-menu-item"]:hover,
+[data-slot="dropdown-menu-item"]:focus {
+  background-color: oklch(var(--primary) / 10%) !important;
+  color: oklch(var(--primary)) !important;
+  outline: none !important;
+}
+
+[data-radix-menu-content] [role="menuitem"][data-variant="destructive"]:hover,
+[data-radix-menu-content] [role="menuitem"][data-variant="destructive"]:focus {
+  background-color: oklch(var(--destructive) / 10%) !important;
+  color: oklch(var(--destructive)) !important;
 }
