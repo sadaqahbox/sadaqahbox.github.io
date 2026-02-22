@@ -177,8 +177,8 @@ function QuoteCarousel() {
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ delay: 0.1 }}
                     className={`p-3 rounded-full mb-5 ${currentQuote.type === "ayah"
-                        ? "bg-primary/10 text-primary"
-                        : "bg-amber-500/10 text-amber-600"
+                      ? "bg-primary/10 text-primary"
+                      : "bg-amber-500/10 text-amber-600"
                       }`}
                   >
                     {currentQuote.type === "ayah" ? (
@@ -254,8 +254,8 @@ function QuoteCarousel() {
                 setCurrentIndex(index);
               }}
               className={`h-1.5 rounded-full transition-all duration-300 ${index === currentIndex
-                  ? "bg-primary w-5"
-                  : "bg-primary/20 w-1.5 hover:bg-primary/40"
+                ? "bg-primary w-5"
+                : "bg-primary/20 w-1.5 hover:bg-primary/40"
                 }`}
               aria-label={`Go to quote ${index + 1}`}
             />
@@ -664,6 +664,35 @@ export function LandingPage() {
                   borderColor: "border-orange-500/10",
                   iconColor: "text-orange-600",
                   bgColor: "bg-orange-500/10",
+                },
+                {
+                  icon: ServerIcon,
+                  title: "Developer API & Docs",
+                  desc: (
+                    <>
+                      OpenAPI 3.1.0 Specification, API keys, and{" "}
+                      <a
+                        href="/api/docs"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline hover:text-primary transition-colors"
+                      >
+                        Scalar Docs
+                      </a>{" "}
+                      with <a
+                        href="/llms.txt"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline hover:text-primary transition-colors"
+                      >
+                        llms.txt
+                      </a>{" "} support.
+                    </>
+                  ),
+                  color: "from-indigo-500/5 to-background",
+                  borderColor: "border-indigo-500/10",
+                  iconColor: "text-indigo-600",
+                  bgColor: "bg-indigo-500/10",
                 },
               ].map((feature) => (
                 <motion.div key={feature.title} variants={scaleIn}>

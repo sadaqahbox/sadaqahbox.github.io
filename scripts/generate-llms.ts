@@ -43,7 +43,6 @@ SadaqahBox is a modern application designed to facilitate charitable giving and 
 - **Charity Management**: Efficiently manage charitable organizations and projects.
 - **Donation Tracking**: Real-time tracking and reporting of donations.
 - **Secure Authentication**: Robust authentication system using better-auth.
-- **Vector Search**: Advanced search capabilities for content discovery.
 
 ## API Overview
 The API is built with Hono and follows OpenAPI standards. All endpoints are under \`/api\`.
