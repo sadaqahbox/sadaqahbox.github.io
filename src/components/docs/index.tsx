@@ -39,12 +39,10 @@ export function DocsPage() {
       configuration={{
         sources: [
           {
-            id: "api",
             title: "API",
             content: honoSpec,
           },
           {
-            id: "auth",
             title: "Auth",
             content: authSpec,
           },

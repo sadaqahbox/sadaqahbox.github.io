@@ -87,7 +87,7 @@ async function testServerConnection(apiBase: string): Promise<{ success: boolean
 export function ServerUrlDialog({ children }: { children?: React.ReactNode }) {
     const { isConnected } = useServerConnection();
     const storedUrl = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) || "" : "";
-    const [inputValue, setInputValue] = useState(storedUrl.replace(/\/api$/, ""));
+    const [inputValue, setInputValue] = useState(() => storedUrl.replace(/\/api$/, ""));
     const [isOpen, setIsOpen] = useState(false);
     const [isTesting, setIsTesting] = useState(false);
     const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
