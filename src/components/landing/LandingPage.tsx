@@ -29,6 +29,8 @@ import {
   Shield,
   ServerIcon,
   Loader2Icon,
+  Play,
+  Pause,
 } from "lucide-react";
 import quotesData from "@/data/quotes.json";
 import { WheatScrollAnimation } from "./WheatScrollAnimation";
@@ -109,6 +111,7 @@ function QuoteCarousel() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [isAutoplay, setIsAutoplay] = useState(false);
   const carouselRef = useRef<HTMLDivElement>(null);
 
   const paginate = useCallback((newDirection: number) => {
@@ -122,10 +125,10 @@ function QuoteCarousel() {
   }, []);
 
   useEffect(() => {
-    if (isPaused) return;
+    if (isPaused || !isAutoplay) return;
     const timer = setInterval(() => paginate(1), 10000);
     return () => clearInterval(timer);
-  }, [paginate, isPaused]);
+  }, [paginate, isPaused, isAutoplay]);
 
   useEffect(() => {
     const element = carouselRef.current;
@@ -159,6 +162,28 @@ function QuoteCarousel() {
 
   return (
     <div ref={carouselRef} className="relative max-w-4xl mx-auto">
+      {/* Play/Pause Button - Top Right */}
+      <div className="absolute -top-12 right-0 z-20">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsAutoplay(!isAutoplay)}
+          className="rounded-full gap-2 px-4 border-primary/20 bg-background/50 backdrop-blur-sm hover:bg-primary/10"
+        >
+          {isAutoplay ? (
+            <>
+              <Pause className="h-4 w-4" />
+              <span className="text-xs font-medium">Auto-play On</span>
+            </>
+          ) : (
+            <>
+              <Play className="h-4 w-4" />
+              <span className="text-xs font-medium">Auto-play Off</span>
+            </>
+          )}
+        </Button>
+      </div>
+
       {/* Card with auto height */}
       <div className="relative">
         <AnimatePresence mode="wait" custom={direction}>
