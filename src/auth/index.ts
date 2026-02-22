@@ -64,10 +64,9 @@ function createAuth(env?: AuthEnv, cf?: IncomingRequestCfProperties) {
                 },
                 advanced: {
                     cookiePrefix: "sadaqahbox",
-                    useSecureCookies: false,
                     defaultCookieAttributes: {
-                        secure: false,
-                        sameSite: "lax",
+                        sameSite: "none", // Required for cross-domain cookies
+                        secure: true,     // Required for SameSite=none
                         path: "/",
                     },
                 },
