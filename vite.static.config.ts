@@ -54,16 +54,11 @@ export default defineConfig(({ mode }) => ({
               },
             },
           },
-          // Note: API caching is configured based on the API URL
-          // When using a custom VITE_API_URL, you may want to update this pattern
+          // Note: API caching is configured based on the API URL.
+          // We use a regex that matches any URL containing /api/ to avoid dynamically building it at runtime,
+          // which prevents 'process is not defined' errors in the Service Worker.
           {
-            urlPattern: ({ url }) => {
-              const apiUrl = process.env.VITE_API_URL || "";
-              if (apiUrl) {
-                return url.href.startsWith(apiUrl);
-              }
-              return url.pathname.startsWith("/api/");
-            },
+            urlPattern: /\/api\//i,
             handler: "NetworkFirst",
             options: {
               cacheName: "api-cache",

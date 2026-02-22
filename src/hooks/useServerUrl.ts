@@ -1,6 +1,6 @@
 /**
  * Server URL Configuration Hook
- * 
+ *
  * Manages the API server URL in localStorage.
  * Users can set this to point to their own Cloudflare Worker instance.
  */
@@ -30,9 +30,9 @@ export interface ServerUrlConfig {
  * Returns the configured URL or falls back to same-origin
  */
 export function getApiBaseUrl(): string {
-    if (typeof window === "undefined") return "/api";
+    if (typeof window === "undefined") return import.meta.env.VITE_API_URL || "/api";
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored || DEFAULT_URL || "/api";
+    return stored || import.meta.env.VITE_API_URL || DEFAULT_URL || "/api";
 }
 
 /**
@@ -66,7 +66,7 @@ export function useServerUrl(): ServerUrlConfig {
     // Load from localStorage on mount
     useEffect(() => {
         if (typeof window === "undefined") return;
-        
+
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored !== null) {
             setUrlState(stored);
@@ -78,7 +78,7 @@ export function useServerUrl(): ServerUrlConfig {
     // Save to localStorage when changed
     const setUrl = useCallback((newUrl: string) => {
         const trimmed = newUrl.trim();
-        
+
         if (trimmed === "") {
             // Empty means use same-origin
             localStorage.removeItem(STORAGE_KEY);
@@ -106,26 +106,26 @@ export function useServerUrl(): ServerUrlConfig {
     }, []);
 
     const testConnection = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
-        const testUrl = url || `${window.location.origin}/api`;
-        
+        const testUrl = url || getApiBaseUrl();
+
         try {
             const response = await fetch(`${testUrl}/health`, {
                 method: "GET",
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
             });
-            
+
             if (response.ok) {
                 return { success: true };
             } else {
-                return { 
-                    success: false, 
-                    error: `Server returned ${response.status}: ${response.statusText}` 
+                return {
+                    success: false,
+                    error: `Server returned ${response.status}: ${response.statusText}`
                 };
             }
         } catch (err) {
-            return { 
-                success: false, 
+            return {
+                success: false,
                 error: err instanceof Error ? err.message : "Network error - check URL and CORS settings"
             };
         }
