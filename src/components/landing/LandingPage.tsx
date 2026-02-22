@@ -31,6 +31,7 @@ import {
   Loader2Icon,
 } from "lucide-react";
 import quotesData from "@/data/quotes.json";
+import { WheatScrollAnimation } from "./WheatScrollAnimation";
 
 // Animation variants
 const fadeInUp: Variants = {
@@ -383,6 +384,9 @@ export function LandingPage() {
       <Header />
 
       <main className="flex-1">
+        {/* Wheat SVG Scroll Animation - fixed bottom-right */}
+        <WheatScrollAnimation />
+
         {/* Hero Section */}
         <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-background">
           {/* Advanced Animated background orbs */}
