@@ -17,7 +17,8 @@ export const openApiConfig: OpenAPIObject = {
         description: "API for managing charity boxes and sadaqahs",
     },
     servers: [
-        { url: "/", description: "API Server" }
+        { url: "/", description: "Current Server" },
+        { url: "https://sadaqahbox.apps.erklab.com/api", description: "Production" }
     ],
     components: {
         securitySchemes: {
