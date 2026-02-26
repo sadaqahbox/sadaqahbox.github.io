@@ -841,7 +841,21 @@ export function LandingPage() {
       {/* Footer */}
       <footer className="border-t py-6 bg-background">
         <div className="container px-4 md:px-6 mx-auto">
-          <div className="flex flex-col sm:flex-row items-center justify-end gap-3">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Sponsored by</span>
+              <a
+                href="https://erklab.com"
+                target="_blank"
+                className="flex items-center"
+              >
+                <img
+                  src="/erklab-logo.svg"
+                  alt="Erklab"
+                  className="h-5 w-auto opacity-80 hover:opacity-100 transition-opacity"
+                />
+              </a>
+            </div>
             <p className="text-sm text-muted-foreground">
               Built with{" "}
               <Heart className="inline h-3 w-3" />{" "}

@@ -194,9 +194,19 @@ export function ServerUrlDialog({ children }: { children?: React.ReactNode }) {
 
                     <div className="space-y-5">
                         <div className="space-y-3">
-                            <Label htmlFor="server-url" className="text-sm font-semibold tracking-wide text-foreground/80">
-                                Server URL
-                            </Label>
+                            <div className="flex items-center justify-between">
+                                <Label htmlFor="server-url" className="text-sm font-semibold tracking-wide text-foreground/80">
+                                    Server URL
+                                </Label>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setInputValue("https://sadaqahbox.apps.erklab.com")}
+                                    className="h-7 px-2 text-xs text-primary hover:text-primary hover:bg-primary/10"
+                                >
+                                    Use Official Server
+                                </Button>
+                            </div>
                             <Input
                                 id="server-url"
                                 placeholder="https://your-worker.workers.dev"
@@ -204,8 +214,8 @@ export function ServerUrlDialog({ children }: { children?: React.ReactNode }) {
                                 onChange={(e) => setInputValue(e.target.value)}
                                 className="font-mono text-base h-12 bg-muted/30 border-border/50 focus-visible:ring-primary/40 focus-visible:border-primary/50 rounded-xl px-4"
                             />
-                            <p className="text-xs text-muted-foreground font-medium pl-1">
-                                Example: <span className="text-foreground/60 font-mono">https://my-sadaqahbox.workers.dev</span>
+                            <p className="text-xs text-muted-foreground/70 pl-1">
+                                Supported servers: Official (<a href="https://sadaqahbox.apps.erklab.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">sadaqahbox.apps.erklab.com</a>) or self-hosted
                             </p>
                         </div>
 

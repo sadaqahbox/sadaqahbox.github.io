@@ -50,7 +50,7 @@ export const BoxListSection = React.memo(function BoxListSection({
             animate="visible"
             className="lg:col-span-4 xl:col-span-3"
         >
-            <Card className="h-full overflow-hidden flex flex-col">
+            <Card className="h-full overflow-hidden flex flex-col pb-0">
                 <CardHeader className="pb-4 shrink-0">
                     <motion.div
                         variants={fadeInVariants}

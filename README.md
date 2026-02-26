@@ -13,6 +13,14 @@
   [![License](https://img.shields.io/badge/License-Private-red.svg)](LICENSE)
 
   [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/sadaqahbox/sadaqahbox)
+
+  ## Sponsor
+
+  <a href="https://erklab.com" target="_blank">
+    <img src="public/erklab-logo.svg" alt="Erklab" width="120">
+  </a>
+
+  Sponsored by [erklab](https://erklab.com) — Architecting production-grade systems with AI-driven velocity and human-centered precision.
 </div>
 
 ---

@@ -12,6 +12,7 @@ import { BoxListSection } from "./BoxListSection";
 import { BoxDetailSection } from "./BoxDetailSection";
 import { useServerConnection } from "@/components/providers";
 import { Navigate } from "react-router-dom";
+import { Heart } from "lucide-react";
 
 // Inner component that uses the dashboard data - wrapped in React.memo
 const DashboardContent = React.memo(function DashboardContent() {
@@ -98,6 +99,34 @@ const DashboardContent = React.memo(function DashboardContent() {
                     </div>
                 </motion.div>
             </main>
+
+            {/* Footer */}
+            <footer className="border-t py-4 bg-background">
+                <div className="container px-4 md:px-6 mx-auto">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">Sponsored by</span>
+                            <a
+                                href="https://erklab.com"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center"
+                            >
+                                <img
+                                    src="/erklab-logo.svg"
+                                    alt="Erklab"
+                                    className="h-4 w-auto opacity-80 hover:opacity-100 transition-opacity"
+                                />
+                            </a>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            Built with{" "}
+                            <Heart className="inline h-3 w-3" />{" "}
+                            for the Ummah
+                        </p>
+                    </div>
+                </div>
+            </footer>
         </div>
     );
 });

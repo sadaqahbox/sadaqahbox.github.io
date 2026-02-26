@@ -58,8 +58,7 @@ export function BoxList({ boxes, selectedBoxId, onSelectBox, onBoxDeleted }: Box
 
   return (
     <>
-      <ScrollArea className="h-[calc(100vh-280px)]">
-        <div className="py-2">
+      <ScrollArea className="h-[calc(100vh-330px)]">
           <AnimatePresence mode="popLayout">
             {boxes.map((box, index) => (
               <BoxListItem
@@ -77,7 +76,6 @@ export function BoxList({ boxes, selectedBoxId, onSelectBox, onBoxDeleted }: Box
               />
             ))}
           </AnimatePresence>
-        </div>
       </ScrollArea>
 
       <DeleteDialog
