@@ -24,7 +24,8 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       workbox: {
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest}"],
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest,txt}"],
+        navigateFallbackDenylist: [/^\/[^/]*\.txt$/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
