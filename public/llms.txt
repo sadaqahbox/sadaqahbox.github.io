@@ -1,0 +1,15 @@
+# SadaqahBox
+
+SadaqahBox is a modern application designed to facilitate charitable giving and management.
+
+## Documentation
+- [Comprehensive API Documentation](./llms-full.txt) - Detailed API references for all endpoints.
+- [Public Documentation](./api/docs) - Interactive Scalar API reference.
+
+## Key Features
+- **Charity Management**: Efficiently manage charitable organizations and projects.
+- **Donation Tracking**: Real-time tracking and reporting of donations.
+- **Secure Authentication**: Robust authentication system using better-auth.
+
+## API Overview
+The API is built with Hono and follows OpenAPI standards. All endpoints are under `/api`.

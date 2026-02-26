@@ -166,4 +166,3 @@ dev-dist
 .env*
 !.env.example
 .wrangler/
-public/llms*.txt

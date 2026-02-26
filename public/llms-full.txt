@@ -1,0 +1,13199 @@
+# SadaqahBox API
+
+- **OpenAPI Version:** `3.1.1`
+- **API Version:** `1.0.0`
+
+API for managing charity boxes and sadaqahs
+
+## Servers
+
+- **URL:** `/`
+  - **Description:** API Server
+
+## Operations
+
+### Health check
+
+- **Method:** `GET`
+- **Path:** `/api/health`
+- **Tags:** System
+
+#### Responses
+
+##### Status: 200 API health status
+
+###### Content-Type: application/json
+
+- **`status` (required)**
+
+  `string`, possible values: `"healthy", "degraded", "unhealthy"`
+
+- **`success` (required)**
+
+  `boolean`
+
+- **`timestamp` (required)**
+
+  `string`, format: `date-time`
+
+- **`version` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "status": "healthy",
+  "timestamp": "",
+  "version": ""
+}
+```
+
+### Get user statistics
+
+- **Method:** `GET`
+- **Path:** `/api/stats`
+- **Tags:** Stats
+
+#### Responses
+
+##### Status: 200 User statistics
+
+###### Content-Type: application/json
+
+- **`primaryCurrency` (required)**
+
+  `object | null`
+
+  - **`code` (required)**
+
+    `string`
+
+  - **`id` (required)**
+
+    `string`
+
+  - **`name` (required)**
+
+    `string`
+
+  - **`currencyTypeId`**
+
+    `string`
+
+  - **`currencyTypeName`**
+
+    `string`
+
+  - **`symbol`**
+
+    `string`
+
+- **`success` (required)**
+
+  `boolean`
+
+- **`totalBoxes` (required)**
+
+  `integer`
+
+- **`totalSadaqahs` (required)**
+
+  `integer`
+
+- **`totalValue` (required)**
+
+  `number`
+
+- **`uniqueCurrencies` (required)**
+
+  `integer`
+
+- **`totalValueExtra`**
+
+  `object | null`
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "totalBoxes": 0,
+  "totalSadaqahs": 0,
+  "totalValue": 0,
+  "totalValueExtra": null,
+  "uniqueCurrencies": 0,
+  "primaryCurrency": {
+    "id": "",
+    "code": "",
+    "name": "",
+    "symbol": "",
+    "currencyTypeId": "",
+    "currencyTypeName": ""
+  }
+}
+```
+
+### List all charity boxes
+
+- **Method:** `GET`
+- **Path:** `/api/boxes`
+- **Tags:** Boxes
+
+#### Responses
+
+##### Status: 200 Returns a list of boxes
+
+###### Content-Type: application/json
+
+- **`boxes` (required)**
+
+  `array`
+
+  **Items:**
+
+  - **`count` (required)**
+
+    `integer`  -  Total sadaqahs in box
+
+  - **`createdAt` (required)**
+
+    `string`, format: `date-time`
+
+  - **`id` (required)**
+
+    `string`
+
+  - **`name` (required)**
+
+    `string`
+
+  - **`totalValue` (required)**
+
+    `number`  -  Total value in base currency
+
+  - **`updatedAt` (required)**
+
+    `string`, format: `date-time`
+
+  - **`baseCurrency`**
+
+    `object`  -  Base currency for the box - all values are stored in this currency
+
+    - **`code` (required)**
+
+      `string`  -  ISO 4217 currency code
+
+    - **`id` (required)**
+
+      `string`
+
+    - **`name` (required)**
+
+      `string`
+
+    - **`currencyType`**
+
+      `object`
+
+      - **`id` (required)**
+
+        `string`
+
+      - **`name` (required)**
+
+        `string`  -  Currency type name
+
+      - **`description`**
+
+        `string`
+
+    - **`currencyTypeId`**
+
+      `string`
+
+    - **`lastRateUpdate`**
+
+      `string | null`, format: `date-time`  -  When the rate was last updated
+
+    - **`symbol`**
+
+      `string`
+
+    - **`usdValue`**
+
+      `number | null`  -  USD value for 1 unit of this currency
+
+  - **`baseCurrencyId`**
+
+    `string`  -  Base currency ID for the box - cannot be changed after sadaqahs are added
+
+  - **`currency`**
+
+    `object`
+
+    - **`code` (required)**
+
+      `string`  -  ISO 4217 currency code
+
+    - **`id` (required)**
+
+      `string`
+
+    - **`name` (required)**
+
+      `string`
+
+    - **`currencyType`**
+
+      `object`
+
+      - **`id` (required)**
+
+        `string`
+
+      - **`name` (required)**
+
+        `string`  -  Currency type name
+
+      - **`description`**
+
+        `string`
+
+    - **`currencyTypeId`**
+
+      `string`
+
+    - **`lastRateUpdate`**
+
+      `string | null`, format: `date-time`  -  When the rate was last updated
+
+    - **`symbol`**
+
+      `string`
+
+    - **`usdValue`**
+
+      `number | null`  -  USD value for 1 unit of this currency
+
+  - **`currencyId`**
+
+    `string | null`
+
+  - **`description`**
+
+    `string`
+
+  - **`metadata`**
+
+    `object`
+
+  - **`totalValueExtra`**
+
+    `object | null`  -  Values that couldn't be converted to base currency, keyed by currencyId
+
+- **`success` (required)**
+
+  `boolean`
+
+- **`summary` (required)**
+
+  `object`
+
+  - **`totalBoxes` (required)**
+
+    `integer`
+
+  - **`totalCoins` (required)**
+
+    `integer`
+
+  - **`totalValue` (required)**
+
+    `number`
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "boxes": [
+    {
+      "id": "box_abc123",
+      "name": "Ramadan Charity",
+      "description": "",
+      "metadata": {
+        "additionalProperty": ""
+      },
+      "count": 0,
+      "totalValue": 0,
+      "totalValueExtra": null,
+      "currencyId": null,
+      "currency": {
+        "id": "cur_abc123",
+        "code": "USD",
+        "name": "US Dollar",
+        "symbol": "$",
+        "currencyTypeId": "ctyp_abc123",
+        "currencyType": {
+          "id": "ctyp_abc123",
+          "name": "Fiat",
+          "description": "Government-issued currency"
+        },
+        "usdValue": 1,
+        "lastRateUpdate": "2024-01-15T10:30:00.000Z"
+      },
+      "baseCurrencyId": "",
+      "baseCurrency": {
+        "id": "cur_abc123",
+        "code": "USD",
+        "name": "US Dollar",
+        "symbol": "$",
+        "currencyTypeId": "ctyp_abc123",
+        "currencyType": {
+          "id": "ctyp_abc123",
+          "name": "Fiat",
+          "description": "Government-issued currency"
+        },
+        "usdValue": 1,
+        "lastRateUpdate": "2024-01-15T10:30:00.000Z"
+      },
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:30:00.000Z"
+    }
+  ],
+  "summary": {
+    "totalBoxes": 0,
+    "totalCoins": 0,
+    "totalValue": 0
+  }
+}
+```
+
+### Create a new charity box
+
+- **Method:** `POST`
+- **Path:** `/api/boxes`
+- **Tags:** Boxes
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`name` (required)**
+
+  `string`  -  Box name (max 100 characters)
+
+- **`baseCurrencyId`**
+
+  `string`  -  Base currency ID for the box - defaults to USD if not provided. Cannot be changed after sadaqahs are added.
+
+- **`description`**
+
+  `string`
+
+- **`metadata`**
+
+  `object`
+
+**Example:**
+
+```json
+{
+  "name": "Ramadan Charity",
+  "description": "",
+  "metadata": {
+    "additionalProperty": ""
+  },
+  "baseCurrencyId": ""
+}
+```
+
+#### Responses
+
+##### Status: 201 Returns the created box
+
+###### Content-Type: application/json
+
+- **`box` (required)**
+
+  `object`
+
+  - **`count` (required)**
+
+    `integer`  -  Total sadaqahs in box
+
+  - **`createdAt` (required)**
+
+    `string`, format: `date-time`
+
+  - **`id` (required)**
+
+    `string`
+
+  - **`name` (required)**
+
+    `string`
+
+  - **`totalValue` (required)**
+
+    `number`  -  Total value in base currency
+
+  - **`updatedAt` (required)**
+
+    `string`, format: `date-time`
+
+  - **`baseCurrency`**
+
+    `object`  -  Base currency for the box - all values are stored in this currency
+
+    - **`code` (required)**
+
+      `string`  -  ISO 4217 currency code
+
+    - **`id` (required)**
+
+      `string`
+
+    - **`name` (required)**
+
+      `string`
+
+    - **`currencyType`**
+
+      `object`
+
+      - **`id` (required)**
+
+        `string`
+
+      - **`name` (required)**
+
+        `string`  -  Currency type name
+
+      - **`description`**
+
+        `string`
+
+    - **`currencyTypeId`**
+
+      `string`
+
+    - **`lastRateUpdate`**
+
+      `string | null`, format: `date-time`  -  When the rate was last updated
+
+    - **`symbol`**
+
+      `string`
+
+    - **`usdValue`**
+
+      `number | null`  -  USD value for 1 unit of this currency
+
+  - **`baseCurrencyId`**
+
+    `string`  -  Base currency ID for the box - cannot be changed after sadaqahs are added
+
+  - **`currency`**
+
+    `object`
+
+    - **`code` (required)**
+
+      `string`  -  ISO 4217 currency code
+
+    - **`id` (required)**
+
+      `string`
+
+    - **`name` (required)**
+
+      `string`
+
+    - **`currencyType`**
+
+      `object`
+
+      - **`id` (required)**
+
+        `string`
+
+      - **`name` (required)**
+
+        `string`  -  Currency type name
+
+      - **`description`**
+
+        `string`
+
+    - **`currencyTypeId`**
+
+      `string`
+
+    - **`lastRateUpdate`**
+
+      `string | null`, format: `date-time`  -  When the rate was last updated
+
+    - **`symbol`**
+
+      `string`
+
+    - **`usdValue`**
+
+      `number | null`  -  USD value for 1 unit of this currency
+
+  - **`currencyId`**
+
+    `string | null`
+
+  - **`description`**
+
+    `string`
+
+  - **`metadata`**
+
+    `object`
+
+  - **`totalValueExtra`**
+
+    `object | null`  -  Values that couldn't be converted to base currency, keyed by currencyId
+
+- **`success` (required)**
+
+  `boolean`
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "box": {
+    "id": "box_abc123",
+    "name": "Ramadan Charity",
+    "description": "",
+    "metadata": {
+      "additionalProperty": ""
+    },
+    "count": 0,
+    "totalValue": 0,
+    "totalValueExtra": null,
+    "currencyId": null,
+    "currency": {
+      "id": "cur_abc123",
+      "code": "USD",
+      "name": "US Dollar",
+      "symbol": "$",
+      "currencyTypeId": "ctyp_abc123",
+      "currencyType": {
+        "id": "ctyp_abc123",
+        "name": "Fiat",
+        "description": "Government-issued currency"
+      },
+      "usdValue": 1,
+      "lastRateUpdate": "2024-01-15T10:30:00.000Z"
+    },
+    "baseCurrencyId": "",
+    "baseCurrency": {
+      "id": "cur_abc123",
+      "code": "USD",
+      "name": "US Dollar",
+      "symbol": "$",
+      "currencyTypeId": "ctyp_abc123",
+      "currencyType": {
+        "id": "ctyp_abc123",
+        "name": "Fiat",
+        "description": "Government-issued currency"
+      },
+      "usdValue": 1,
+      "lastRateUpdate": "2024-01-15T10:30:00.000Z"
+    },
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
+  }
+}
+```
+
+### Get a box with detailed stats
+
+- **Method:** `GET`
+- **Path:** `/api/boxes/{boxId}`
+- **Tags:** Boxes
+
+#### Responses
+
+##### Status: 200 Returns the box
+
+###### Content-Type: application/json
+
+- **`box` (required)**
+
+  `object`
+
+  - **`count` (required)**
+
+    `integer`  -  Total sadaqahs in box
+
+  - **`createdAt` (required)**
+
+    `string`, format: `date-time`
+
+  - **`id` (required)**
+
+    `string`
+
+  - **`name` (required)**
+
+    `string`
+
+  - **`totalValue` (required)**
+
+    `number`  -  Total value in base currency
+
+  - **`updatedAt` (required)**
+
+    `string`, format: `date-time`
+
+  - **`baseCurrency`**
+
+    `object`  -  Base currency for the box - all values are stored in this currency
+
+    - **`code` (required)**
+
+      `string`  -  ISO 4217 currency code
+
+    - **`id` (required)**
+
+      `string`
+
+    - **`name` (required)**
+
+      `string`
+
+    - **`currencyType`**
+
+      `object`
+
+      - **`id` (required)**
+
+        `string`
+
+      - **`name` (required)**
+
+        `string`  -  Currency type name
+
+      - **`description`**
+
+        `string`
+
+    - **`currencyTypeId`**
+
+      `string`
+
+    - **`lastRateUpdate`**
+
+      `string | null`, format: `date-time`  -  When the rate was last updated
+
+    - **`symbol`**
+
+      `string`
+
+    - **`usdValue`**
+
+      `number | null`  -  USD value for 1 unit of this currency
+
+  - **`baseCurrencyId`**
+
+    `string`  -  Base currency ID for the box - cannot be changed after sadaqahs are added
+
+  - **`currency`**
+
+    `object`
+
+    - **`code` (required)**
+
+      `string`  -  ISO 4217 currency code
+
+    - **`id` (required)**
+
+      `string`
+
+    - **`name` (required)**
+
+      `string`
+
+    - **`currencyType`**
+
+      `object`
+
+      - **`id` (required)**
+
+        `string`
+
+      - **`name` (required)**
+
+        `string`  -  Currency type name
+
+      - **`description`**
+
+        `string`
+
+    - **`currencyTypeId`**
+
+      `string`
+
+    - **`lastRateUpdate`**
+
+      `string | null`, format: `date-time`  -  When the rate was last updated
+
+    - **`symbol`**
+
+      `string`
+
+    - **`usdValue`**
+
+      `number | null`  -  USD value for 1 unit of this currency
+
+  - **`currencyId`**
+
+    `string | null`
+
+  - **`description`**
+
+    `string`
+
+  - **`metadata`**
+
+    `object`
+
+  - **`totalValueExtra`**
+
+    `object | null`  -  Values that couldn't be converted to base currency, keyed by currencyId
+
+- **`stats` (required)**
+
+  `object`
+
+  - **`firstSadaqahAt` (required)**
+
+    `string | null`
+
+  - **`lastSadaqahAt` (required)**
+
+    `string | null`
+
+  - **`totalSadaqahs` (required)**
+
+    `integer`
+
+- **`success` (required)**
+
+  `boolean`
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "box": {
+    "id": "box_abc123",
+    "name": "Ramadan Charity",
+    "description": "",
+    "metadata": {
+      "additionalProperty": ""
+    },
+    "count": 0,
+    "totalValue": 0,
+    "totalValueExtra": null,
+    "currencyId": null,
+    "currency": {
+      "id": "cur_abc123",
+      "code": "USD",
+      "name": "US Dollar",
+      "symbol": "$",
+      "currencyTypeId": "ctyp_abc123",
+      "currencyType": {
+        "id": "ctyp_abc123",
+        "name": "Fiat",
+        "description": "Government-issued currency"
+      },
+      "usdValue": 1,
+      "lastRateUpdate": "2024-01-15T10:30:00.000Z"
+    },
+    "baseCurrencyId": "",
+    "baseCurrency": {
+      "id": "cur_abc123",
+      "code": "USD",
+      "name": "US Dollar",
+      "symbol": "$",
+      "currencyTypeId": "ctyp_abc123",
+      "currencyType": {
+        "id": "ctyp_abc123",
+        "name": "Fiat",
+        "description": "Government-issued currency"
+      },
+      "usdValue": 1,
+      "lastRateUpdate": "2024-01-15T10:30:00.000Z"
+    },
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
+  },
+  "stats": {
+    "firstSadaqahAt": null,
+    "lastSadaqahAt": null,
+    "totalSadaqahs": 0
+  }
+}
+```
+
+##### Status: 404 Box not found
+
+###### Content-Type: application/json
+
+- **`error` (required)**
+
+  `string`
+
+- **`success` (required)**
+
+  `boolean`
+
+- **`code`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "error": "",
+  "code": ""
+}
+```
+
+### Update a box
+
+- **Method:** `PATCH`
+- **Path:** `/api/boxes/{boxId}`
+- **Tags:** Boxes
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`baseCurrencyId`**
+
+  `string`  -  Base currency ID - can only be changed if box has no sadaqahs
+
+- **`description`**
+
+  `string`
+
+- **`metadata`**
+
+  `object`
+
+- **`name`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "name": "",
+  "description": "",
+  "metadata": {
+    "additionalProperty": ""
+  },
+  "baseCurrencyId": ""
+}
+```
+
+#### Responses
+
+##### Status: 200 Returns the updated box
+
+###### Content-Type: application/json
+
+- **`box` (required)**
+
+  `object`
+
+  - **`count` (required)**
+
+    `integer`  -  Total sadaqahs in box
+
+  - **`createdAt` (required)**
+
+    `string`, format: `date-time`
+
+  - **`id` (required)**
+
+    `string`
+
+  - **`name` (required)**
+
+    `string`
+
+  - **`totalValue` (required)**
+
+    `number`  -  Total value in base currency
+
+  - **`updatedAt` (required)**
+
+    `string`, format: `date-time`
+
+  - **`baseCurrency`**
+
+    `object`  -  Base currency for the box - all values are stored in this currency
+
+    - **`code` (required)**
+
+      `string`  -  ISO 4217 currency code
+
+    - **`id` (required)**
+
+      `string`
+
+    - **`name` (required)**
+
+      `string`
+
+    - **`currencyType`**
+
+      `object`
+
+      - **`id` (required)**
+
+        `string`
+
+      - **`name` (required)**
+
+        `string`  -  Currency type name
+
+      - **`description`**
+
+        `string`
+
+    - **`currencyTypeId`**
+
+      `string`
+
+    - **`lastRateUpdate`**
+
+      `string | null`, format: `date-time`  -  When the rate was last updated
+
+    - **`symbol`**
+
+      `string`
+
+    - **`usdValue`**
+
+      `number | null`  -  USD value for 1 unit of this currency
+
+  - **`baseCurrencyId`**
+
+    `string`  -  Base currency ID for the box - cannot be changed after sadaqahs are added
+
+  - **`currency`**
+
+    `object`
+
+    - **`code` (required)**
+
+      `string`  -  ISO 4217 currency code
+
+    - **`id` (required)**
+
+      `string`
+
+    - **`name` (required)**
+
+      `string`
+
+    - **`currencyType`**
+
+      `object`
+
+      - **`id` (required)**
+
+        `string`
+
+      - **`name` (required)**
+
+        `string`  -  Currency type name
+
+      - **`description`**
+
+        `string`
+
+    - **`currencyTypeId`**
+
+      `string`
+
+    - **`lastRateUpdate`**
+
+      `string | null`, format: `date-time`  -  When the rate was last updated
+
+    - **`symbol`**
+
+      `string`
+
+    - **`usdValue`**
+
+      `number | null`  -  USD value for 1 unit of this currency
+
+  - **`currencyId`**
+
+    `string | null`
+
+  - **`description`**
+
+    `string`
+
+  - **`metadata`**
+
+    `object`
+
+  - **`totalValueExtra`**
+
+    `object | null`  -  Values that couldn't be converted to base currency, keyed by currencyId
+
+- **`success` (required)**
+
+  `boolean`
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "box": {
+    "id": "box_abc123",
+    "name": "Ramadan Charity",
+    "description": "",
+    "metadata": {
+      "additionalProperty": ""
+    },
+    "count": 0,
+    "totalValue": 0,
+    "totalValueExtra": null,
+    "currencyId": null,
+    "currency": {
+      "id": "cur_abc123",
+      "code": "USD",
+      "name": "US Dollar",
+      "symbol": "$",
+      "currencyTypeId": "ctyp_abc123",
+      "currencyType": {
+        "id": "ctyp_abc123",
+        "name": "Fiat",
+        "description": "Government-issued currency"
+      },
+      "usdValue": 1,
+      "lastRateUpdate": "2024-01-15T10:30:00.000Z"
+    },
+    "baseCurrencyId": "",
+    "baseCurrency": {
+      "id": "cur_abc123",
+      "code": "USD",
+      "name": "US Dollar",
+      "symbol": "$",
+      "currencyTypeId": "ctyp_abc123",
+      "currencyType": {
+        "id": "ctyp_abc123",
+        "name": "Fiat",
+        "description": "Government-issued currency"
+      },
+      "usdValue": 1,
+      "lastRateUpdate": "2024-01-15T10:30:00.000Z"
+    },
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
+  }
+}
+```
+
+##### Status: 404 Box not found
+
+###### Content-Type: application/json
+
+- **`error` (required)**
+
+  `string`
+
+- **`success` (required)**
+
+  `boolean`
+
+- **`code`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "error": "",
+  "code": ""
+}
+```
+
+### Delete a box
+
+- **Method:** `DELETE`
+- **Path:** `/api/boxes/{boxId}`
+- **Tags:** Boxes
+
+#### Responses
+
+##### Status: 200 Box deleted
+
+###### Content-Type: application/json
+
+- **`collectionsDeleted` (required)**
+
+  `integer`
+
+- **`deleted` (required)**
+
+  `boolean`
+
+- **`sadaqahsDeleted` (required)**
+
+  `integer`
+
+- **`success` (required)**
+
+  `boolean`
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "deleted": true,
+  "sadaqahsDeleted": 0,
+  "collectionsDeleted": 0
+}
+```
+
+##### Status: 404 Box not found
+
+###### Content-Type: application/json
+
+- **`error` (required)**
+
+  `string`
+
+- **`success` (required)**
+
+  `boolean`
+
+- **`code`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "error": "",
+  "code": ""
+}
+```
+
+### Empty a box (collect all sadaqahs)
+
+- **Method:** `POST`
+- **Path:** `/api/boxes/{boxId}/empty`
+- **Tags:** Boxes
+
+#### Responses
+
+##### Status: 200 Box emptied
+
+###### Content-Type: application/json
+
+- **`box` (required)**
+
+  `object`
+
+  - **`count` (required)**
+
+    `integer`  -  Total sadaqahs in box
+
+  - **`createdAt` (required)**
+
+    `string`, format: `date-time`
+
+  - **`id` (required)**
+
+    `string`
+
+  - **`name` (required)**
+
+    `string`
+
+  - **`totalValue` (required)**
+
+    `number`  -  Total value in base currency
+
+  - **`updatedAt` (required)**
+
+    `string`, format: `date-time`
+
+  - **`baseCurrency`**
+
+    `object`  -  Base currency for the box - all values are stored in this currency
+
+    - **`code` (required)**
+
+      `string`  -  ISO 4217 currency code
+
+    - **`id` (required)**
+
+      `string`
+
+    - **`name` (required)**
+
+      `string`
+
+    - **`currencyType`**
+
+      `object`
+
+      - **`id` (required)**
+
+        `string`
+
+      - **`name` (required)**
+
+        `string`  -  Currency type name
+
+      - **`description`**
+
+        `string`
+
+    - **`currencyTypeId`**
+
+      `string`
+
+    - **`lastRateUpdate`**
+
+      `string | null`, format: `date-time`  -  When the rate was last updated
+
+    - **`symbol`**
+
+      `string`
+
+    - **`usdValue`**
+
+      `number | null`  -  USD value for 1 unit of this currency
+
+  - **`baseCurrencyId`**
+
+    `string`  -  Base currency ID for the box - cannot be changed after sadaqahs are added
+
+  - **`currency`**
+
+    `object`
+
+    - **`code` (required)**
+
+      `string`  -  ISO 4217 currency code
+
+    - **`id` (required)**
+
+      `string`
+
+    - **`name` (required)**
+
+      `string`
+
+    - **`currencyType`**
+
+      `object`
+
+      - **`id` (required)**
+
+        `string`
+
+      - **`name` (required)**
+
+        `string`  -  Currency type name
+
+      - **`description`**
+
+        `string`
+
+    - **`currencyTypeId`**
+
+      `string`
+
+    - **`lastRateUpdate`**
+
+      `string | null`, format: `date-time`  -  When the rate was last updated
+
+    - **`symbol`**
+
+      `string`
+
+    - **`usdValue`**
+
+      `number | null`  -  USD value for 1 unit of this currency
+
+  - **`currencyId`**
+
+    `string | null`
+
+  - **`description`**
+
+    `string`
+
+  - **`metadata`**
+
+    `object`
+
+  - **`totalValueExtra`**
+
+    `object | null`  -  Values that couldn't be converted to base currency, keyed by currencyId
+
+- **`collection` (required)**
+
+  `object`
+
+  - **`boxId` (required)**
+
+    `string`
+
+  - **`currencyId` (required)**
+
+    `string`
+
+  - **`emptiedAt` (required)**
+
+    `string`, format: `date-time`
+
+  - **`id` (required)**
+
+    `string`
+
+  - **`totalValue` (required)**
+
+    `number`
+
+  - **`currency`**
+
+    `object`
+
+    - **`code` (required)**
+
+      `string`  -  ISO 4217 currency code
+
+    - **`id` (required)**
+
+      `string`
+
+    - **`name` (required)**
+
+      `string`
+
+    - **`currencyType`**
+
+      `object`
+
+      - **`id` (required)**
+
+        `string`
+
+      - **`name` (required)**
+
+        `string`  -  Currency type name
+
+      - **`description`**
+
+        `string`
+
+    - **`currencyTypeId`**
+
+      `string`
+
+    - **`lastRateUpdate`**
+
+      `string | null`, format: `date-time`  -  When the rate was last updated
+
+    - **`symbol`**
+
+      `string`
+
+    - **`usdValue`**
+
+      `number | null`  -  USD value for 1 unit of this currency
+
+  - **`metadata`**
+
+    `object | null`
+
+    - **`conversions`**
+
+      `array`
+
+      **Items:**
+
+      - **`code` (required)**
+
+        `string`
+
+      - **`currencyId` (required)**
+
+        `string`
+
+      - **`name` (required)**
+
+        `string`
+
+      - **`rate` (required)**
+
+        `number`
+
+      - **`value` (required)**
+
+        `number`
+
+      - **`symbol`**
+
+        `string | null`
+
+    - **`preferredCurrencyCode`**
+
+      `string`
+
+    - **`preferredCurrencyId`**
+
+      `string`
+
+  - **`totalValueExtra`**
+
+    `object | null`
+
+- **`success` (required)**
+
+  `boolean`
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "box": {
+    "id": "box_abc123",
+    "name": "Ramadan Charity",
+    "description": "",
+    "metadata": {
+      "additionalProperty": ""
+    },
+    "count": 0,
+    "totalValue": 0,
+    "totalValueExtra": null,
+    "currencyId": null,
+    "currency": {
+      "id": "cur_abc123",
+      "code": "USD",
+      "name": "US Dollar",
+      "symbol": "$",
+      "currencyTypeId": "ctyp_abc123",
+      "currencyType": {
+        "id": "ctyp_abc123",
+        "name": "Fiat",
+        "description": "Government-issued currency"
+      },
+      "usdValue": 1,
+      "lastRateUpdate": "2024-01-15T10:30:00.000Z"
+    },
+    "baseCurrencyId": "",
+    "baseCurrency": {
+      "id": "cur_abc123",
+      "code": "USD",
+      "name": "US Dollar",
+      "symbol": "$",
+      "currencyTypeId": "ctyp_abc123",
+      "currencyType": {
+        "id": "ctyp_abc123",
+        "name": "Fiat",
+        "description": "Government-issued currency"
+      },
+      "usdValue": 1,
+      "lastRateUpdate": "2024-01-15T10:30:00.000Z"
+    },
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
+  },
+  "collection": {
+    "id": "col_abc123",
+    "boxId": "",
+    "emptiedAt": "2024-01-15T10:30:00.000Z",
+    "totalValue": 0,
+    "totalValueExtra": null,
+    "metadata": {
+      "conversions": [
+        {
+          "currencyId": "",
+          "code": "",
+          "name": "",
+          "symbol": null,
+          "value": 1,
+          "rate": 1
+        }
+      ],
+      "preferredCurrencyId": "",
+      "preferredCurrencyCode": ""
+    },
+    "currencyId": "",
+    "currency": {
+      "id": "cur_abc123",
+      "code": "USD",
+      "name": "US Dollar",
+      "symbol": "$",
+      "currencyTypeId": "ctyp_abc123",
+      "currencyType": {
+        "id": "ctyp_abc123",
+        "name": "Fiat",
+        "description": "Government-issued currency"
+      },
+      "usdValue": 1,
+      "lastRateUpdate": "2024-01-15T10:30:00.000Z"
+    }
+  }
+}
+```
+
+##### Status: 404 Box not found
+
+###### Content-Type: application/json
+
+- **`error` (required)**
+
+  `string`
+
+- **`success` (required)**
+
+  `boolean`
+
+- **`code`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "error": "",
+  "code": ""
+}
+```
+
+### Get collection history for a box
+
+- **Method:** `GET`
+- **Path:** `/api/boxes/{boxId}/collections`
+- **Tags:** Boxes
+
+#### Responses
+
+##### Status: 200 Returns collection history
+
+###### Content-Type: application/json
+
+- **`collections` (required)**
+
+  `array`
+
+  **Items:**
+
+  - **`boxId` (required)**
+
+    `string`
+
+  - **`currencyId` (required)**
+
+    `string`
+
+  - **`emptiedAt` (required)**
+
+    `string`, format: `date-time`
+
+  - **`id` (required)**
+
+    `string`
+
+  - **`totalValue` (required)**
+
+    `number`
+
+  - **`currency`**
+
+    `object`
+
+    - **`code` (required)**
+
+      `string`  -  ISO 4217 currency code
+
+    - **`id` (required)**
+
+      `string`
+
+    - **`name` (required)**
+
+      `string`
+
+    - **`currencyType`**
+
+      `object`
+
+      - **`id` (required)**
+
+        `string`
+
+      - **`name` (required)**
+
+        `string`  -  Currency type name
+
+      - **`description`**
+
+        `string`
+
+    - **`currencyTypeId`**
+
+      `string`
+
+    - **`lastRateUpdate`**
+
+      `string | null`, format: `date-time`  -  When the rate was last updated
+
+    - **`symbol`**
+
+      `string`
+
+    - **`usdValue`**
+
+      `number | null`  -  USD value for 1 unit of this currency
+
+  - **`metadata`**
+
+    `object | null`
+
+    - **`conversions`**
+
+      `array`
+
+      **Items:**
+
+      - **`code` (required)**
+
+        `string`
+
+      - **`currencyId` (required)**
+
+        `string`
+
+      - **`name` (required)**
+
+        `string`
+
+      - **`rate` (required)**
+
+        `number`
+
+      - **`value` (required)**
+
+        `number`
+
+      - **`symbol`**
+
+        `string | null`
+
+    - **`preferredCurrencyCode`**
+
+      `string`
+
+    - **`preferredCurrencyId`**
+
+      `string`
+
+  - **`totalValueExtra`**
+
+    `object | null`
+
+- **`pagination` (required)**
+
+  `object`
+
+  - **`limit` (required)**
+
+    `integer`
+
+  - **`page` (required)**
+
+    `integer`
+
+  - **`total` (required)**
+
+    `integer`
+
+  - **`totalPages` (required)**
+
+    `integer`
+
+- **`success` (required)**
+
+  `boolean`
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "collections": [
+    {
+      "id": "col_abc123",
+      "boxId": "",
+      "emptiedAt": "2024-01-15T10:30:00.000Z",
+      "totalValue": 0,
+      "totalValueExtra": null,
+      "metadata": {
+        "conversions": [
+          {
+            "currencyId": "",
+            "code": "",
+            "name": "",
+            "symbol": null,
+            "value": 1,
+            "rate": 1
+          }
+        ],
+        "preferredCurrencyId": "",
+        "preferredCurrencyCode": ""
+      },
+      "currencyId": "",
+      "currency": {
+        "id": "cur_abc123",
+        "code": "USD",
+        "name": "US Dollar",
+        "symbol": "$",
+        "currencyTypeId": "ctyp_abc123",
+        "currencyType": {
+          "id": "ctyp_abc123",
+          "name": "Fiat",
+          "description": "Government-issued currency"
+        },
+        "usdValue": 1,
+        "lastRateUpdate": "2024-01-15T10:30:00.000Z"
+      }
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 1,
+    "total": 0,
+    "totalPages": 0
+  }
+}
+```
+
+##### Status: 404 Box not found
+
+###### Content-Type: application/json
+
+- **`error` (required)**
+
+  `string`
+
+- **`success` (required)**
+
+  `boolean`
+
+- **`code`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "error": "",
+  "code": ""
+}
+```
+
+### List all sadaqahs in a box
+
+- **Method:** `GET`
+- **Path:** `/api/boxes/{boxId}/sadaqahs`
+- **Tags:** Sadaqahs
+
+#### Responses
+
+##### Status: 200 Returns sadaqahs in the box
+
+###### Content-Type: application/json
+
+- **`pagination` (required)**
+
+  `object`
+
+  - **`limit` (required)**
+
+    `integer`
+
+  - **`page` (required)**
+
+    `integer`
+
+  - **`total` (required)**
+
+    `integer`
+
+  - **`totalPages` (required)**
+
+    `integer`
+
+- **`sadaqahs` (required)**
+
+  `array`
+
+  **Items:**
+
+  - **`boxId` (required)**
+
+    `string`  -  ID of the box containing this sadaqah
+
+  - **`createdAt` (required)**
+
+    `string`, format: `date-time`
+
+  - **`currencyId` (required)**
+
+    `string`  -  ID of the currency
+
+  - **`id` (required)**
+
+    `string`
+
+  - **`value` (required)**
+
+    `number`  -  This sadaqah's specific value
+
+  - **`currency`**
+
+    `object`
+
+    - **`code` (required)**
+
+      `string`  -  ISO 4217 currency code
+
+    - **`id` (required)**
+
+      `string`
+
+    - **`name` (required)**
+
+      `string`
+
+    - **`currencyType`**
+
+      `object`
+
+      - **`id` (required)**
+
+        `string`
+
+      - **`name` (required)**
+
+        `string`  -  Currency type name
+
+      - **`description`**
+
+        `string`
+
+    - **`currencyTypeId`**
+
+      `string`
+
+    - **`lastRateUpdate`**
+
+      `string | null`, format: `date-time`  -  When the rate was last updated
+
+    - **`symbol`**
+
+      `string`
+
+    - **`usdValue`**
+
+      `number | null`  -  USD value for 1 unit of this currency
+
+  - **`userId`**
+
+    `string`
+
+- **`success` (required)**
+
+  `boolean`
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "sadaqahs": [
+    {
+      "id": "sadaqah_xyz789",
+      "boxId": "",
+      "value": 5,
+      "currencyId": "",
+      "currency": {
+        "id": "cur_abc123",
+        "code": "USD",
+        "name": "US Dollar",
+        "symbol": "$",
+        "currencyTypeId": "ctyp_abc123",
+        "currencyType": {
+          "id": "ctyp_abc123",
+          "name": "Fiat",
+          "description": "Government-issued currency"
+        },
+        "usdValue": 1,
+        "lastRateUpdate": "2024-01-15T10:30:00.000Z"
+      },
+      "userId": "",
+      "createdAt": "2024-01-15T10:30:00.000Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 1,
+    "total": 0,
+    "totalPages": 0
+  }
+}
+```
+
+##### Status: 404 Box not found
+
+###### Content-Type: application/json
+
+- **`error` (required)**
+
+  `string`
+
+- **`success` (required)**
+
+  `boolean`
+
+- **`code`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "error": "",
+  "code": ""
+}
+```
+
+### Add a sadaqah to a box
+
+- **Method:** `POST`
+- **Path:** `/api/boxes/{boxId}/sadaqahs`
+- **Tags:** Sadaqahs
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`amount`**
+
+  `integer`
+
+- **`currencyId`**
+
+  `string`
+
+- **`metadata`**
+
+  `object`
+
+- **`value`**
+
+  `number`
+
+**Example:**
+
+```json
+{
+  "amount": 1,
+  "value": 1,
+  "currencyId": "",
+  "metadata": {
+    "additionalProperty": ""
+  }
+}
+```
+
+#### Responses
+
+##### Status: 201 Returns the created sadaqah and updated box
+
+###### Content-Type: application/json
+
+- **`box` (required)**
+
+  `object`
+
+  - **`count` (required)**
+
+    `number`
+
+  - **`createdAt` (required)**
+
+    `string`
+
+  - **`id` (required)**
+
+    `string`
+
+  - **`name` (required)**
+
+    `string`
+
+  - **`totalValue` (required)**
+
+    `number`
+
+  - **`updatedAt` (required)**
+
+    `string`
+
+  - **`baseCurrency`**
+
+    `object`
+
+  - **`baseCurrencyId`**
+
+    `string`
+
+  - **`currency`**
+
+    `object`
+
+  - **`currencyId`**
+
+    `string`
+
+  - **`description`**
+
+    `string`
+
+  - **`totalValueExtra`**
+
+    `object | null`
+
+- **`message` (required)**
+
+  `string`
+
+- **`sadaqahs` (required)**
+
+  `array`
+
+  **Items:**
+
+  - **`boxId` (required)**
+
+    `string`  -  ID of the box containing this sadaqah
+
+  - **`createdAt` (required)**
+
+    `string`, format: `date-time`
+
+  - **`currencyId` (required)**
+
+    `string`  -  ID of the currency
+
+  - **`id` (required)**
+
+    `string`
+
+  - **`value` (required)**
+
+    `number`  -  This sadaqah's specific value
+
+  - **`currency`**
+
+    `object`
+
+    - **`code` (required)**
+
+      `string`  -  ISO 4217 currency code
+
+    - **`id` (required)**
+
+      `string`
+
+    - **`name` (required)**
+
+      `string`
+
+    - **`currencyType`**
+
+      `object`
+
+      - **`id` (required)**
+
+        `string`
+
+      - **`name` (required)**
+
+        `string`  -  Currency type name
+
+      - **`description`**
+
+        `string`
+
+    - **`currencyTypeId`**
+
+      `string`
+
+    - **`lastRateUpdate`**
+
+      `string | null`, format: `date-time`  -  When the rate was last updated
+
+    - **`symbol`**
+
+      `string`
+
+    - **`usdValue`**
+
+      `number | null`  -  USD value for 1 unit of this currency
+
+  - **`userId`**
+
+    `string`
+
+- **`success` (required)**
+
+  `boolean`
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "sadaqahs": [
+    {
+      "id": "sadaqah_xyz789",
+      "boxId": "",
+      "value": 5,
+      "currencyId": "",
+      "currency": {
+        "id": "cur_abc123",
+        "code": "USD",
+        "name": "US Dollar",
+        "symbol": "$",
+        "currencyTypeId": "ctyp_abc123",
+        "currencyType": {
+          "id": "ctyp_abc123",
+          "name": "Fiat",
+          "description": "Government-issued currency"
+        },
+        "usdValue": 1,
+        "lastRateUpdate": "2024-01-15T10:30:00.000Z"
+      },
+      "userId": "",
+      "createdAt": "2024-01-15T10:30:00.000Z"
+    }
+  ],
+  "box": {
+    "id": "",
+    "name": "",
+    "description": "",
+    "count": 1,
+    "totalValue": 1,
+    "totalValueExtra": null,
+    "currencyId": "",
+    "currency": null,
+    "baseCurrencyId": "",
+    "baseCurrency": null,
+    "createdAt": "",
+    "updatedAt": ""
+  },
+  "message": ""
+}
+```
+
+##### Status: 404 Box not found
+
+###### Content-Type: application/json
+
+- **`error` (required)**
+
+  `string`
+
+- **`success` (required)**
+
+  `boolean`
+
+- **`code`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "error": "",
+  "code": ""
+}
+```
+
+### Delete a sadaqah
+
+- **Method:** `DELETE`
+- **Path:** `/api/boxes/{boxId}/sadaqahs/{sadaqahId}`
+- **Tags:** Sadaqahs
+
+#### Responses
+
+##### Status: 200 Sadaqah deleted
+
+###### Content-Type: application/json
+
+- **`deleted` (required)**
+
+  `boolean`
+
+- **`success` (required)**
+
+  `boolean`
+
+- **`updatedBox`**
+
+  `object`
+
+  - **`count` (required)**
+
+    `number`
+
+  - **`id` (required)**
+
+    `string`
+
+  - **`name` (required)**
+
+    `string`
+
+  - **`totalValue` (required)**
+
+    `number`
+
+  - **`currencyId`**
+
+    `string`
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "deleted": true,
+  "updatedBox": {
+    "id": "",
+    "name": "",
+    "count": 1,
+    "totalValue": 1,
+    "currencyId": ""
+  }
+}
+```
+
+##### Status: 404 Sadaqah not found
+
+###### Content-Type: application/json
+
+- **`error` (required)**
+
+  `string`
+
+- **`success` (required)**
+
+  `boolean`
+
+- **`code`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "error": "",
+  "code": ""
+}
+```
+
+### List all currencies
+
+- **Method:** `GET`
+- **Path:** `/api/currencies`
+- **Tags:** Currencies
+
+#### Responses
+
+##### Status: 200 Returns a list of currencies
+
+###### Content-Type: application/json
+
+- **`currencies` (required)**
+
+  `array`
+
+  **Items:**
+
+  - **`code` (required)**
+
+    `string`  -  ISO 4217 currency code
+
+  - **`id` (required)**
+
+    `string`
+
+  - **`name` (required)**
+
+    `string`
+
+  - **`currencyType`**
+
+    `object`
+
+    - **`id` (required)**
+
+      `string`
+
+    - **`name` (required)**
+
+      `string`  -  Currency type name
+
+    - **`description`**
+
+      `string`
+
+  - **`currencyTypeId`**
+
+    `string`
+
+  - **`lastRateUpdate`**
+
+    `string | null`, format: `date-time`  -  When the rate was last updated
+
+  - **`symbol`**
+
+    `string`
+
+  - **`usdValue`**
+
+    `number | null`  -  USD value for 1 unit of this currency
+
+- **`success` (required)**
+
+  `boolean`
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "currencies": [
+    {
+      "id": "cur_abc123",
+      "code": "USD",
+      "name": "US Dollar",
+      "symbol": "$",
+      "currencyTypeId": "ctyp_abc123",
+      "currencyType": {
+        "id": "ctyp_abc123",
+        "name": "Fiat",
+        "description": "Government-issued currency"
+      },
+      "usdValue": 1,
+      "lastRateUpdate": "2024-01-15T10:30:00.000Z"
+    }
+  ]
+}
+```
+
+### Create a new currency
+
+- **Method:** `POST`
+- **Path:** `/api/currencies`
+- **Tags:** Currencies
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`code` (required)**
+
+  `string`
+
+- **`name` (required)**
+
+  `string`
+
+- **`currencyTypeId`**
+
+  `string`
+
+- **`symbol`**
+
+  `string`
+
+- **`usdValue`**
+
+  `number`  -  USD value for 1 unit of this currency (optional, will be fetched automatically)
+
+**Example:**
+
+```json
+{
+  "code": "",
+  "name": "",
+  "symbol": "",
+  "currencyTypeId": "",
+  "usdValue": 1
+}
+```
+
+#### Responses
+
+##### Status: 201 Returns the created currency
+
+###### Content-Type: application/json
+
+- **`currency` (required)**
+
+  `object`
+
+  - **`code` (required)**
+
+    `string`  -  ISO 4217 currency code
+
+  - **`id` (required)**
+
+    `string`
+
+  - **`name` (required)**
+
+    `string`
+
+  - **`currencyType`**
+
+    `object`
+
+    - **`id` (required)**
+
+      `string`
+
+    - **`name` (required)**
+
+      `string`  -  Currency type name
+
+    - **`description`**
+
+      `string`
+
+  - **`currencyTypeId`**
+
+    `string`
+
+  - **`lastRateUpdate`**
+
+    `string | null`, format: `date-time`  -  When the rate was last updated
+
+  - **`symbol`**
+
+    `string`
+
+  - **`usdValue`**
+
+    `number | null`  -  USD value for 1 unit of this currency
+
+- **`success` (required)**
+
+  `boolean`
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "currency": {
+    "id": "cur_abc123",
+    "code": "USD",
+    "name": "US Dollar",
+    "symbol": "$",
+    "currencyTypeId": "ctyp_abc123",
+    "currencyType": {
+      "id": "ctyp_abc123",
+      "name": "Fiat",
+      "description": "Government-issued currency"
+    },
+    "usdValue": 1,
+    "lastRateUpdate": "2024-01-15T10:30:00.000Z"
+  }
+}
+```
+
+### Get a currency by ID
+
+- **Method:** `GET`
+- **Path:** `/api/currencies/{currencyId}`
+- **Tags:** Currencies
+
+#### Responses
+
+##### Status: 200 Returns the currency
+
+###### Content-Type: application/json
+
+- **`currency` (required)**
+
+  `object`
+
+  - **`code` (required)**
+
+    `string`  -  ISO 4217 currency code
+
+  - **`id` (required)**
+
+    `string`
+
+  - **`name` (required)**
+
+    `string`
+
+  - **`currencyType`**
+
+    `object`
+
+    - **`id` (required)**
+
+      `string`
+
+    - **`name` (required)**
+
+      `string`  -  Currency type name
+
+    - **`description`**
+
+      `string`
+
+  - **`currencyTypeId`**
+
+    `string`
+
+  - **`lastRateUpdate`**
+
+    `string | null`, format: `date-time`  -  When the rate was last updated
+
+  - **`symbol`**
+
+    `string`
+
+  - **`usdValue`**
+
+    `number | null`  -  USD value for 1 unit of this currency
+
+- **`success` (required)**
+
+  `boolean`
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "currency": {
+    "id": "cur_abc123",
+    "code": "USD",
+    "name": "US Dollar",
+    "symbol": "$",
+    "currencyTypeId": "ctyp_abc123",
+    "currencyType": {
+      "id": "ctyp_abc123",
+      "name": "Fiat",
+      "description": "Government-issued currency"
+    },
+    "usdValue": 1,
+    "lastRateUpdate": "2024-01-15T10:30:00.000Z"
+  }
+}
+```
+
+### Delete a currency
+
+- **Method:** `DELETE`
+- **Path:** `/api/currencies/{currencyId}`
+- **Tags:** Currencies
+
+#### Responses
+
+##### Status: 200 Returns deletion status
+
+###### Content-Type: application/json
+
+- **`deleted` (required)**
+
+  `boolean`
+
+- **`success` (required)**
+
+  `boolean`
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "deleted": true
+}
+```
+
+### Update gold rates for all currencies
+
+- **Method:** `POST`
+- **Path:** `/api/currencies/update-gold-rates`
+- **Tags:** Currencies
+
+Fetches latest gold prices from external APIs and updates all currency gold values. Admin only.
+
+#### Responses
+
+##### Status: 200 Returns number of currencies updated
+
+###### Content-Type: application/json
+
+- **`success` (required)**
+
+  `boolean`
+
+- **`updated` (required)**
+
+  `number`
+
+- **`errors`**
+
+  `array`
+
+  **Items:**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "updated": 1,
+  "errors": [
+    ""
+  ]
+}
+```
+
+### List all currency types
+
+- **Method:** `GET`
+- **Path:** `/api/currency-types`
+- **Tags:** Currency Types
+
+#### Responses
+
+##### Status: 200 Returns a list of currency types
+
+###### Content-Type: application/json
+
+- **`currencyTypes` (required)**
+
+  `array`
+
+  **Items:**
+
+  - **`id` (required)**
+
+    `string`
+
+  - **`name` (required)**
+
+    `string`  -  Currency type name
+
+  - **`description`**
+
+    `string`
+
+- **`success` (required)**
+
+  `boolean`
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "currencyTypes": [
+    {
+      "id": "ctyp_abc123",
+      "name": "Fiat",
+      "description": "Government-issued currency"
+    }
+  ]
+}
+```
+
+### Create a new currency type
+
+- **Method:** `POST`
+- **Path:** `/api/currency-types`
+- **Tags:** Currency Types
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`name` (required)**
+
+  `string`
+
+- **`description`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "name": "",
+  "description": ""
+}
+```
+
+#### Responses
+
+##### Status: 201 Returns the created currency type
+
+###### Content-Type: application/json
+
+- **`currencyType` (required)**
+
+  `object`
+
+  - **`id` (required)**
+
+    `string`
+
+  - **`name` (required)**
+
+    `string`  -  Currency type name
+
+  - **`description`**
+
+    `string`
+
+- **`success` (required)**
+
+  `boolean`
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "currencyType": {
+    "id": "ctyp_abc123",
+    "name": "Fiat",
+    "description": "Government-issued currency"
+  }
+}
+```
+
+### Get a currency type by ID
+
+- **Method:** `GET`
+- **Path:** `/api/currency-types/{currencyTypeId}`
+- **Tags:** Currency Types
+
+#### Responses
+
+##### Status: 200 Returns the currency type
+
+###### Content-Type: application/json
+
+- **`currencyType` (required)**
+
+  `object`
+
+  - **`id` (required)**
+
+    `string`
+
+  - **`name` (required)**
+
+    `string`  -  Currency type name
+
+  - **`description`**
+
+    `string`
+
+- **`success` (required)**
+
+  `boolean`
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "currencyType": {
+    "id": "ctyp_abc123",
+    "name": "Fiat",
+    "description": "Government-issued currency"
+  }
+}
+```
+
+### Delete a currency type
+
+- **Method:** `DELETE`
+- **Path:** `/api/currency-types/{currencyTypeId}`
+- **Tags:** Currency Types
+
+#### Responses
+
+##### Status: 200 Returns deletion status
+
+###### Content-Type: application/json
+
+- **`deleted` (required)**
+
+  `boolean`
+
+- **`success` (required)**
+
+  `boolean`
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "deleted": true
+}
+```
+
+
+---
+
+# Better Auth
+
+- **OpenAPI Version:** `3.1.1`
+- **API Version:** `1.1.0`
+
+API Reference for your Better Auth Instance
+
+## Servers
+
+- **URL:** `http://localhost:5173/api/auth`
+
+## Operations
+
+### POST /sign-in/social
+
+- **Method:** `POST`
+- **Path:** `/sign-in/social`
+- **Tags:** Default
+
+Sign in with a social provider
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`provider` (required)**
+
+  `string`
+
+- **`additionalData`**
+
+  `string | null`
+
+- **`callbackURL`**
+
+  `string | null`  -  Callback URL to redirect to after the user has signed in
+
+- **`disableRedirect`**
+
+  `boolean | null`  -  Disable automatic redirection to the provider. Useful for handling the redirection yourself
+
+- **`errorCallbackURL`**
+
+  `string | null`  -  Callback URL to redirect to if an error happens
+
+- **`idToken`**
+
+  `object | null`
+
+  - **`token` (required)**
+
+    `string`  -  ID token from the provider
+
+  - **`accessToken`**
+
+    `string | null`  -  Access token from the provider
+
+  - **`expiresAt`**
+
+    `number | null`  -  Expiry date of the token
+
+  - **`nonce`**
+
+    `string | null`  -  Nonce used to generate the token
+
+  - **`refreshToken`**
+
+    `string | null`  -  Refresh token from the provider
+
+- **`loginHint`**
+
+  `string | null`  -  The login hint to use for the authorization code request
+
+- **`newUserCallbackURL`**
+
+  `string | null`
+
+- **`requestSignUp`**
+
+  `boolean | null`  -  Explicitly request sign-up. Useful when disableImplicitSignUp is true for this provider
+
+- **`scopes`**
+
+  `array | null`  -  Array of scopes to request from the provider. This will override the default scopes passed.
+
+**Example:**
+
+```json
+{
+  "callbackURL": null,
+  "newUserCallbackURL": null,
+  "errorCallbackURL": null,
+  "provider": "",
+  "disableRedirect": null,
+  "idToken": {
+    "token": "",
+    "nonce": null,
+    "accessToken": null,
+    "refreshToken": null,
+    "expiresAt": null
+  },
+  "scopes": null,
+  "requestSignUp": null,
+  "loginHint": null,
+  "additionalData": null
+}
+```
+
+#### Responses
+
+##### Status: 200 Success - Returns either session details or redirect URL
+
+###### Content-Type: application/json
+
+- **`redirect` (required)**
+
+  `boolean`, possible values: `false`
+
+- **`token` (required)**
+
+  `string`
+
+- **`user` (required)**
+
+  `object`
+
+  - **`createdAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`email` (required)**
+
+    `string`
+
+  - **`name` (required)**
+
+    `string`
+
+  - **`updatedAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`banExpires`**
+
+    `string`, format: `date-time`
+
+  - **`banned`**
+
+    `boolean`, default: `false`
+
+  - **`banReason`**
+
+    `string`
+
+  - **`emailVerified`**
+
+    `boolean`, default: `false`
+
+  - **`id`**
+
+    `string`
+
+  - **`image`**
+
+    `string`
+
+  - **`role`**
+
+    `string`
+
+- **`url`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "token": "",
+  "user": {
+    "id": "",
+    "name": "",
+    "email": "",
+    "emailVerified": false,
+    "image": "",
+    "createdAt": "Generated at runtime",
+    "updatedAt": "Generated at runtime",
+    "role": "",
+    "banned": false,
+    "banReason": "",
+    "banExpires": ""
+  },
+  "url": "",
+  "redirect": false
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### GET /get-session
+
+- **Method:** `GET`
+- **Path:** `/get-session`
+- **Tags:** Default
+
+Get the current session
+
+#### Responses
+
+##### Status: 200 Success
+
+###### Content-Type: application/json
+
+- **`session` (required)**
+
+  `object`
+
+  - **`createdAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`expiresAt` (required)**
+
+    `string`, format: `date-time`
+
+  - **`token` (required)**
+
+    `string`
+
+  - **`updatedAt` (required)**
+
+    `string`, format: `date-time`
+
+  - **`userId` (required)**
+
+    `string`
+
+  - **`id`**
+
+    `string`
+
+  - **`impersonatedBy`**
+
+    `string`
+
+  - **`ipAddress`**
+
+    `string`
+
+  - **`userAgent`**
+
+    `string`
+
+- **`user` (required)**
+
+  `object`
+
+  - **`createdAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`email` (required)**
+
+    `string`
+
+  - **`name` (required)**
+
+    `string`
+
+  - **`updatedAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`banExpires`**
+
+    `string`, format: `date-time`
+
+  - **`banned`**
+
+    `boolean`, default: `false`
+
+  - **`banReason`**
+
+    `string`
+
+  - **`emailVerified`**
+
+    `boolean`, default: `false`
+
+  - **`id`**
+
+    `string`
+
+  - **`image`**
+
+    `string`
+
+  - **`role`**
+
+    `string`
+
+**Example:**
+
+```json
+{
+  "session": {
+    "id": "",
+    "expiresAt": "",
+    "token": "",
+    "createdAt": "Generated at runtime",
+    "updatedAt": "",
+    "ipAddress": "",
+    "userAgent": "",
+    "userId": "",
+    "impersonatedBy": ""
+  },
+  "user": {
+    "id": "",
+    "name": "",
+    "email": "",
+    "emailVerified": false,
+    "image": "",
+    "createdAt": "Generated at runtime",
+    "updatedAt": "Generated at runtime",
+    "role": "",
+    "banned": false,
+    "banReason": "",
+    "banExpires": ""
+  }
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /sign-out
+
+- **Method:** `POST`
+- **Path:** `/sign-out`
+- **Tags:** Default
+
+Sign out the current user
+
+#### Request Body
+
+##### Content-Type: application/json
+
+**Example:**
+
+```json
+{}
+```
+
+#### Responses
+
+##### Status: 200 Success
+
+###### Content-Type: application/json
+
+- **`success`**
+
+  `boolean`
+
+**Example:**
+
+```json
+{
+  "success": true
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /sign-up/email
+
+- **Method:** `POST`
+- **Path:** `/sign-up/email`
+- **Tags:** Default
+
+Sign up a user using email and password
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`email` (required)**
+
+  `string`  -  The email of the user
+
+- **`name` (required)**
+
+  `string`  -  The name of the user
+
+- **`password` (required)**
+
+  `string`  -  The password of the user
+
+- **`callbackURL`**
+
+  `string`  -  The URL to use for email verification callback
+
+- **`image`**
+
+  `string`  -  The profile image URL of the user
+
+- **`rememberMe`**
+
+  `boolean`  -  If this is false, the session will not be remembered. Default is \`true\`.
+
+**Example:**
+
+```json
+{
+  "name": "",
+  "email": "",
+  "password": "",
+  "image": "",
+  "callbackURL": "",
+  "rememberMe": true
+}
+```
+
+#### Responses
+
+##### Status: 200 Successfully created user
+
+###### Content-Type: application/json
+
+- **`user` (required)**
+
+  `object`
+
+  - **`createdAt` (required)**
+
+    `string`, format: `date-time`  -  When the user was created
+
+  - **`email` (required)**
+
+    `string`, format: `email`  -  The email address of the user
+
+  - **`emailVerified` (required)**
+
+    `boolean`  -  Whether the email has been verified
+
+  - **`id` (required)**
+
+    `string`  -  The unique identifier of the user
+
+  - **`name` (required)**
+
+    `string`  -  The name of the user
+
+  - **`updatedAt` (required)**
+
+    `string`, format: `date-time`  -  When the user was last updated
+
+  - **`image`**
+
+    `string`, format: `uri`  -  The profile image URL of the user
+
+- **`token`**
+
+  `string`  -  Authentication token for the session
+
+**Example:**
+
+```json
+{
+  "token": "",
+  "user": {
+    "id": "",
+    "email": "",
+    "name": "",
+    "image": "",
+    "emailVerified": true,
+    "createdAt": "",
+    "updatedAt": ""
+  }
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 422 Unprocessable Entity. User already exists or failed to create user.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /sign-in/email
+
+- **Method:** `POST`
+- **Path:** `/sign-in/email`
+- **Tags:** Default
+
+Sign in with email and password
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`email` (required)**
+
+  `string`  -  Email of the user
+
+- **`password` (required)**
+
+  `string`  -  Password of the user
+
+- **`callbackURL`**
+
+  `string | null`  -  Callback URL to use as a redirect for email verification
+
+- **`rememberMe`**
+
+  `boolean | null`, default: `true`  -  If this is false, the session will not be remembered. Default is \`true\`.
+
+**Example:**
+
+```json
+{
+  "email": "",
+  "password": "",
+  "callbackURL": null,
+  "rememberMe": true
+}
+```
+
+#### Responses
+
+##### Status: 200 Success - Returns either session details or redirect URL
+
+###### Content-Type: application/json
+
+- **`redirect` (required)**
+
+  `boolean`, possible values: `false`
+
+- **`token` (required)**
+
+  `string`  -  Session token
+
+- **`user` (required)**
+
+  `object`
+
+  - **`createdAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`email` (required)**
+
+    `string`
+
+  - **`name` (required)**
+
+    `string`
+
+  - **`updatedAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`banExpires`**
+
+    `string`, format: `date-time`
+
+  - **`banned`**
+
+    `boolean`, default: `false`
+
+  - **`banReason`**
+
+    `string`
+
+  - **`emailVerified`**
+
+    `boolean`, default: `false`
+
+  - **`id`**
+
+    `string`
+
+  - **`image`**
+
+    `string`
+
+  - **`role`**
+
+    `string`
+
+- **`url`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "redirect": false,
+  "token": "",
+  "url": "",
+  "user": {
+    "id": "",
+    "name": "",
+    "email": "",
+    "emailVerified": false,
+    "image": "",
+    "createdAt": "Generated at runtime",
+    "updatedAt": "Generated at runtime",
+    "role": "",
+    "banned": false,
+    "banReason": "",
+    "banExpires": ""
+  }
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /reset-password
+
+- **Method:** `POST`
+- **Path:** `/reset-password`
+- **Tags:** Default
+
+Reset the password for a user
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`newPassword` (required)**
+
+  `string`  -  The new password to set
+
+- **`token`**
+
+  `string | null`  -  The token to reset the password
+
+**Example:**
+
+```json
+{
+  "newPassword": "",
+  "token": null
+}
+```
+
+#### Responses
+
+##### Status: 200 Success
+
+###### Content-Type: application/json
+
+- **`status`**
+
+  `boolean`
+
+**Example:**
+
+```json
+{
+  "status": true
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /verify-password
+
+- **Method:** `POST`
+- **Path:** `/verify-password`
+- **Tags:** Default
+
+Verify the current user's password
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`password` (required)**
+
+  `string`  -  The password to verify
+
+**Example:**
+
+```json
+{
+  "password": ""
+}
+```
+
+#### Responses
+
+##### Status: 200 Success
+
+###### Content-Type: application/json
+
+- **`status`**
+
+  `boolean`
+
+**Example:**
+
+```json
+{
+  "status": true
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### GET /verify-email
+
+- **Method:** `GET`
+- **Path:** `/verify-email`
+- **Tags:** Default
+
+Verify the email of the user
+
+#### Responses
+
+##### Status: 200 Success
+
+###### Content-Type: application/json
+
+- **`status` (required)**
+
+  `boolean`  -  Indicates if the email was verified successfully
+
+- **`user` (required)**
+
+  `object`
+
+  - **`createdAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`email` (required)**
+
+    `string`
+
+  - **`name` (required)**
+
+    `string`
+
+  - **`updatedAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`banExpires`**
+
+    `string`, format: `date-time`
+
+  - **`banned`**
+
+    `boolean`, default: `false`
+
+  - **`banReason`**
+
+    `string`
+
+  - **`emailVerified`**
+
+    `boolean`, default: `false`
+
+  - **`id`**
+
+    `string`
+
+  - **`image`**
+
+    `string`
+
+  - **`role`**
+
+    `string`
+
+**Example:**
+
+```json
+{
+  "user": {
+    "id": "",
+    "name": "",
+    "email": "",
+    "emailVerified": false,
+    "image": "",
+    "createdAt": "Generated at runtime",
+    "updatedAt": "Generated at runtime",
+    "role": "",
+    "banned": false,
+    "banReason": "",
+    "banExpires": ""
+  },
+  "status": true
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /send-verification-email
+
+- **Method:** `POST`
+- **Path:** `/send-verification-email`
+- **Tags:** Default
+
+Send a verification email to the user
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`email` (required)**
+
+  `string`  -  The email to send the verification email to
+
+- **`callbackURL`**
+
+  `string`  -  The URL to use for email verification callback
+
+**Example:**
+
+```json
+{
+  "email": "user@example.com",
+  "callbackURL": "https://example.com/callback"
+}
+```
+
+#### Responses
+
+##### Status: 200 Success
+
+###### Content-Type: application/json
+
+- **`status`**
+
+  `boolean`  -  Indicates if the email was sent successfully
+
+**Example:**
+
+```json
+{
+  "status": true
+}
+```
+
+##### Status: 400 Bad Request
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`  -  Error message
+
+**Example:**
+
+```json
+{
+  "message": "Verification email isn't enabled"
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /change-email
+
+- **Method:** `POST`
+- **Path:** `/change-email`
+- **Tags:** Default
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`newEmail` (required)**
+
+  `string`  -  The new email address to set must be a valid email address
+
+- **`callbackURL`**
+
+  `string | null`  -  The URL to redirect to after email verification
+
+**Example:**
+
+```json
+{
+  "newEmail": "",
+  "callbackURL": null
+}
+```
+
+#### Responses
+
+##### Status: 200 Email change request processed successfully
+
+###### Content-Type: application/json
+
+- **`status` (required)**
+
+  `boolean`  -  Indicates if the request was successful
+
+- **`message`**
+
+  `string`, possible values: `"Email updated", "Verification email sent"`  -  Status message of the email change process
+
+- **`user`**
+
+  `object`
+
+  - **`createdAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`email` (required)**
+
+    `string`
+
+  - **`name` (required)**
+
+    `string`
+
+  - **`updatedAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`banExpires`**
+
+    `string`, format: `date-time`
+
+  - **`banned`**
+
+    `boolean`, default: `false`
+
+  - **`banReason`**
+
+    `string`
+
+  - **`emailVerified`**
+
+    `boolean`, default: `false`
+
+  - **`id`**
+
+    `string`
+
+  - **`image`**
+
+    `string`
+
+  - **`role`**
+
+    `string`
+
+**Example:**
+
+```json
+{
+  "user": {
+    "id": "",
+    "name": "",
+    "email": "",
+    "emailVerified": false,
+    "image": "",
+    "createdAt": "Generated at runtime",
+    "updatedAt": "Generated at runtime",
+    "role": "",
+    "banned": false,
+    "banReason": "",
+    "banExpires": ""
+  },
+  "status": true,
+  "message": "Email updated"
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 422 Unprocessable Entity. Email already exists
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /change-password
+
+- **Method:** `POST`
+- **Path:** `/change-password`
+- **Tags:** Default
+
+Change the password of the user
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`currentPassword` (required)**
+
+  `string`  -  The current password is required
+
+- **`newPassword` (required)**
+
+  `string`  -  The new password to set
+
+- **`revokeOtherSessions`**
+
+  `boolean | null`  -  Must be a boolean value
+
+**Example:**
+
+```json
+{
+  "newPassword": "",
+  "currentPassword": "",
+  "revokeOtherSessions": null
+}
+```
+
+#### Responses
+
+##### Status: 200 Password successfully changed
+
+###### Content-Type: application/json
+
+- **`user` (required)**
+
+  `object`
+
+  - **`createdAt` (required)**
+
+    `string`, format: `date-time`  -  When the user was created
+
+  - **`email` (required)**
+
+    `string`, format: `email`  -  The email address of the user
+
+  - **`emailVerified` (required)**
+
+    `boolean`  -  Whether the email has been verified
+
+  - **`id` (required)**
+
+    `string`  -  The unique identifier of the user
+
+  - **`name` (required)**
+
+    `string`  -  The name of the user
+
+  - **`updatedAt` (required)**
+
+    `string`, format: `date-time`  -  When the user was last updated
+
+  - **`image`**
+
+    `string`, format: `uri`  -  The profile image URL of the user
+
+- **`token`**
+
+  `string`  -  New session token if other sessions were revoked
+
+**Example:**
+
+```json
+{
+  "token": "",
+  "user": {
+    "id": "",
+    "email": "",
+    "name": "",
+    "image": "",
+    "emailVerified": true,
+    "createdAt": "",
+    "updatedAt": ""
+  }
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /update-user
+
+- **Method:** `POST`
+- **Path:** `/update-user`
+- **Tags:** Default
+
+Update the current user
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`image`**
+
+  `string`  -  The image of the user
+
+- **`name`**
+
+  `string`  -  The name of the user
+
+**Example:**
+
+```json
+{
+  "name": "",
+  "image": ""
+}
+```
+
+#### Responses
+
+##### Status: 200 Success
+
+###### Content-Type: application/json
+
+- **`user`**
+
+  `object`
+
+  - **`createdAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`email` (required)**
+
+    `string`
+
+  - **`name` (required)**
+
+    `string`
+
+  - **`updatedAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`banExpires`**
+
+    `string`, format: `date-time`
+
+  - **`banned`**
+
+    `boolean`, default: `false`
+
+  - **`banReason`**
+
+    `string`
+
+  - **`emailVerified`**
+
+    `boolean`, default: `false`
+
+  - **`id`**
+
+    `string`
+
+  - **`image`**
+
+    `string`
+
+  - **`role`**
+
+    `string`
+
+**Example:**
+
+```json
+{
+  "user": {
+    "id": "",
+    "name": "",
+    "email": "",
+    "emailVerified": false,
+    "image": "",
+    "createdAt": "Generated at runtime",
+    "updatedAt": "Generated at runtime",
+    "role": "",
+    "banned": false,
+    "banReason": "",
+    "banExpires": ""
+  }
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /delete-user
+
+- **Method:** `POST`
+- **Path:** `/delete-user`
+- **Tags:** Default
+
+Delete the user
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`callbackURL`**
+
+  `string`  -  The callback URL to redirect to after the user is deleted
+
+- **`password`**
+
+  `string`  -  The user's password. Required if session is not fresh
+
+- **`token`**
+
+  `string`  -  The deletion verification token
+
+**Example:**
+
+```json
+{
+  "callbackURL": "",
+  "password": "",
+  "token": ""
+}
+```
+
+#### Responses
+
+##### Status: 200 User deletion processed successfully
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`, possible values: `"User deleted", "Verification email sent"`  -  Status message of the deletion process
+
+- **`success` (required)**
+
+  `boolean`  -  Indicates if the operation was successful
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "message": "User deleted"
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /request-password-reset
+
+- **Method:** `POST`
+- **Path:** `/request-password-reset`
+- **Tags:** Default
+
+Send a password reset email to the user
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`email` (required)**
+
+  `string`  -  The email address of the user to send a password reset email to
+
+- **`redirectTo`**
+
+  `string | null`  -  The URL to redirect the user to reset their password. If the token isn't valid or expired, it'll be redirected with a query parameter \`?error=INVALID\_TOKEN\`. If the token is valid, it'll be redirected with a query parameter \`?token=VALID\_TOKEN
+
+**Example:**
+
+```json
+{
+  "email": "",
+  "redirectTo": null
+}
+```
+
+#### Responses
+
+##### Status: 200 Success
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+- **`status`**
+
+  `boolean`
+
+**Example:**
+
+```json
+{
+  "status": true,
+  "message": ""
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### GET /reset-password/{token}
+
+- **Method:** `GET`
+- **Path:** `/reset-password/{token}`
+- **Tags:** Default
+
+Redirects the user to the callback URL with the token
+
+#### Responses
+
+##### Status: 200 Success
+
+###### Content-Type: application/json
+
+- **`token`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "token": ""
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### GET /list-sessions
+
+- **Method:** `GET`
+- **Path:** `/list-sessions`
+- **Tags:** Default
+
+List all active sessions for the user
+
+#### Responses
+
+##### Status: 200 Success
+
+###### Content-Type: application/json
+
+**Array of:**
+
+- **`createdAt` (required)**
+
+  `string`, format: `date-time`, default: `"Generated at runtime"`
+
+- **`expiresAt` (required)**
+
+  `string`, format: `date-time`
+
+- **`token` (required)**
+
+  `string`
+
+- **`updatedAt` (required)**
+
+  `string`, format: `date-time`
+
+- **`userId` (required)**
+
+  `string`
+
+- **`id`**
+
+  `string`
+
+- **`impersonatedBy`**
+
+  `string`
+
+- **`ipAddress`**
+
+  `string`
+
+- **`userAgent`**
+
+  `string`
+
+**Example:**
+
+```json
+[
+  {
+    "id": "",
+    "expiresAt": "",
+    "token": "",
+    "createdAt": "Generated at runtime",
+    "updatedAt": "",
+    "ipAddress": "",
+    "userAgent": "",
+    "userId": "",
+    "impersonatedBy": ""
+  }
+]
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /revoke-session
+
+- **Method:** `POST`
+- **Path:** `/revoke-session`
+- **Tags:** Default
+
+Revoke a single session
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`token` (required)**
+
+  `string`  -  The token to revoke
+
+**Example:**
+
+```json
+{
+  "token": ""
+}
+```
+
+#### Responses
+
+##### Status: 200 Success
+
+###### Content-Type: application/json
+
+- **`status` (required)**
+
+  `boolean`  -  Indicates if the session was revoked successfully
+
+**Example:**
+
+```json
+{
+  "status": true
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /revoke-sessions
+
+- **Method:** `POST`
+- **Path:** `/revoke-sessions`
+- **Tags:** Default
+
+Revoke all sessions for the user
+
+#### Request Body
+
+##### Content-Type: application/json
+
+**Example:**
+
+```json
+{}
+```
+
+#### Responses
+
+##### Status: 200 Success
+
+###### Content-Type: application/json
+
+- **`status` (required)**
+
+  `boolean`  -  Indicates if all sessions were revoked successfully
+
+**Example:**
+
+```json
+{
+  "status": true
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /revoke-other-sessions
+
+- **Method:** `POST`
+- **Path:** `/revoke-other-sessions`
+- **Tags:** Default
+
+Revoke all other sessions for the user except the current one
+
+#### Request Body
+
+##### Content-Type: application/json
+
+**Example:**
+
+```json
+{}
+```
+
+#### Responses
+
+##### Status: 200 Success
+
+###### Content-Type: application/json
+
+- **`status` (required)**
+
+  `boolean`  -  Indicates if all other sessions were revoked successfully
+
+**Example:**
+
+```json
+{
+  "status": true
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /link-social
+
+- **Method:** `POST`
+- **Path:** `/link-social`
+- **Tags:** Default
+
+Link a social account to the user
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`provider` (required)**
+
+  `string`
+
+- **`additionalData`**
+
+  `string | null`
+
+- **`callbackURL`**
+
+  `string | null`  -  The URL to redirect to after the user has signed in
+
+- **`disableRedirect`**
+
+  `boolean | null`  -  Disable automatic redirection to the provider. Useful for handling the redirection yourself
+
+- **`errorCallbackURL`**
+
+  `string | null`  -  The URL to redirect to if there is an error during the link process
+
+- **`idToken`**
+
+  `object | null`
+
+  - **`token` (required)**
+
+    `string`
+
+  - **`accessToken`**
+
+    `string | null`
+
+  - **`nonce`**
+
+    `string | null`
+
+  - **`refreshToken`**
+
+    `string | null`
+
+  - **`scopes`**
+
+    `array | null`
+
+- **`requestSignUp`**
+
+  `boolean | null`
+
+- **`scopes`**
+
+  `array | null`  -  Additional scopes to request from the provider
+
+**Example:**
+
+```json
+{
+  "callbackURL": null,
+  "provider": "",
+  "idToken": {
+    "token": "",
+    "nonce": null,
+    "accessToken": null,
+    "refreshToken": null,
+    "scopes": null
+  },
+  "requestSignUp": null,
+  "scopes": null,
+  "errorCallbackURL": null,
+  "disableRedirect": null,
+  "additionalData": null
+}
+```
+
+#### Responses
+
+##### Status: 200 Success
+
+###### Content-Type: application/json
+
+- **`redirect` (required)**
+
+  `boolean`  -  Indicates if the user should be redirected to the authorization URL
+
+- **`status`**
+
+  `boolean`
+
+- **`url`**
+
+  `string`  -  The authorization URL to redirect the user to
+
+**Example:**
+
+```json
+{
+  "url": "",
+  "redirect": true,
+  "status": true
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### GET /list-accounts
+
+- **Method:** `GET`
+- **Path:** `/list-accounts`
+- **Tags:** Default
+
+List all accounts linked to the user
+
+#### Responses
+
+##### Status: 200 Success
+
+###### Content-Type: application/json
+
+**Array of:**
+
+- **`accountId` (required)**
+
+  `string`
+
+- **`createdAt` (required)**
+
+  `string`, format: `date-time`
+
+- **`id` (required)**
+
+  `string`
+
+- **`providerId` (required)**
+
+  `string`
+
+- **`scopes` (required)**
+
+  `array`
+
+  **Items:**
+
+  `string`
+
+- **`updatedAt` (required)**
+
+  `string`, format: `date-time`
+
+- **`userId` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+[
+  {
+    "id": "",
+    "providerId": "",
+    "createdAt": "",
+    "updatedAt": "",
+    "accountId": "",
+    "userId": "",
+    "scopes": [
+      ""
+    ]
+  }
+]
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### GET /delete-user/callback
+
+- **Method:** `GET`
+- **Path:** `/delete-user/callback`
+- **Tags:** Default
+
+Callback to complete user deletion with verification token
+
+#### Responses
+
+##### Status: 200 User successfully deleted
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`, possible values: `"User deleted"`  -  Confirmation message
+
+- **`success` (required)**
+
+  `boolean`  -  Indicates if the deletion was successful
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "message": "User deleted"
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /unlink-account
+
+- **Method:** `POST`
+- **Path:** `/unlink-account`
+- **Tags:** Default
+
+Unlink an account
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`providerId` (required)**
+
+  `string`
+
+- **`accountId`**
+
+  `string | null`
+
+**Example:**
+
+```json
+{
+  "providerId": "",
+  "accountId": null
+}
+```
+
+#### Responses
+
+##### Status: 200 Success
+
+###### Content-Type: application/json
+
+- **`status`**
+
+  `boolean`
+
+**Example:**
+
+```json
+{
+  "status": true
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /refresh-token
+
+- **Method:** `POST`
+- **Path:** `/refresh-token`
+- **Tags:** Default
+
+Refresh the access token using a refresh token
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`providerId` (required)**
+
+  `string`  -  The provider ID for the OAuth provider
+
+- **`accountId`**
+
+  `string | null`  -  The account ID associated with the refresh token
+
+- **`userId`**
+
+  `string | null`  -  The user ID associated with the account
+
+**Example:**
+
+```json
+{
+  "providerId": "",
+  "accountId": null,
+  "userId": null
+}
+```
+
+#### Responses
+
+##### Status: 200 Access token refreshed successfully
+
+###### Content-Type: application/json
+
+- **`accessToken`**
+
+  `string`
+
+- **`accessTokenExpiresAt`**
+
+  `string`, format: `date-time`
+
+- **`idToken`**
+
+  `string`
+
+- **`refreshToken`**
+
+  `string`
+
+- **`refreshTokenExpiresAt`**
+
+  `string`, format: `date-time`
+
+- **`tokenType`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "tokenType": "",
+  "idToken": "",
+  "accessToken": "",
+  "refreshToken": "",
+  "accessTokenExpiresAt": "",
+  "refreshTokenExpiresAt": ""
+}
+```
+
+##### Status: 400 Invalid refresh token or provider configuration
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /get-access-token
+
+- **Method:** `POST`
+- **Path:** `/get-access-token`
+- **Tags:** Default
+
+Get a valid access token, doing a refresh if needed
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`providerId` (required)**
+
+  `string`  -  The provider ID for the OAuth provider
+
+- **`accountId`**
+
+  `string | null`  -  The account ID associated with the refresh token
+
+- **`userId`**
+
+  `string | null`  -  The user ID associated with the account
+
+**Example:**
+
+```json
+{
+  "providerId": "",
+  "accountId": null,
+  "userId": null
+}
+```
+
+#### Responses
+
+##### Status: 200 A Valid access token
+
+###### Content-Type: application/json
+
+- **`accessToken`**
+
+  `string`
+
+- **`accessTokenExpiresAt`**
+
+  `string`, format: `date-time`
+
+- **`idToken`**
+
+  `string`
+
+- **`tokenType`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "tokenType": "",
+  "idToken": "",
+  "accessToken": "",
+  "accessTokenExpiresAt": ""
+}
+```
+
+##### Status: 400 Invalid refresh token or provider configuration
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### GET /account-info
+
+- **Method:** `GET`
+- **Path:** `/account-info`
+- **Tags:** Default
+
+Get the account info provided by the provider
+
+#### Responses
+
+##### Status: 200 Success
+
+###### Content-Type: application/json
+
+- **`data` (required)**
+
+  `object`
+
+- **`user` (required)**
+
+  `object`
+
+  - **`emailVerified` (required)**
+
+    `boolean`
+
+  - **`id` (required)**
+
+    `string`
+
+  - **`email`**
+
+    `string`
+
+  - **`image`**
+
+    `string`
+
+  - **`name`**
+
+    `string`
+
+**Example:**
+
+```json
+{
+  "user": {
+    "id": "",
+    "name": "",
+    "email": "",
+    "image": "",
+    "emailVerified": true
+  },
+  "data": {
+    "additionalProperty": "anything"
+  }
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### GET /ok
+
+- **Method:** `GET`
+- **Path:** `/ok`
+- **Tags:** Default
+
+Check if the API is working
+
+#### Responses
+
+##### Status: 200 API is working
+
+###### Content-Type: application/json
+
+- **`ok` (required)**
+
+  `boolean`  -  Indicates if the API is working
+
+**Example:**
+
+```json
+{
+  "ok": true
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### GET /error
+
+- **Method:** `GET`
+- **Path:** `/error`
+- **Tags:** Default
+
+Displays an error page
+
+#### Responses
+
+##### Status: 200 Success
+
+###### Content-Type: text/html
+
+`string`  -  The HTML content of the error page
+
+**Example:**
+
+```json
+true
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /admin/set-role
+
+- **Method:** `POST`
+- **Path:** `/admin/set-role`
+- **Tags:** Admin
+
+Set the role of a user
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`role` (required)**
+
+  `string`  -  The role to set, this can be a string or an array of strings. Eg: \`admin\` or \`\[admin, user]\`
+
+- **`userId` (required)**
+
+  `string`  -  The user id
+
+**Example:**
+
+```json
+{
+  "userId": "",
+  "role": ""
+}
+```
+
+#### Responses
+
+##### Status: 200 User role updated
+
+###### Content-Type: application/json
+
+- **`user`**
+
+  `object`
+
+  - **`createdAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`email` (required)**
+
+    `string`
+
+  - **`name` (required)**
+
+    `string`
+
+  - **`updatedAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`banExpires`**
+
+    `string`, format: `date-time`
+
+  - **`banned`**
+
+    `boolean`, default: `false`
+
+  - **`banReason`**
+
+    `string`
+
+  - **`emailVerified`**
+
+    `boolean`, default: `false`
+
+  - **`id`**
+
+    `string`
+
+  - **`image`**
+
+    `string`
+
+  - **`role`**
+
+    `string`
+
+**Example:**
+
+```json
+{
+  "user": {
+    "id": "",
+    "name": "",
+    "email": "",
+    "emailVerified": false,
+    "image": "",
+    "createdAt": "Generated at runtime",
+    "updatedAt": "Generated at runtime",
+    "role": "",
+    "banned": false,
+    "banReason": "",
+    "banExpires": ""
+  }
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### GET /admin/get-user
+
+- **Method:** `GET`
+- **Path:** `/admin/get-user`
+- **Tags:** Admin
+
+Get an existing user
+
+#### Responses
+
+##### Status: 200 User
+
+###### Content-Type: application/json
+
+- **`user`**
+
+  `object`
+
+  - **`createdAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`email` (required)**
+
+    `string`
+
+  - **`name` (required)**
+
+    `string`
+
+  - **`updatedAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`banExpires`**
+
+    `string`, format: `date-time`
+
+  - **`banned`**
+
+    `boolean`, default: `false`
+
+  - **`banReason`**
+
+    `string`
+
+  - **`emailVerified`**
+
+    `boolean`, default: `false`
+
+  - **`id`**
+
+    `string`
+
+  - **`image`**
+
+    `string`
+
+  - **`role`**
+
+    `string`
+
+**Example:**
+
+```json
+{
+  "user": {
+    "id": "",
+    "name": "",
+    "email": "",
+    "emailVerified": false,
+    "image": "",
+    "createdAt": "Generated at runtime",
+    "updatedAt": "Generated at runtime",
+    "role": "",
+    "banned": false,
+    "banReason": "",
+    "banExpires": ""
+  }
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /admin/create-user
+
+- **Method:** `POST`
+- **Path:** `/admin/create-user`
+- **Tags:** Admin
+
+Create a new user
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`email` (required)**
+
+  `string`  -  The email of the user
+
+- **`name` (required)**
+
+  `string`  -  The name of the user
+
+- **`data`**
+
+  `string | null`
+
+- **`password`**
+
+  `string | null`
+
+- **`role`**
+
+  `string | null`
+
+**Example:**
+
+```json
+{
+  "email": "",
+  "password": null,
+  "name": "",
+  "role": null,
+  "data": null
+}
+```
+
+#### Responses
+
+##### Status: 200 User created
+
+###### Content-Type: application/json
+
+- **`user`**
+
+  `object`
+
+  - **`createdAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`email` (required)**
+
+    `string`
+
+  - **`name` (required)**
+
+    `string`
+
+  - **`updatedAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`banExpires`**
+
+    `string`, format: `date-time`
+
+  - **`banned`**
+
+    `boolean`, default: `false`
+
+  - **`banReason`**
+
+    `string`
+
+  - **`emailVerified`**
+
+    `boolean`, default: `false`
+
+  - **`id`**
+
+    `string`
+
+  - **`image`**
+
+    `string`
+
+  - **`role`**
+
+    `string`
+
+**Example:**
+
+```json
+{
+  "user": {
+    "id": "",
+    "name": "",
+    "email": "",
+    "emailVerified": false,
+    "image": "",
+    "createdAt": "Generated at runtime",
+    "updatedAt": "Generated at runtime",
+    "role": "",
+    "banned": false,
+    "banReason": "",
+    "banExpires": ""
+  }
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /admin/update-user
+
+- **Method:** `POST`
+- **Path:** `/admin/update-user`
+- **Tags:** Admin
+
+Update a user's details
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`data` (required)**
+
+  `string`  -  The user data to update
+
+- **`userId` (required)**
+
+  `string`  -  The user id
+
+**Example:**
+
+```json
+{
+  "userId": "",
+  "data": ""
+}
+```
+
+#### Responses
+
+##### Status: 200 User updated
+
+###### Content-Type: application/json
+
+- **`user`**
+
+  `object`
+
+  - **`createdAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`email` (required)**
+
+    `string`
+
+  - **`name` (required)**
+
+    `string`
+
+  - **`updatedAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`banExpires`**
+
+    `string`, format: `date-time`
+
+  - **`banned`**
+
+    `boolean`, default: `false`
+
+  - **`banReason`**
+
+    `string`
+
+  - **`emailVerified`**
+
+    `boolean`, default: `false`
+
+  - **`id`**
+
+    `string`
+
+  - **`image`**
+
+    `string`
+
+  - **`role`**
+
+    `string`
+
+**Example:**
+
+```json
+{
+  "user": {
+    "id": "",
+    "name": "",
+    "email": "",
+    "emailVerified": false,
+    "image": "",
+    "createdAt": "Generated at runtime",
+    "updatedAt": "Generated at runtime",
+    "role": "",
+    "banned": false,
+    "banReason": "",
+    "banExpires": ""
+  }
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### GET /admin/list-users
+
+- **Method:** `GET`
+- **Path:** `/admin/list-users`
+- **Tags:** Admin
+
+List users
+
+#### Responses
+
+##### Status: 200 List of users
+
+###### Content-Type: application/json
+
+- **`total` (required)**
+
+  `number`
+
+- **`users` (required)**
+
+  `array`
+
+  **Items:**
+
+  - **`createdAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`email` (required)**
+
+    `string`
+
+  - **`name` (required)**
+
+    `string`
+
+  - **`updatedAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`banExpires`**
+
+    `string`, format: `date-time`
+
+  - **`banned`**
+
+    `boolean`, default: `false`
+
+  - **`banReason`**
+
+    `string`
+
+  - **`emailVerified`**
+
+    `boolean`, default: `false`
+
+  - **`id`**
+
+    `string`
+
+  - **`image`**
+
+    `string`
+
+  - **`role`**
+
+    `string`
+
+- **`limit`**
+
+  `number`
+
+- **`offset`**
+
+  `number`
+
+**Example:**
+
+```json
+{
+  "users": [
+    {
+      "id": "",
+      "name": "",
+      "email": "",
+      "emailVerified": false,
+      "image": "",
+      "createdAt": "Generated at runtime",
+      "updatedAt": "Generated at runtime",
+      "role": "",
+      "banned": false,
+      "banReason": "",
+      "banExpires": ""
+    }
+  ],
+  "total": 1,
+  "limit": 1,
+  "offset": 1
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /admin/list-user-sessions
+
+- **Method:** `POST`
+- **Path:** `/admin/list-user-sessions`
+- **Tags:** Admin
+
+List user sessions
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`userId` (required)**
+
+  `string`  -  The user id
+
+**Example:**
+
+```json
+{
+  "userId": ""
+}
+```
+
+#### Responses
+
+##### Status: 200 List of user sessions
+
+###### Content-Type: application/json
+
+- **`sessions`**
+
+  `array`
+
+  **Items:**
+
+  - **`createdAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`expiresAt` (required)**
+
+    `string`, format: `date-time`
+
+  - **`token` (required)**
+
+    `string`
+
+  - **`updatedAt` (required)**
+
+    `string`, format: `date-time`
+
+  - **`userId` (required)**
+
+    `string`
+
+  - **`id`**
+
+    `string`
+
+  - **`impersonatedBy`**
+
+    `string`
+
+  - **`ipAddress`**
+
+    `string`
+
+  - **`userAgent`**
+
+    `string`
+
+**Example:**
+
+```json
+{
+  "sessions": [
+    {
+      "id": "",
+      "expiresAt": "",
+      "token": "",
+      "createdAt": "Generated at runtime",
+      "updatedAt": "",
+      "ipAddress": "",
+      "userAgent": "",
+      "userId": "",
+      "impersonatedBy": ""
+    }
+  ]
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /admin/unban-user
+
+- **Method:** `POST`
+- **Path:** `/admin/unban-user`
+- **Tags:** Admin
+
+Unban a user
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`userId` (required)**
+
+  `string`  -  The user id
+
+**Example:**
+
+```json
+{
+  "userId": ""
+}
+```
+
+#### Responses
+
+##### Status: 200 User unbanned
+
+###### Content-Type: application/json
+
+- **`user`**
+
+  `object`
+
+  - **`createdAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`email` (required)**
+
+    `string`
+
+  - **`name` (required)**
+
+    `string`
+
+  - **`updatedAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`banExpires`**
+
+    `string`, format: `date-time`
+
+  - **`banned`**
+
+    `boolean`, default: `false`
+
+  - **`banReason`**
+
+    `string`
+
+  - **`emailVerified`**
+
+    `boolean`, default: `false`
+
+  - **`id`**
+
+    `string`
+
+  - **`image`**
+
+    `string`
+
+  - **`role`**
+
+    `string`
+
+**Example:**
+
+```json
+{
+  "user": {
+    "id": "",
+    "name": "",
+    "email": "",
+    "emailVerified": false,
+    "image": "",
+    "createdAt": "Generated at runtime",
+    "updatedAt": "Generated at runtime",
+    "role": "",
+    "banned": false,
+    "banReason": "",
+    "banExpires": ""
+  }
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /admin/ban-user
+
+- **Method:** `POST`
+- **Path:** `/admin/ban-user`
+- **Tags:** Admin
+
+Ban a user
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`userId` (required)**
+
+  `string`  -  The user id
+
+- **`banExpiresIn`**
+
+  `number | null`  -  The number of seconds until the ban expires
+
+- **`banReason`**
+
+  `string | null`  -  The reason for the ban
+
+**Example:**
+
+```json
+{
+  "userId": "",
+  "banReason": null,
+  "banExpiresIn": null
+}
+```
+
+#### Responses
+
+##### Status: 200 User banned
+
+###### Content-Type: application/json
+
+- **`user`**
+
+  `object`
+
+  - **`createdAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`email` (required)**
+
+    `string`
+
+  - **`name` (required)**
+
+    `string`
+
+  - **`updatedAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`banExpires`**
+
+    `string`, format: `date-time`
+
+  - **`banned`**
+
+    `boolean`, default: `false`
+
+  - **`banReason`**
+
+    `string`
+
+  - **`emailVerified`**
+
+    `boolean`, default: `false`
+
+  - **`id`**
+
+    `string`
+
+  - **`image`**
+
+    `string`
+
+  - **`role`**
+
+    `string`
+
+**Example:**
+
+```json
+{
+  "user": {
+    "id": "",
+    "name": "",
+    "email": "",
+    "emailVerified": false,
+    "image": "",
+    "createdAt": "Generated at runtime",
+    "updatedAt": "Generated at runtime",
+    "role": "",
+    "banned": false,
+    "banReason": "",
+    "banExpires": ""
+  }
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /admin/impersonate-user
+
+- **Method:** `POST`
+- **Path:** `/admin/impersonate-user`
+- **Tags:** Admin
+
+Impersonate a user
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`userId` (required)**
+
+  `string`  -  The user id
+
+**Example:**
+
+```json
+{
+  "userId": ""
+}
+```
+
+#### Responses
+
+##### Status: 200 Impersonation session created
+
+###### Content-Type: application/json
+
+- **`session`**
+
+  `object`
+
+  - **`createdAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`expiresAt` (required)**
+
+    `string`, format: `date-time`
+
+  - **`token` (required)**
+
+    `string`
+
+  - **`updatedAt` (required)**
+
+    `string`, format: `date-time`
+
+  - **`userId` (required)**
+
+    `string`
+
+  - **`id`**
+
+    `string`
+
+  - **`impersonatedBy`**
+
+    `string`
+
+  - **`ipAddress`**
+
+    `string`
+
+  - **`userAgent`**
+
+    `string`
+
+- **`user`**
+
+  `object`
+
+  - **`createdAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`email` (required)**
+
+    `string`
+
+  - **`name` (required)**
+
+    `string`
+
+  - **`updatedAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`banExpires`**
+
+    `string`, format: `date-time`
+
+  - **`banned`**
+
+    `boolean`, default: `false`
+
+  - **`banReason`**
+
+    `string`
+
+  - **`emailVerified`**
+
+    `boolean`, default: `false`
+
+  - **`id`**
+
+    `string`
+
+  - **`image`**
+
+    `string`
+
+  - **`role`**
+
+    `string`
+
+**Example:**
+
+```json
+{
+  "session": {
+    "id": "",
+    "expiresAt": "",
+    "token": "",
+    "createdAt": "Generated at runtime",
+    "updatedAt": "",
+    "ipAddress": "",
+    "userAgent": "",
+    "userId": "",
+    "impersonatedBy": ""
+  },
+  "user": {
+    "id": "",
+    "name": "",
+    "email": "",
+    "emailVerified": false,
+    "image": "",
+    "createdAt": "Generated at runtime",
+    "updatedAt": "Generated at runtime",
+    "role": "",
+    "banned": false,
+    "banReason": "",
+    "banExpires": ""
+  }
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /admin/stop-impersonating
+
+- **Method:** `POST`
+- **Path:** `/admin/stop-impersonating`
+- **Tags:** Admin
+
+#### Responses
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /admin/revoke-user-session
+
+- **Method:** `POST`
+- **Path:** `/admin/revoke-user-session`
+- **Tags:** Admin
+
+Revoke a user session
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`sessionToken` (required)**
+
+  `string`  -  The session token
+
+**Example:**
+
+```json
+{
+  "sessionToken": ""
+}
+```
+
+#### Responses
+
+##### Status: 200 Session revoked
+
+###### Content-Type: application/json
+
+- **`success`**
+
+  `boolean`
+
+**Example:**
+
+```json
+{
+  "success": true
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /admin/revoke-user-sessions
+
+- **Method:** `POST`
+- **Path:** `/admin/revoke-user-sessions`
+- **Tags:** Admin
+
+Revoke all user sessions
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`userId` (required)**
+
+  `string`  -  The user id
+
+**Example:**
+
+```json
+{
+  "userId": ""
+}
+```
+
+#### Responses
+
+##### Status: 200 Sessions revoked
+
+###### Content-Type: application/json
+
+- **`success`**
+
+  `boolean`
+
+**Example:**
+
+```json
+{
+  "success": true
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /admin/remove-user
+
+- **Method:** `POST`
+- **Path:** `/admin/remove-user`
+- **Tags:** Admin
+
+Delete a user and all their sessions and accounts. Cannot be undone.
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`userId` (required)**
+
+  `string`  -  The user id
+
+**Example:**
+
+```json
+{
+  "userId": ""
+}
+```
+
+#### Responses
+
+##### Status: 200 User removed
+
+###### Content-Type: application/json
+
+- **`success`**
+
+  `boolean`
+
+**Example:**
+
+```json
+{
+  "success": true
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /admin/set-user-password
+
+- **Method:** `POST`
+- **Path:** `/admin/set-user-password`
+- **Tags:** Admin
+
+Set a user's password
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`newPassword` (required)**
+
+  `string`  -  The new password
+
+- **`userId` (required)**
+
+  `string`  -  The user id
+
+**Example:**
+
+```json
+{
+  "newPassword": "",
+  "userId": ""
+}
+```
+
+#### Responses
+
+##### Status: 200 Password set
+
+###### Content-Type: application/json
+
+- **`status`**
+
+  `boolean`
+
+**Example:**
+
+```json
+{
+  "status": true
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /admin/has-permission
+
+- **Method:** `POST`
+- **Path:** `/admin/has-permission`
+- **Tags:** Admin
+
+Check if the user has permission
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`permissions` (required)**
+
+  `object`  -  The permission to check
+
+- **`permission`**
+
+  `object`  -  The permission to check
+
+**Example:**
+
+```json
+{
+  "permissions": {}
+}
+```
+
+#### Responses
+
+##### Status: 200 Success
+
+###### Content-Type: application/json
+
+- **`success` (required)**
+
+  `boolean`
+
+- **`error`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "error": "",
+  "success": true
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### GET /passkey/generate-register-options
+
+- **Method:** `GET`
+- **Path:** `/passkey/generate-register-options`
+- **Tags:** Passkey
+
+Generate registration options for a new passkey
+
+#### Responses
+
+##### Status: 200 Success
+
+###### Content-Type: application/json
+
+- **`attestation`**
+
+  `string`
+
+- **`authenticatorSelection`**
+
+  `object`
+
+  - **`authenticatorAttachment`**
+
+    `string`
+
+  - **`requireResidentKey`**
+
+    `boolean`
+
+  - **`userVerification`**
+
+    `string`
+
+- **`challenge`**
+
+  `string`
+
+- **`excludeCredentials`**
+
+  `array`
+
+  **Items:**
+
+  - **`id`**
+
+    `string`
+
+  - **`transports`**
+
+    `array`
+
+    **Items:**
+
+    `string`
+
+  - **`type`**
+
+    `string`
+
+- **`extensions`**
+
+  `object`
+
+- **`pubKeyCredParams`**
+
+  `array`
+
+  **Items:**
+
+  - **`alg`**
+
+    `number`
+
+  - **`type`**
+
+    `string`
+
+- **`rp`**
+
+  `object`
+
+  - **`id`**
+
+    `string`
+
+  - **`name`**
+
+    `string`
+
+- **`timeout`**
+
+  `number`
+
+- **`user`**
+
+  `object`
+
+  - **`displayName`**
+
+    `string`
+
+  - **`id`**
+
+    `string`
+
+  - **`name`**
+
+    `string`
+
+**Example:**
+
+```json
+{
+  "challenge": "",
+  "rp": {
+    "name": "",
+    "id": ""
+  },
+  "user": {
+    "id": "",
+    "name": "",
+    "displayName": ""
+  },
+  "pubKeyCredParams": [
+    {
+      "type": "",
+      "alg": 1
+    }
+  ],
+  "timeout": 1,
+  "excludeCredentials": [
+    {
+      "id": "",
+      "type": "",
+      "transports": [
+        ""
+      ]
+    }
+  ],
+  "authenticatorSelection": {
+    "authenticatorAttachment": "",
+    "requireResidentKey": true,
+    "userVerification": ""
+  },
+  "attestation": "",
+  "extensions": {}
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### GET /passkey/generate-authenticate-options
+
+- **Method:** `GET`
+- **Path:** `/passkey/generate-authenticate-options`
+- **Tags:** Passkey
+
+Generate authentication options for a passkey
+
+#### Responses
+
+##### Status: 200 Success
+
+###### Content-Type: application/json
+
+- **`allowCredentials`**
+
+  `array`
+
+  **Items:**
+
+  - **`id`**
+
+    `string`
+
+  - **`transports`**
+
+    `array`
+
+    **Items:**
+
+    `string`
+
+  - **`type`**
+
+    `string`
+
+- **`authenticatorSelection`**
+
+  `object`
+
+  - **`authenticatorAttachment`**
+
+    `string`
+
+  - **`requireResidentKey`**
+
+    `boolean`
+
+  - **`userVerification`**
+
+    `string`
+
+- **`challenge`**
+
+  `string`
+
+- **`extensions`**
+
+  `object`
+
+- **`rp`**
+
+  `object`
+
+  - **`id`**
+
+    `string`
+
+  - **`name`**
+
+    `string`
+
+- **`timeout`**
+
+  `number`
+
+- **`user`**
+
+  `object`
+
+  - **`displayName`**
+
+    `string`
+
+  - **`id`**
+
+    `string`
+
+  - **`name`**
+
+    `string`
+
+- **`userVerification`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "challenge": "",
+  "rp": {
+    "name": "",
+    "id": ""
+  },
+  "user": {
+    "id": "",
+    "name": "",
+    "displayName": ""
+  },
+  "timeout": 1,
+  "allowCredentials": [
+    {
+      "id": "",
+      "type": "",
+      "transports": [
+        ""
+      ]
+    }
+  ],
+  "userVerification": "",
+  "authenticatorSelection": {
+    "authenticatorAttachment": "",
+    "requireResidentKey": true,
+    "userVerification": ""
+  },
+  "extensions": {}
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /passkey/verify-registration
+
+- **Method:** `POST`
+- **Path:** `/passkey/verify-registration`
+- **Tags:** Passkey
+
+Verify registration of a new passkey
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`response` (required)**
+
+  `string`
+
+- **`name`**
+
+  `string | null`  -  Name of the passkey
+
+**Example:**
+
+```json
+{
+  "response": "",
+  "name": null
+}
+```
+
+#### Responses
+
+##### Status: 200 Success
+
+###### Content-Type: application/json
+
+- **`backedUp` (required)**
+
+  `boolean`
+
+- **`counter` (required)**
+
+  `number`
+
+- **`credentialID` (required)**
+
+  `string`
+
+- **`deviceType` (required)**
+
+  `string`
+
+- **`publicKey` (required)**
+
+  `string`
+
+- **`userId` (required)**
+
+  `string`
+
+- **`aaguid`**
+
+  `string`
+
+- **`createdAt`**
+
+  `string`, format: `date-time`
+
+- **`id`**
+
+  `string`
+
+- **`name`**
+
+  `string`
+
+- **`transports`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "id": "",
+  "name": "",
+  "publicKey": "",
+  "userId": "",
+  "credentialID": "",
+  "counter": 1,
+  "deviceType": "",
+  "backedUp": true,
+  "transports": "",
+  "createdAt": "",
+  "aaguid": ""
+}
+```
+
+##### Status: 400 Bad request
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /passkey/verify-authentication
+
+- **Method:** `POST`
+- **Path:** `/passkey/verify-authentication`
+- **Tags:** Passkey
+
+Verify authentication of a passkey
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`response` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "response": ""
+}
+```
+
+#### Responses
+
+##### Status: 200 Success
+
+###### Content-Type: application/json
+
+- **`session`**
+
+  `object`
+
+  - **`createdAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`expiresAt` (required)**
+
+    `string`, format: `date-time`
+
+  - **`token` (required)**
+
+    `string`
+
+  - **`updatedAt` (required)**
+
+    `string`, format: `date-time`
+
+  - **`userId` (required)**
+
+    `string`
+
+  - **`id`**
+
+    `string`
+
+  - **`impersonatedBy`**
+
+    `string`
+
+  - **`ipAddress`**
+
+    `string`
+
+  - **`userAgent`**
+
+    `string`
+
+- **`user`**
+
+  `object`
+
+  - **`createdAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`email` (required)**
+
+    `string`
+
+  - **`name` (required)**
+
+    `string`
+
+  - **`updatedAt` (required)**
+
+    `string`, format: `date-time`, default: `"Generated at runtime"`
+
+  - **`banExpires`**
+
+    `string`, format: `date-time`
+
+  - **`banned`**
+
+    `boolean`, default: `false`
+
+  - **`banReason`**
+
+    `string`
+
+  - **`emailVerified`**
+
+    `boolean`, default: `false`
+
+  - **`id`**
+
+    `string`
+
+  - **`image`**
+
+    `string`
+
+  - **`role`**
+
+    `string`
+
+**Example:**
+
+```json
+{
+  "session": {
+    "id": "",
+    "expiresAt": "",
+    "token": "",
+    "createdAt": "Generated at runtime",
+    "updatedAt": "",
+    "ipAddress": "",
+    "userAgent": "",
+    "userId": "",
+    "impersonatedBy": ""
+  },
+  "user": {
+    "id": "",
+    "name": "",
+    "email": "",
+    "emailVerified": false,
+    "image": "",
+    "createdAt": "Generated at runtime",
+    "updatedAt": "Generated at runtime",
+    "role": "",
+    "banned": false,
+    "banReason": "",
+    "banExpires": ""
+  }
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### GET /passkey/list-user-passkeys
+
+- **Method:** `GET`
+- **Path:** `/passkey/list-user-passkeys`
+- **Tags:** Passkey
+
+List all passkeys for the authenticated user
+
+#### Responses
+
+##### Status: 200 Passkeys retrieved successfully
+
+###### Content-Type: application/json
+
+**Array of:**
+
+- **`createdAt` (required)**
+
+  `string`, format: `date-time`
+
+- **`id` (required)**
+
+  `string`
+
+- **`publicKey` (required)**
+
+  `string`
+
+- **`userId` (required)**
+
+  `string`
+
+- **`aaguid`**
+
+  `string`
+
+- **`backedUp`**
+
+  `boolean`
+
+- **`counter`**
+
+  `number`
+
+- **`credentialID`**
+
+  `string`
+
+- **`deviceType`**
+
+  `string`
+
+- **`name`**
+
+  `string`
+
+- **`transports`**
+
+  `string`
+
+**Example:**
+
+```json
+[
+  {
+    "id": "",
+    "name": "",
+    "publicKey": "",
+    "userId": "",
+    "credentialID": "",
+    "counter": 1,
+    "deviceType": "",
+    "backedUp": true,
+    "transports": "",
+    "createdAt": "",
+    "aaguid": ""
+  }
+]
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /passkey/delete-passkey
+
+- **Method:** `POST`
+- **Path:** `/passkey/delete-passkey`
+- **Tags:** Passkey
+
+Delete a specific passkey
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`id` (required)**
+
+  `string`  -  The ID of the passkey to delete. Eg: "some-passkey-id"
+
+**Example:**
+
+```json
+{
+  "id": ""
+}
+```
+
+#### Responses
+
+##### Status: 200 Passkey deleted successfully
+
+###### Content-Type: application/json
+
+- **`status` (required)**
+
+  `boolean`  -  Indicates whether the deletion was successful
+
+**Example:**
+
+```json
+{
+  "status": true
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /passkey/update-passkey
+
+- **Method:** `POST`
+- **Path:** `/passkey/update-passkey`
+- **Tags:** Passkey
+
+Update a specific passkey's name
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`id` (required)**
+
+  `string`  -  The ID of the passkey which will be updated. Eg: "passkey-id"
+
+- **`name` (required)**
+
+  `string`  -  The new name which the passkey will be updated to. Eg: "my-new-passkey-name"
+
+**Example:**
+
+```json
+{
+  "id": "",
+  "name": ""
+}
+```
+
+#### Responses
+
+##### Status: 200 Passkey updated successfully
+
+###### Content-Type: application/json
+
+- **`passkey` (required)**
+
+  `object`
+
+  - **`backedUp` (required)**
+
+    `boolean`
+
+  - **`counter` (required)**
+
+    `number`
+
+  - **`credentialID` (required)**
+
+    `string`
+
+  - **`deviceType` (required)**
+
+    `string`
+
+  - **`publicKey` (required)**
+
+    `string`
+
+  - **`userId` (required)**
+
+    `string`
+
+  - **`aaguid`**
+
+    `string`
+
+  - **`createdAt`**
+
+    `string`, format: `date-time`
+
+  - **`id`**
+
+    `string`
+
+  - **`name`**
+
+    `string`
+
+  - **`transports`**
+
+    `string`
+
+**Example:**
+
+```json
+{
+  "passkey": {
+    "id": "",
+    "name": "",
+    "publicKey": "",
+    "userId": "",
+    "credentialID": "",
+    "counter": 1,
+    "deviceType": "",
+    "backedUp": true,
+    "transports": "",
+    "createdAt": "",
+    "aaguid": ""
+  }
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /api-key/create
+
+- **Method:** `POST`
+- **Path:** `/api-key/create`
+- **Tags:** Api-key
+
+Create a new API key for a user
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`expiresIn` (required)**
+
+  `string`, default: `null`
+
+- **`remaining` (required)**
+
+  `string`, default: `null`
+
+- **`metadata`**
+
+  `string | null`
+
+- **`name`**
+
+  `string | null`  -  Name of the Api Key
+
+- **`permissions`**
+
+  `string | null`  -  Permissions of the Api Key.
+
+- **`prefix`**
+
+  `string | null`  -  Prefix of the Api Key
+
+- **`rateLimitEnabled`**
+
+  `boolean | null`  -  Whether the key has rate limiting enabled. server-only. Eg: true
+
+- **`rateLimitMax`**
+
+  `number | null`  -  Maximum amount of requests allowed within a window. Once the \`maxRequests\` is reached, the request will be rejected until the \`timeWindow\` has passed, at which point the \`timeWindow\` will be reset. server-only. Eg: 100
+
+- **`rateLimitTimeWindow`**
+
+  `number | null`  -  The duration in milliseconds where each request is counted. Once the \`maxRequests\` is reached, the request will be rejected until the \`timeWindow\` has passed, at which point the \`timeWindow\` will be reset. server-only. Eg: 1000
+
+- **`refillAmount`**
+
+  `number | null`  -  Amount to refill the remaining count of the Api Key. server-only. Eg: 100
+
+- **`refillInterval`**
+
+  `number | null`  -  Interval to refill the Api Key in milliseconds. server-only. Eg: 1000
+
+- **`userId`**
+
+  `string | null`  -  User Id of the user that the Api Key belongs to. server-only. Eg: "user-id"
+
+**Example:**
+
+```json
+{
+  "name": null,
+  "expiresIn": null,
+  "userId": null,
+  "prefix": null,
+  "remaining": null,
+  "metadata": null,
+  "refillAmount": null,
+  "refillInterval": null,
+  "rateLimitTimeWindow": null,
+  "rateLimitMax": null,
+  "rateLimitEnabled": null,
+  "permissions": null
+}
+```
+
+#### Responses
+
+##### Status: 200 API key created successfully
+
+###### Content-Type: application/json
+
+- **`createdAt` (required)**
+
+  `string`, format: `date-time`  -  Creation timestamp
+
+- **`enabled` (required)**
+
+  `boolean`  -  Whether the key is enabled
+
+- **`id` (required)**
+
+  `string`  -  Unique identifier of the API key
+
+- **`key` (required)**
+
+  `string`  -  The full API key (only returned on creation)
+
+- **`rateLimitEnabled` (required)**
+
+  `boolean`  -  Whether rate limiting is enabled
+
+- **`requestCount` (required)**
+
+  `number`  -  Current request count in window
+
+- **`updatedAt` (required)**
+
+  `string`, format: `date-time`  -  Last update timestamp
+
+- **`userId` (required)**
+
+  `string`  -  ID of the user owning the key
+
+- **`expiresAt`**
+
+  `string`, format: `date-time`  -  Expiration timestamp
+
+- **`lastRefillAt`**
+
+  `string`, format: `date-time`  -  Last refill timestamp
+
+- **`lastRequest`**
+
+  `string`, format: `date-time`  -  Last request timestamp
+
+- **`metadata`**
+
+  `object`  -  Metadata associated with the key
+
+- **`name`**
+
+  `string`  -  Name of the API key
+
+- **`permissions`**
+
+  `object`  -  Permissions associated with the key
+
+- **`prefix`**
+
+  `string`  -  Prefix of the API key
+
+- **`rateLimitMax`**
+
+  `number`  -  Maximum requests in time window
+
+- **`rateLimitTimeWindow`**
+
+  `number`  -  Rate limit time window in milliseconds
+
+- **`refillAmount`**
+
+  `number`  -  Amount to refill
+
+- **`refillInterval`**
+
+  `number`  -  Refill interval in milliseconds
+
+- **`remaining`**
+
+  `number`  -  Remaining requests
+
+- **`start`**
+
+  `string`  -  Starting characters of the key (if configured)
+
+**Example:**
+
+```json
+{
+  "id": "",
+  "createdAt": "",
+  "updatedAt": "",
+  "name": "",
+  "prefix": "",
+  "start": "",
+  "key": "",
+  "enabled": true,
+  "expiresAt": "",
+  "userId": "",
+  "lastRefillAt": "",
+  "lastRequest": "",
+  "metadata": {
+    "additionalProperty": "anything"
+  },
+  "rateLimitMax": 1,
+  "rateLimitTimeWindow": 1,
+  "remaining": 1,
+  "refillAmount": 1,
+  "refillInterval": 1,
+  "rateLimitEnabled": true,
+  "requestCount": 1,
+  "permissions": {
+    "additionalProperty": [
+      ""
+    ]
+  }
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### GET /api-key/get
+
+- **Method:** `GET`
+- **Path:** `/api-key/get`
+- **Tags:** Api-key
+
+Retrieve an existing API key by ID
+
+#### Responses
+
+##### Status: 200 API key retrieved successfully
+
+###### Content-Type: application/json
+
+- **`createdAt` (required)**
+
+  `string`, format: `date-time`  -  created at
+
+- **`enabled` (required)**
+
+  `boolean`, default: `true`  -  Sets if key is enabled or disabled
+
+- **`id` (required)**
+
+  `string`  -  ID
+
+- **`rateLimitEnabled` (required)**
+
+  `boolean`  -  Whether the key has rate limiting enabled
+
+- **`requestCount` (required)**
+
+  `number`  -  The number of requests made within the rate limit time window
+
+- **`updatedAt` (required)**
+
+  `string`, format: `date-time`  -  updated at
+
+- **`userId` (required)**
+
+  `string`  -  The owner of the user id
+
+- **`expiresAt`**
+
+  `string`, format: `date-time`  -  Expiry date of a key
+
+- **`lastRefillAt`**
+
+  `string`, format: `date-time`  -  The last refill date
+
+- **`lastRequest`**
+
+  `string`, format: `date-time`  -  When last request occurred
+
+- **`metadata`**
+
+  `object`  -  Extra metadata about the apiKey
+
+- **`name`**
+
+  `string`  -  The name of the key
+
+- **`permissions`**
+
+  `string`  -  Permissions for the api key (stored as JSON string)
+
+- **`prefix`**
+
+  `string`  -  The API Key prefix. Stored as plain text.
+
+- **`rateLimitMax`**
+
+  `number`  -  Maximum amount of requests allowed within a window
+
+- **`rateLimitTimeWindow`**
+
+  `number`  -  The duration in milliseconds
+
+- **`refillAmount`**
+
+  `number`  -  The amount to refill
+
+- **`refillInterval`**
+
+  `number`  -  The interval in milliseconds between refills of the \`remaining\` count. Example: 3600000 // refill every hour (3600000ms = 1h)
+
+- **`remaining`**
+
+  `number`  -  Remaining requests (every time api key is used this should updated and should be updated on refill as well)
+
+- **`start`**
+
+  `string`  -  Shows the first few characters of the API key, including the prefix. This allows you to show those few characters in the UI to make it easier for users to identify the API key.
+
+**Example:**
+
+```json
+{
+  "id": "",
+  "name": "",
+  "start": "",
+  "prefix": "",
+  "userId": "",
+  "refillInterval": 1,
+  "refillAmount": 1,
+  "lastRefillAt": "",
+  "enabled": true,
+  "rateLimitEnabled": true,
+  "rateLimitTimeWindow": 1,
+  "rateLimitMax": 1,
+  "requestCount": 1,
+  "remaining": 1,
+  "lastRequest": "",
+  "expiresAt": "",
+  "createdAt": "",
+  "updatedAt": "",
+  "metadata": {
+    "additionalProperty": "anything"
+  },
+  "permissions": ""
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /api-key/update
+
+- **Method:** `POST`
+- **Path:** `/api-key/update`
+- **Tags:** Api-key
+
+Update an existing API key by ID
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`expiresIn` (required)**
+
+  `string`
+
+- **`keyId` (required)**
+
+  `string`  -  The id of the Api Key
+
+- **`permissions` (required)**
+
+  `string`
+
+- **`enabled`**
+
+  `boolean | null`  -  Whether the Api Key is enabled or not
+
+- **`metadata`**
+
+  `string | null`
+
+- **`name`**
+
+  `string | null`  -  The name of the key
+
+- **`rateLimitEnabled`**
+
+  `boolean | null`  -  Whether the key has rate limiting enabled.
+
+- **`rateLimitMax`**
+
+  `number | null`  -  Maximum amount of requests allowed within a window. Once the \`maxRequests\` is reached, the request will be rejected until the \`timeWindow\` has passed, at which point the \`timeWindow\` will be reset. server-only. Eg: 100
+
+- **`rateLimitTimeWindow`**
+
+  `number | null`  -  The duration in milliseconds where each request is counted. server-only. Eg: 1000
+
+- **`refillAmount`**
+
+  `number | null`  -  The refill amount
+
+- **`refillInterval`**
+
+  `number | null`  -  The refill interval
+
+- **`remaining`**
+
+  `number | null`  -  The number of remaining requests
+
+- **`userId`**
+
+  `string | null`  -  The id of the user which the api key belongs to. server-only. Eg: "some-user-id"
+
+**Example:**
+
+```json
+{
+  "keyId": "",
+  "userId": null,
+  "name": null,
+  "enabled": null,
+  "remaining": null,
+  "refillAmount": null,
+  "refillInterval": null,
+  "metadata": null,
+  "expiresIn": "",
+  "rateLimitEnabled": null,
+  "rateLimitTimeWindow": null,
+  "rateLimitMax": null,
+  "permissions": ""
+}
+```
+
+#### Responses
+
+##### Status: 200 API key updated successfully
+
+###### Content-Type: application/json
+
+- **`createdAt` (required)**
+
+  `string`, format: `date-time`  -  created at
+
+- **`enabled` (required)**
+
+  `boolean`, default: `true`  -  Sets if key is enabled or disabled
+
+- **`id` (required)**
+
+  `string`  -  ID
+
+- **`rateLimitEnabled` (required)**
+
+  `boolean`  -  Whether the key has rate limiting enabled
+
+- **`requestCount` (required)**
+
+  `number`  -  The number of requests made within the rate limit time window
+
+- **`updatedAt` (required)**
+
+  `string`, format: `date-time`  -  updated at
+
+- **`userId` (required)**
+
+  `string`  -  The owner of the user id
+
+- **`expiresAt`**
+
+  `string`, format: `date-time`  -  Expiry date of a key
+
+- **`lastRefillAt`**
+
+  `string`, format: `date-time`  -  The last refill date
+
+- **`lastRequest`**
+
+  `string`, format: `date-time`  -  When last request occurred
+
+- **`metadata`**
+
+  `object`  -  Extra metadata about the apiKey
+
+- **`name`**
+
+  `string`  -  The name of the key
+
+- **`permissions`**
+
+  `string`  -  Permissions for the api key (stored as JSON string)
+
+- **`prefix`**
+
+  `string`  -  The API Key prefix. Stored as plain text.
+
+- **`rateLimitMax`**
+
+  `number`  -  Maximum amount of requests allowed within a window
+
+- **`rateLimitTimeWindow`**
+
+  `number`  -  The duration in milliseconds
+
+- **`refillAmount`**
+
+  `number`  -  The amount to refill
+
+- **`refillInterval`**
+
+  `number`  -  The interval in milliseconds between refills of the \`remaining\` count. Example: 3600000 // refill every hour (3600000ms = 1h)
+
+- **`remaining`**
+
+  `number`  -  Remaining requests (every time api key is used this should updated and should be updated on refill as well)
+
+- **`start`**
+
+  `string`  -  Shows the first few characters of the API key, including the prefix. This allows you to show those few characters in the UI to make it easier for users to identify the API key.
+
+**Example:**
+
+```json
+{
+  "id": "",
+  "name": "",
+  "start": "",
+  "prefix": "",
+  "userId": "",
+  "refillInterval": 1,
+  "refillAmount": 1,
+  "lastRefillAt": "",
+  "enabled": true,
+  "rateLimitEnabled": true,
+  "rateLimitTimeWindow": 1,
+  "rateLimitMax": 1,
+  "requestCount": 1,
+  "remaining": 1,
+  "lastRequest": "",
+  "expiresAt": "",
+  "createdAt": "",
+  "updatedAt": "",
+  "metadata": {
+    "additionalProperty": "anything"
+  },
+  "permissions": ""
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### POST /api-key/delete
+
+- **Method:** `POST`
+- **Path:** `/api-key/delete`
+- **Tags:** Api-key
+
+Delete an existing API key
+
+#### Request Body
+
+##### Content-Type: application/json
+
+- **`keyId` (required)**
+
+  `string`  -  The id of the API key to delete
+
+**Example:**
+
+```json
+{
+  "keyId": ""
+}
+```
+
+#### Responses
+
+##### Status: 200 API key deleted successfully
+
+###### Content-Type: application/json
+
+- **`success` (required)**
+
+  `boolean`  -  Indicates if the API key was successfully deleted
+
+**Example:**
+
+```json
+{
+  "success": true
+}
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+### GET /api-key/list
+
+- **Method:** `GET`
+- **Path:** `/api-key/list`
+- **Tags:** Api-key
+
+List all API keys for the authenticated user
+
+#### Responses
+
+##### Status: 200 API keys retrieved successfully
+
+###### Content-Type: application/json
+
+**Array of:**
+
+- **`createdAt` (required)**
+
+  `string`, format: `date-time`  -  created at
+
+- **`enabled` (required)**
+
+  `boolean`, default: `true`  -  Sets if key is enabled or disabled
+
+- **`id` (required)**
+
+  `string`  -  ID
+
+- **`rateLimitEnabled` (required)**
+
+  `boolean`  -  Whether the key has rate limiting enabled
+
+- **`requestCount` (required)**
+
+  `number`  -  The number of requests made within the rate limit time window
+
+- **`updatedAt` (required)**
+
+  `string`, format: `date-time`  -  updated at
+
+- **`userId` (required)**
+
+  `string`  -  The owner of the user id
+
+- **`expiresAt`**
+
+  `string`, format: `date-time`  -  Expiry date of a key
+
+- **`lastRefillAt`**
+
+  `string`, format: `date-time`  -  The last refill date
+
+- **`lastRequest`**
+
+  `string`, format: `date-time`  -  When last request occurred
+
+- **`metadata`**
+
+  `object`  -  Extra metadata about the apiKey
+
+- **`name`**
+
+  `string`  -  The name of the key
+
+- **`permissions`**
+
+  `string`  -  Permissions for the api key (stored as JSON string)
+
+- **`prefix`**
+
+  `string`  -  The API Key prefix. Stored as plain text.
+
+- **`rateLimitMax`**
+
+  `number`  -  Maximum amount of requests allowed within a window
+
+- **`rateLimitTimeWindow`**
+
+  `number`  -  The duration in milliseconds
+
+- **`refillAmount`**
+
+  `number`  -  The amount to refill
+
+- **`refillInterval`**
+
+  `number`  -  The interval in milliseconds between refills of the \`remaining\` count. Example: 3600000 // refill every hour (3600000ms = 1h)
+
+- **`remaining`**
+
+  `number`  -  Remaining requests (every time api key is used this should updated and should be updated on refill as well)
+
+- **`start`**
+
+  `string`  -  Shows the first few characters of the API key, including the prefix. This allows you to show those few characters in the UI to make it easier for users to identify the API key.
+
+**Example:**
+
+```json
+[
+  {
+    "id": "",
+    "name": "",
+    "start": "",
+    "prefix": "",
+    "userId": "",
+    "refillInterval": 1,
+    "refillAmount": 1,
+    "lastRefillAt": "",
+    "enabled": true,
+    "rateLimitEnabled": true,
+    "rateLimitTimeWindow": 1,
+    "rateLimitMax": 1,
+    "requestCount": 1,
+    "remaining": 1,
+    "lastRequest": "",
+    "expiresAt": "",
+    "createdAt": "",
+    "updatedAt": "",
+    "metadata": {
+      "additionalProperty": "anything"
+    },
+    "permissions": ""
+  }
+]
+```
+
+##### Status: 400 Bad Request. Usually due to missing parameters, or invalid parameters.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 401 Unauthorized. Due to missing or invalid authentication.
+
+###### Content-Type: application/json
+
+- **`message` (required)**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 403 Forbidden. You do not have permission to access this resource or to perform this action.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 404 Not Found. The requested resource was not found.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 429 Too Many Requests. You have exceeded the rate limit. Try again later.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+##### Status: 500 Internal Server Error. This is a problem with the server that you cannot fix.
+
+###### Content-Type: application/json
+
+- **`message`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "message": ""
+}
+```
+
+## Schemas
+
+### User
+
+- **Type:**`object`
+
+* **`createdAt` (required)**
+
+  `string`, format: `date-time`, default: `"Generated at runtime"`
+
+* **`email` (required)**
+
+  `string`
+
+* **`name` (required)**
+
+  `string`
+
+* **`updatedAt` (required)**
+
+  `string`, format: `date-time`, default: `"Generated at runtime"`
+
+* **`banExpires`**
+
+  `string`, format: `date-time`
+
+* **`banned`**
+
+  `boolean`, default: `false`
+
+* **`banReason`**
+
+  `string`
+
+* **`emailVerified`**
+
+  `boolean`, default: `false`
+
+* **`id`**
+
+  `string`
+
+* **`image`**
+
+  `string`
+
+* **`role`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "id": "",
+  "name": "",
+  "email": "",
+  "emailVerified": false,
+  "image": "",
+  "createdAt": "Generated at runtime",
+  "updatedAt": "Generated at runtime",
+  "role": "",
+  "banned": false,
+  "banReason": "",
+  "banExpires": ""
+}
+```
+
+### Session
+
+- **Type:**`object`
+
+* **`createdAt` (required)**
+
+  `string`, format: `date-time`, default: `"Generated at runtime"`
+
+* **`expiresAt` (required)**
+
+  `string`, format: `date-time`
+
+* **`token` (required)**
+
+  `string`
+
+* **`updatedAt` (required)**
+
+  `string`, format: `date-time`
+
+* **`userId` (required)**
+
+  `string`
+
+* **`id`**
+
+  `string`
+
+* **`impersonatedBy`**
+
+  `string`
+
+* **`ipAddress`**
+
+  `string`
+
+* **`userAgent`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "id": "",
+  "expiresAt": "",
+  "token": "",
+  "createdAt": "Generated at runtime",
+  "updatedAt": "",
+  "ipAddress": "",
+  "userAgent": "",
+  "userId": "",
+  "impersonatedBy": ""
+}
+```
+
+### Account
+
+- **Type:**`object`
+
+* **`accountId` (required)**
+
+  `string`
+
+* **`createdAt` (required)**
+
+  `string`, format: `date-time`, default: `"Generated at runtime"`
+
+* **`providerId` (required)**
+
+  `string`
+
+* **`updatedAt` (required)**
+
+  `string`, format: `date-time`
+
+* **`userId` (required)**
+
+  `string`
+
+* **`accessToken`**
+
+  `string`
+
+* **`accessTokenExpiresAt`**
+
+  `string`, format: `date-time`
+
+* **`id`**
+
+  `string`
+
+* **`idToken`**
+
+  `string`
+
+* **`password`**
+
+  `string`
+
+* **`refreshToken`**
+
+  `string`
+
+* **`refreshTokenExpiresAt`**
+
+  `string`, format: `date-time`
+
+* **`scope`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "id": "",
+  "accountId": "",
+  "providerId": "",
+  "userId": "",
+  "accessToken": "",
+  "refreshToken": "",
+  "idToken": "",
+  "accessTokenExpiresAt": "",
+  "refreshTokenExpiresAt": "",
+  "scope": "",
+  "password": "",
+  "createdAt": "Generated at runtime",
+  "updatedAt": ""
+}
+```
+
+### Verification
+
+- **Type:**`object`
+
+* **`createdAt` (required)**
+
+  `string`, format: `date-time`, default: `"Generated at runtime"`
+
+* **`expiresAt` (required)**
+
+  `string`, format: `date-time`
+
+* **`identifier` (required)**
+
+  `string`
+
+* **`updatedAt` (required)**
+
+  `string`, format: `date-time`, default: `"Generated at runtime"`
+
+* **`value` (required)**
+
+  `string`
+
+* **`id`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "id": "",
+  "identifier": "",
+  "value": "",
+  "expiresAt": "",
+  "createdAt": "Generated at runtime",
+  "updatedAt": "Generated at runtime"
+}
+```
+
+### Passkey
+
+- **Type:**`object`
+
+* **`backedUp` (required)**
+
+  `boolean`
+
+* **`counter` (required)**
+
+  `number`
+
+* **`credentialID` (required)**
+
+  `string`
+
+* **`deviceType` (required)**
+
+  `string`
+
+* **`publicKey` (required)**
+
+  `string`
+
+* **`userId` (required)**
+
+  `string`
+
+* **`aaguid`**
+
+  `string`
+
+* **`createdAt`**
+
+  `string`, format: `date-time`
+
+* **`id`**
+
+  `string`
+
+* **`name`**
+
+  `string`
+
+* **`transports`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "id": "",
+  "name": "",
+  "publicKey": "",
+  "userId": "",
+  "credentialID": "",
+  "counter": 1,
+  "deviceType": "",
+  "backedUp": true,
+  "transports": "",
+  "createdAt": "",
+  "aaguid": ""
+}
+```
+
+### Apikey
+
+- **Type:**`object`
+
+* **`createdAt`**
+
+  `string`, format: `date-time`
+
+* **`enabled`**
+
+  `boolean`, default: `true`
+
+* **`expiresAt`**
+
+  `string`, format: `date-time`
+
+* **`id`**
+
+  `string`
+
+* **`key`**
+
+  `string`
+
+* **`lastRefillAt`**
+
+  `string`, format: `date-time`
+
+* **`lastRequest`**
+
+  `string`, format: `date-time`
+
+* **`metadata`**
+
+  `string`
+
+* **`name`**
+
+  `string`
+
+* **`permissions`**
+
+  `string`
+
+* **`prefix`**
+
+  `string`
+
+* **`rateLimitEnabled`**
+
+  `boolean`, default: `true`
+
+* **`rateLimitMax`**
+
+  `number`, default: `10`
+
+* **`rateLimitTimeWindow`**
+
+  `number`, default: `86400000`
+
+* **`refillAmount`**
+
+  `number`
+
+* **`refillInterval`**
+
+  `number`
+
+* **`remaining`**
+
+  `number`
+
+* **`requestCount`**
+
+  `number`, default: `0`
+
+* **`start`**
+
+  `string`
+
+* **`updatedAt`**
+
+  `string`, format: `date-time`
+
+* **`userId`**
+
+  `string`
+
+**Example:**
+
+```json
+{
+  "id": "",
+  "name": "",
+  "start": "",
+  "prefix": "",
+  "key": "",
+  "userId": "",
+  "refillInterval": 1,
+  "refillAmount": 1,
+  "lastRefillAt": "",
+  "enabled": true,
+  "rateLimitEnabled": true,
+  "rateLimitTimeWindow": 86400000,
+  "rateLimitMax": 10,
+  "requestCount": 0,
+  "remaining": 1,
+  "lastRequest": "",
+  "expiresAt": "",
+  "createdAt": "",
+  "updatedAt": "",
+  "permissions": "",
+  "metadata": ""
+}
+```
