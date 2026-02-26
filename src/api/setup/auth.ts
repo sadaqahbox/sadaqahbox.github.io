@@ -18,5 +18,28 @@ export async function handleAuthRoute(c: Context<{ Bindings: Env }>): Promise<Re
         cf
     );
     const res = await auth.handler(c.req.raw);
-    return c.newResponse(res.body, res);
+    
+    // Merge better-auth response headers with any headers already set on the context (e.g., CORS)
+    const headers = new Headers(res.headers);
+    
+    // Copy CORS headers from context if they were set by the CORS middleware
+    const corsOrigin = c.res.headers.get("Access-Control-Allow-Origin");
+    if (corsOrigin) {
+        headers.set("Access-Control-Allow-Origin", corsOrigin);
+    }
+    const corsCredentials = c.res.headers.get("Access-Control-Allow-Credentials");
+    if (corsCredentials) {
+        headers.set("Access-Control-Allow-Credentials", corsCredentials);
+    }
+    const vary = c.res.headers.get("Vary");
+    if (vary) {
+        headers.set("Vary", vary);
+    }
+    
+    // Use native Response constructor to properly pass status, statusText and headers
+    return new Response(res.body, {
+        status: res.status,
+        statusText: res.statusText,
+        headers,
+    });
 }
