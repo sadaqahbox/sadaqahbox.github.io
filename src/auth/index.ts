@@ -81,7 +81,9 @@ function createAuth(env?: AuthEnv, cf?: IncomingRequestCfProperties) {
                         }
                     }),
                     passkey(),
-                    apiKey(),
+                    apiKey({
+                        enableSessionForAPIKeys: true,
+                    }),
                 ],
                 rateLimit: {
                     enabled: true,

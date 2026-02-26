@@ -18,7 +18,9 @@ export const docsAuth = betterAuth({
       }
     }),
     passkey(),
-    apiKey(),
+    apiKey({
+      enableSessionForAPIKeys: true,
+    }),
   ],
 });
 
