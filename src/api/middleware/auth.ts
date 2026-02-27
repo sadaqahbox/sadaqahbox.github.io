@@ -1,8 +1,8 @@
 /**
  * Authentication middleware
- * 
+ *
  * Uses better-auth's built-in session verification for secure authentication.
- * Falls back to manual verification for edge cases.
+ * Supports both session cookies and API key authentication.
  */
 
 import type { Context, Next } from "hono";
@@ -23,28 +23,48 @@ declare module "hono" {
 
 /**
  * Middleware to require authentication
- * Uses better-auth's built-in session API for verification
+ * Supports both session cookies and API key authentication
  */
 export async function requireAuth(c: Context<{ Bindings: Env }>, next: Next) {
   const auth = createAuth({ DB: c.env.DB });
-  
-  try {
-    // Use better-auth's getSession API
-    const session = await auth.api.getSession({
-      headers: c.req.raw.headers,
-    });
 
-    if (!session || !session.user) {
-      return c.json(
-        { success: false, error: "Unauthorized - No valid session" },
-        401
-      );
+  try {
+    // Check if API key is provided
+    const apiKey = c.req.header("x-api-key");
+    let userId: string | null = null;
+
+    if (apiKey) {
+      // Verify API key using better-auth's API
+      const apiKeyResult = await auth.api.verifyApiKey({
+        body: {
+          key: apiKey,
+        },
+      });
+
+      if (apiKeyResult.valid && apiKeyResult.key) {
+        userId = apiKeyResult.key.userId;
+      }
+    }
+
+    // If no valid API key, try session cookie
+    if (!userId) {
+      const session = await auth.api.getSession({
+        headers: c.req.raw.headers,
+      });
+
+      if (!session || !session.user) {
+        return c.json(
+          { success: false, error: "Unauthorized - No valid session or API key" },
+          401
+        );
+      }
+      userId = session.user.id;
     }
 
     // Fetch full user details including role and banned status
     const db = getDbFromContext(c);
     const userResult = await db.query.users.findFirst({
-      where: (users, { eq }) => eq(users.id, session.user.id),
+      where: (users, { eq }) => eq(users.id, userId!),
       columns: {
         id: true,
         email: true,
@@ -80,7 +100,7 @@ export async function requireAuth(c: Context<{ Bindings: Env }>, next: Next) {
   } catch (error) {
     console.error("Auth middleware error:", error);
     return c.json(
-      { success: false, error: "Unauthorized - Session verification failed" },
+      { success: false, error: "Unauthorized - Authentication failed" },
       401
     );
   }
@@ -107,14 +127,14 @@ export function isAdmin(c: Context<{ Bindings: Env }>): boolean {
  */
 export async function requireAdmin(c: Context<{ Bindings: Env }>, next: Next) {
   const user = c.get("user");
-  
+
   if (!user) {
     return c.json(
       { success: false, error: "Unauthorized - Authentication required" },
       401
     );
   }
-  
+
   if (user.role !== "admin") {
     return c.json(
       { success: false, error: "Forbidden - Admin access required" },
@@ -127,21 +147,45 @@ export async function requireAdmin(c: Context<{ Bindings: Env }>, next: Next) {
 
 /**
  * Optional auth middleware - sets user if authenticated, continues regardless
- * Useful for public endpoints that have enhanced features for logged-in users
+ * Supports both session cookies and API key authentication
  */
 export async function optionalAuth(c: Context<{ Bindings: Env }>, next: Next) {
   const auth = createAuth({ DB: c.env.DB });
-  
-  try {
-    const session = await auth.api.getSession({
-      headers: c.req.raw.headers,
-    });
 
-    if (session?.user) {
-      // Fetch full user details including role
+  try {
+    // Check if API key is provided
+    const apiKey = c.req.header("x-api-key");
+    let userId: string | null = null;
+
+    if (apiKey) {
+      // Verify API key using better-auth's API
+      const apiKeyResult = await auth.api.verifyApiKey({
+        body: {
+          key: apiKey,
+        },
+      });
+
+      if (apiKeyResult.valid && apiKeyResult.key) {
+        userId = apiKeyResult.key.userId;
+      }
+    }
+
+    // If no valid API key, try session cookie
+    if (!userId) {
+      const session = await auth.api.getSession({
+        headers: c.req.raw.headers,
+      });
+
+      if (session?.user) {
+        userId = session.user.id;
+      }
+    }
+
+    // Fetch user details if we have a userId
+    if (userId) {
       const db = getDbFromContext(c);
       const userResult = await db.query.users.findFirst({
-        where: (users, { eq }) => eq(users.id, session.user.id),
+        where: (users, { eq }) => eq(users.id, userId!),
         columns: {
           id: true,
           email: true,
