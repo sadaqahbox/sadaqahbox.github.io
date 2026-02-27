@@ -2,7 +2,7 @@
  * Authentication middleware
  *
  * Uses better-auth's built-in session verification for secure authentication.
- * Supports both session cookies and API key authentication.
+ * Supports both session cookies and API key authentication (via enableSessionForAPIKeys).
  */
 
 import type { Context, Next } from "hono";
@@ -24,47 +24,30 @@ declare module "hono" {
 /**
  * Middleware to require authentication
  * Supports both session cookies and API key authentication
+ * Uses better-auth's enableSessionForAPIKeys feature for seamless API key handling
  */
 export async function requireAuth(c: Context<{ Bindings: Env }>, next: Next) {
   const auth = createAuth({ DB: c.env.DB });
 
   try {
-    // Check if API key is provided
-    const apiKey = c.req.header("x-api-key");
-    let userId: string | null = null;
+    // getSession handles both session cookies and API keys (when enableSessionForAPIKeys is enabled)
+    const session = await auth.api.getSession({
+      headers: c.req.raw.headers,
+    });
 
-    if (apiKey) {
-      // Verify API key using better-auth's API
-      const apiKeyResult = await auth.api.verifyApiKey({
-        body: {
-          key: apiKey,
-        },
-      });
-
-      if (apiKeyResult.valid && apiKeyResult.key) {
-        userId = apiKeyResult.key.userId;
-      }
+    if (!session || !session.user) {
+      return c.json(
+        { success: false, error: "Unauthorized - No valid session or API key" },
+        401
+      );
     }
 
-    // If no valid API key, try session cookie
-    if (!userId) {
-      const session = await auth.api.getSession({
-        headers: c.req.raw.headers,
-      });
-
-      if (!session || !session.user) {
-        return c.json(
-          { success: false, error: "Unauthorized - No valid session or API key" },
-          401
-        );
-      }
-      userId = session.user.id;
-    }
+    const userId = session.user.id;
 
     // Fetch full user details including role and banned status
     const db = getDbFromContext(c);
     const userResult = await db.query.users.findFirst({
-      where: (users, { eq }) => eq(users.id, userId!),
+      where: (users, { eq }) => eq(users.id, userId),
       columns: {
         id: true,
         email: true,
@@ -153,39 +136,17 @@ export async function optionalAuth(c: Context<{ Bindings: Env }>, next: Next) {
   const auth = createAuth({ DB: c.env.DB });
 
   try {
-    // Check if API key is provided
-    const apiKey = c.req.header("x-api-key");
-    let userId: string | null = null;
+    // getSession handles both session cookies and API keys
+    const session = await auth.api.getSession({
+      headers: c.req.raw.headers,
+    });
 
-    if (apiKey) {
-      // Verify API key using better-auth's API
-      const apiKeyResult = await auth.api.verifyApiKey({
-        body: {
-          key: apiKey,
-        },
-      });
-
-      if (apiKeyResult.valid && apiKeyResult.key) {
-        userId = apiKeyResult.key.userId;
-      }
-    }
-
-    // If no valid API key, try session cookie
-    if (!userId) {
-      const session = await auth.api.getSession({
-        headers: c.req.raw.headers,
-      });
-
-      if (session?.user) {
-        userId = session.user.id;
-      }
-    }
-
-    // Fetch user details if we have a userId
-    if (userId) {
+    // If we have a valid session, fetch and set user details
+    if (session?.user) {
+      const userId = session.user.id;
       const db = getDbFromContext(c);
       const userResult = await db.query.users.findFirst({
-        where: (users, { eq }) => eq(users.id, userId!),
+        where: (users, { eq }) => eq(users.id, userId),
         columns: {
           id: true,
           email: true,

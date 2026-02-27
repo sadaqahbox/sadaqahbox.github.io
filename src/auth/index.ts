@@ -5,7 +5,7 @@ import { admin, apiKey, openAPI } from "better-auth/plugins";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { drizzle } from "drizzle-orm/d1";
 import { schema } from "../db";
-import { passkey } from "@better-auth/passkey"
+import { passkey } from "@better-auth/passkey";
 
 // Use KVNamespace from @cloudflare/workers-types to match better-auth-cloudflare
 type AuthEnv = {
@@ -83,6 +83,12 @@ function createAuth(env?: AuthEnv, cf?: IncomingRequestCfProperties) {
                     passkey(),
                     apiKey({
                         enableSessionForAPIKeys: true,
+                        apiKeyHeaders: ["x-api-key", "X-API-Key"],
+                        rateLimit: {
+                            enabled: true,
+                            timeWindow: 1000 * 60 * 60, // 1 hour window
+                            maxRequests: 1000, // 1000 requests per hour
+                        },
                     }),
                 ],
                 rateLimit: {

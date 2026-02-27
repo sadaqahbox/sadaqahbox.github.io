@@ -22,17 +22,26 @@ export const openApiConfig: OpenAPIObject = {
     ],
     components: {
         securitySchemes: {
+            // Session cookie authentication (better-auth session token)
             apiKeyCookie: {
                 type: "apiKey",
                 in: "cookie",
-                name: "better-auth.session_token",
+                name: "sadaqahbox.session_token",
                 description: "Session token cookie from better-auth",
             },
+            // Bearer token authentication (for API keys)
             bearerAuth: {
                 type: "http",
                 scheme: "bearer",
-                bearerFormat: "JWT",
-                description: "Bearer token authentication",
+                bearerFormat: "API Key",
+                description: "API Key authentication via Bearer token or x-api-key header",
+            },
+            // API Key header authentication (alternative to bearer)
+            apiKeyHeader: {
+                type: "apiKey",
+                in: "header",
+                name: "x-api-key",
+                description: "API Key provided in x-api-key header",
             },
         },
     },

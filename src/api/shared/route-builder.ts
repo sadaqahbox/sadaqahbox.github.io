@@ -91,6 +91,7 @@ export function buildRoute<
 			security: [
 				{ apiKeyCookie: [] },
 				{ bearerAuth: [] },
+				{ apiKeyHeader: [] },
 			],
 		} : {}),
 	});
