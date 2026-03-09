@@ -65,14 +65,6 @@ interface ApiResponse {
   source: string;
 }
 
-// Custom error for quick bailout
-class ApiSkipError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "ApiSkipError";
-  }
-}
-
 export function calculateGoldValue(usdValue: number, xauUsdValue: number): number {
   if (xauUsdValue <= 0) return 0;
   return usdValue / xauUsdValue;
@@ -225,13 +217,15 @@ export class ExchangeRateService {
       }
     }
 
-    // Mark currencies that weren't found
-    for (const code of codesNeedingAttempt) {
-      if (!apiResults.rates.has(code)) {
-        notFound.push(code);
-        // Record that we tried but didn't find this currency
-        await this.attemptRepo.recordNotFound(code);
-      }
+    // Mark currencies that weren't found - batch operation
+    const notFoundCodes = codesNeedingAttempt.filter(code => !apiResults.rates.has(code));
+    for (const code of notFoundCodes) {
+      notFound.push(code);
+    }
+    
+    // Record not-found in batch
+    if (notFoundCodes.length > 0) {
+      await this.attemptRepo.recordBatchNotFound(notFoundCodes);
     }
 
     return {
@@ -255,21 +249,6 @@ export class ExchangeRateService {
     const errors: string[] = [];
     const foundCodes = new Set<string>();
 
-    // Define API fetchers - grouped by type for efficient parallel execution
-    // Fiat APIs (return many currencies at once)
-    const fiatApiFetchers = [
-      { name: "fawazahmed0", fetch: () => this.fetchFromFawazAhmed0() },
-      { name: "exchangerate-api", fetch: () => this.fetchFromExchangeRateAPI() },
-      { name: "frankfurter", fetch: () => this.fetchFromFrankfurter() },
-      { name: "exchangerate-host", fetch: () => this.fetchFromExchangerateHost() },
-    ];
-
-    // Crypto APIs (return crypto prices)
-    const cryptoApiFetchers = [
-      { name: "cryptocompare", fetch: () => this.fetchFromCryptoCompare() },
-      { name: "coingecko", fetch: () => this.fetchFromCoinGecko() },
-    ];
-
     // Check if we need crypto rates
     const cryptoCodes = new Set([
       "BTC", "ETH", "BNB", "XRP", "ADA", "SOL", "DOT", "DOGE",
@@ -281,44 +260,21 @@ export class ExchangeRateService {
     const needsCrypto = codes.some(c => cryptoCodes.has(c));
 
     // Run fiat APIs in parallel first (they return the most currencies)
-    const fiatPromises = fiatApiFetchers.map(async (api) => {
-      try {
-        logger.info(`Trying API: ${api.name}`);
-        const response = await api.fetch();
-
-        if (response && response.rates.size > 0) {
-          logger.info(`${api.name} returned ${response.rates.size} rates`);
-          return { api: api.name, response, error: null };
-        }
-        return { api: api.name, response: null, error: "No rates returned" };
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        logger.warn(`${api.name} failed: ${errorMsg}`);
-        return { api: api.name, response: null, error: errorMsg };
-      }
-    });
-
-    // Wait for all fiat APIs to complete (they're fast and comprehensive)
-    const fiatResults = await Promise.all(fiatPromises);
+    // Only run first API for speed, fallback to others only if it fails
+    const fiatResults = await this.tryFiatApis();
 
     // Process fiat results
-    const savePromises: Promise<void>[] = [];
-    for (const result of fiatResults) {
-      if (result.response && result.response.rates.size > 0) {
-        for (const [code, rate] of result.response.rates) {
-          if (!allRates.has(code)) {
-            allRates.set(code, rate);
-          }
-          if (codes.includes(code)) {
-            foundCodes.add(code);
-          }
-          savePromises.push(
-            this.attemptRepo.recordSuccess(code, rate, result.api)
-          );
-        }
-      } else if (result.error) {
-        errors.push(`${result.api}: ${result.error}`);
+    for (const [code, rate] of fiatResults.rates) {
+      if (!allRates.has(code)) {
+        allRates.set(code, rate);
       }
+      if (codes.includes(code)) {
+        foundCodes.add(code);
+      }
+    }
+    
+    if (fiatResults.errors.length > 0) {
+      errors.push(...fiatResults.errors);
     }
 
     // Check if we found all requested codes
@@ -326,53 +282,108 @@ export class ExchangeRateService {
     
     // Only run crypto APIs if we need them and haven't found all codes
     if (needsCrypto && !allFound) {
-      const cryptoPromises = cryptoApiFetchers.map(async (api) => {
-        try {
-          logger.info(`Trying crypto API: ${api.name}`);
-          const response = await api.fetch();
+      const cryptoResults = await this.tryCryptoApis();
 
-          if (response && response.rates.size > 0) {
-            logger.info(`${api.name} returned ${response.rates.size} rates`);
-            return { api: api.name, response, error: null };
-          }
-          return { api: api.name, response: null, error: "No rates returned" };
-        } catch (error) {
-          const errorMsg = error instanceof Error ? error.message : String(error);
-          logger.warn(`${api.name} failed: ${errorMsg}`);
-          return { api: api.name, response: null, error: errorMsg };
+      for (const [code, rate] of cryptoResults.rates) {
+        if (!allRates.has(code)) {
+          allRates.set(code, rate);
         }
-      });
-
-      const cryptoResults = await Promise.all(cryptoPromises);
-
-      for (const result of cryptoResults) {
-        if (result.response && result.response.rates.size > 0) {
-          for (const [code, rate] of result.response.rates) {
-            if (!allRates.has(code)) {
-              allRates.set(code, rate);
-            }
-            if (codes.includes(code)) {
-              foundCodes.add(code);
-            }
-            savePromises.push(
-              this.attemptRepo.recordSuccess(code, rate, result.api)
-            );
-          }
-        } else if (result.error) {
-          errors.push(`${result.api}: ${result.error}`);
+        if (codes.includes(code)) {
+          foundCodes.add(code);
         }
+      }
+      
+      if (cryptoResults.errors.length > 0) {
+        errors.push(...cryptoResults.errors);
       }
     }
 
-    // Wait for all attempt records to complete
-    await Promise.all(savePromises);
-
-    // Batch update the currencies table with the fetched rates
+    // Batch save all rates to database (single transaction)
     if (allRates.size > 0) {
-      await this.updateCurrencyRatesBatch(allRates);
+      await this.batchSaveRates(allRates, fiatResults.source || "unknown");
     }
 
     return { rates: allRates, errors };
+  }
+
+  /**
+   * Try fiat APIs in sequence (first successful wins)
+   */
+  private async tryFiatApis(): Promise<{ rates: Map<string, number>; errors: string[]; source: string }> {
+    const errors: string[] = [];
+    
+    // Define API fetchers in priority order - only try first successful
+    const apiFetchers = [
+      { name: "fawazahmed0", fetch: () => this.fetchFromFawazAhmed0() },
+      { name: "exchangerate-api", fetch: () => this.fetchFromExchangeRateAPI() },
+      { name: "frankfurter", fetch: () => this.fetchFromFrankfurter() },
+      { name: "exchangerate-host", fetch: () => this.fetchFromExchangerateHost() },
+    ];
+
+    for (const api of apiFetchers) {
+      try {
+        logger.info(`Trying API: ${api.name}`);
+        const response = await api.fetch();
+
+        if (response && response.rates.size > 0) {
+          logger.info(`${api.name} returned ${response.rates.size} rates`);
+          return { rates: response.rates, errors: [], source: api.name };
+        }
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        logger.warn(`${api.name} failed: ${errorMsg}`);
+        errors.push(`${api.name}: ${errorMsg}`);
+      }
+    }
+
+    return { rates: new Map(), errors, source: "" };
+  }
+
+  /**
+   * Try crypto APIs in sequence (first successful wins)
+   */
+  private async tryCryptoApis(): Promise<{ rates: Map<string, number>; errors: string[] }> {
+    const errors: string[] = [];
+    
+    const apiFetchers = [
+      { name: "cryptocompare", fetch: () => this.fetchFromCryptoCompare() },
+      { name: "coingecko", fetch: () => this.fetchFromCoinGecko() },
+    ];
+
+    for (const api of apiFetchers) {
+      try {
+        logger.info(`Trying crypto API: ${api.name}`);
+        const response = await api.fetch();
+
+        if (response && response.rates.size > 0) {
+          logger.info(`${api.name} returned ${response.rates.size} rates`);
+          return { rates: response.rates, errors: [] };
+        }
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        logger.warn(`${api.name} failed: ${errorMsg}`);
+        errors.push(`${api.name}: ${errorMsg}`);
+      }
+    }
+
+    return { rates: new Map(), errors };
+  }
+
+  /**
+   * Batch save rates to database - single operation per table
+   */
+  private async batchSaveRates(rates: Map<string, number>, source: string): Promise<void> {
+    if (rates.size === 0) return;
+
+    // Save to currency_rate_attempt table (batch)
+    const results: Array<{ code: string; found: boolean; usdValue?: number; sourceApi?: string }> = [];
+    for (const [code, usdValue] of rates) {
+      results.push({ code, found: true, usdValue, sourceApi: source });
+    }
+    await this.attemptRepo.recordBatchSuccess(results);
+
+    // Update currencies table (batch)
+    await this.updateCurrencyRatesBatch(rates);
   }
 
   /**
@@ -632,31 +643,25 @@ export class ExchangeRateService {
       { name: "goldprice.org", fetch: () => this.fetchGoldFromGoldPrice() }
     );
 
-    // Try APIs in parallel for faster response
-    const promises = goldApis.map(async (api) => {
+    // Try APIs in sequence (first successful wins)
+    for (const api of goldApis) {
       try {
         const price = await api.fetch();
         if (price > 0) {
           logger.info(`Gold price from ${api.name}: $${price}`);
           return price;
         }
-        return null;
       } catch (error) {
         logger.warn(`${api.name} failed for gold price: ${error instanceof Error ? error.message : String(error)}`);
-        return null;
       }
-    });
+    }
 
-    // Use Promise.race with a wrapper that filters out nulls
-    const results = await Promise.all(promises);
-    const validPrice = results.find(p => p !== null && p > 0);
-    
-    return validPrice ?? 0;
+    return 0;
   }
 
   private async fetchGoldFromGoldAPI(): Promise<number> {
     if (!GOLD_API_TOKEN) {
-      throw new ApiSkipError("No API token configured");
+      throw new Error("No API token configured");
     }
 
     const response = await fetchWithTimeout("https://www.goldapi.io/api/XAU/USD", {
@@ -754,7 +759,7 @@ export class ExchangeRateService {
     const now = new Date();
 
     if (byId) {
-      // Update by ID (for updateCurrencyValues)
+      // Update by ID (for updateCurrencyValues) - sequential to avoid DB limits
       for (const [id, usdValue] of rates) {
         try {
           await this.db
@@ -770,16 +775,15 @@ export class ExchangeRateService {
       }
     } else {
       // Update by code (for API results)
-      const currencyEntity = new CurrencyEntity(this.db);
+      const codes = Array.from(rates.keys());
       
       // Get all currencies that match the codes
-      const codes = Array.from(rates.keys());
       const existingCurrencies = await this.db
         .select()
         .from(currencies)
         .where(inArray(sql`UPPER(${currencies.code})`, codes));
 
-      // Update each existing currency
+      // Update each existing currency sequentially to avoid DB limits
       for (const currency of existingCurrencies) {
         const usdValue = rates.get(currency.code.toUpperCase());
         if (usdValue !== undefined) {
@@ -837,11 +841,12 @@ export class ExchangeRateService {
     const currencyEntity = new CurrencyEntity(this.db);
     const allCurrencies = await currencyEntity.list();
 
-    // Batch clear rates
-    await this.db
-      .update(currencies)
-      .set({ lastRateUpdate: null })
-      .where(inArray(currencies.id, allCurrencies.map(c => c.id)));
+    for (const currency of allCurrencies) {
+      await this.db
+        .update(currencies)
+        .set({ lastRateUpdate: null })
+        .where(eq(currencies.id, currency.id));
+    }
 
     return this.updateCurrencyValues();
   }

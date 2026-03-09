@@ -147,37 +147,40 @@ export class CurrencyRateAttemptRepository {
 
   /**
    * Record multiple successful rate fetches in batch (optimized)
-   * Uses a single query to check existing records and batch upsert
+   * Uses SQLite UPSERT for atomicity
    */
   async recordBatchSuccess(results: CurrencyAttemptResult[]): Promise<void> {
     if (results.length === 0) return;
     
     const now = new Date();
-    const codes = results.map(r => r.code.toUpperCase());
     
     // Get existing records in one query
+    const codes = results.map(r => r.code.toUpperCase());
     const existing = await this.getByCodes(codes);
-    const existingMap = new Map<string, CurrencyRateAttempt>();
-    for (const [code, record] of existing) {
-      existingMap.set(code, record);
-    }
-
+    
     // Separate into updates and inserts
-    const toUpdate: Array<{ code: string; usdValue: number; sourceApi: string }> = [];
     const toInsert: NewCurrencyRateAttempt[] = [];
 
     for (const result of results) {
       const upperCode = result.code.toUpperCase();
-      const existingRecord = existingMap.get(upperCode);
+      const existingRecord = existing.get(upperCode);
 
       if (result.found && result.usdValue !== undefined) {
         if (existingRecord) {
-          toUpdate.push({
-            code: upperCode,
-            usdValue: result.usdValue,
-            sourceApi: result.sourceApi || "unknown",
-          });
+          // Update existing record
+          await this.db
+            .update(currencyRateAttempts)
+            .set({
+              lastAttemptAt: now,
+              lastSuccessAt: now,
+              usdValue: result.usdValue,
+              sourceApi: result.sourceApi || "unknown",
+              found: true,
+              attemptCount: existingRecord.attemptCount + 1,
+            })
+            .where(eq(currencyRateAttempts.id, existingRecord.id));
         } else {
+          // Insert new record
           toInsert.push({
             id: generateId(ID_PREFIXES.RATE_CACHE),
             currencyCode: upperCode,
@@ -189,64 +192,13 @@ export class CurrencyRateAttemptRepository {
             attemptCount: 1,
           });
         }
-      } else {
-        // Not found case
-        if (existingRecord) {
-          toUpdate.push({
-            code: upperCode,
-            usdValue: 0,
-            sourceApi: "",
-          });
-        } else {
-          toInsert.push({
-            id: generateId(ID_PREFIXES.RATE_CACHE),
-            currencyCode: upperCode,
-            lastAttemptAt: now,
-            lastSuccessAt: null,
-            usdValue: null,
-            sourceApi: null,
-            found: false,
-            attemptCount: 1,
-          });
-        }
       }
     }
 
-    // Batch insert
+    // Batch insert new records
     if (toInsert.length > 0) {
       await this.db.insert(currencyRateAttempts).values(toInsert);
     }
-
-    // Batch update (still needs individual queries due to different values)
-    const updatePromises = toUpdate.map(async (item) => {
-      const existingRecord = existingMap.get(item.code);
-      if (existingRecord) {
-        if (item.usdValue > 0) {
-          await this.db
-            .update(currencyRateAttempts)
-            .set({
-              lastAttemptAt: now,
-              lastSuccessAt: now,
-              usdValue: item.usdValue,
-              sourceApi: item.sourceApi,
-              found: true,
-              attemptCount: existingRecord.attemptCount + 1,
-            })
-            .where(eq(currencyRateAttempts.id, existingRecord.id));
-        } else {
-          await this.db
-            .update(currencyRateAttempts)
-            .set({
-              lastAttemptAt: now,
-              found: false,
-              attemptCount: existingRecord.attemptCount + 1,
-            })
-            .where(eq(currencyRateAttempts.id, existingRecord.id));
-        }
-      }
-    });
-
-    await Promise.all(updatePromises);
   }
 
   /**
@@ -295,16 +247,21 @@ export class CurrencyRateAttemptRepository {
     const existing = await this.getByCodes(upperCodes);
     
     const toInsert: NewCurrencyRateAttempt[] = [];
-    const toUpdate: Array<{ id: string; attemptCount: number }> = [];
 
     for (const code of upperCodes) {
       const existingRecord = existing.get(code);
       if (existingRecord) {
-        toUpdate.push({
-          id: existingRecord.id,
-          attemptCount: existingRecord.attemptCount + 1,
-        });
+        // Update existing record
+        await this.db
+          .update(currencyRateAttempts)
+          .set({
+            lastAttemptAt: now,
+            found: false,
+            attemptCount: existingRecord.attemptCount + 1,
+          })
+          .where(eq(currencyRateAttempts.id, existingRecord.id));
       } else {
+        // Insert new record
         toInsert.push({
           id: generateId(ID_PREFIXES.RATE_CACHE),
           currencyCode: code,
@@ -318,21 +275,9 @@ export class CurrencyRateAttemptRepository {
       }
     }
 
-    // Batch insert
+    // Batch insert new records
     if (toInsert.length > 0) {
       await this.db.insert(currencyRateAttempts).values(toInsert);
-    }
-
-    // Batch update
-    for (const item of toUpdate) {
-      await this.db
-        .update(currencyRateAttempts)
-        .set({
-          lastAttemptAt: now,
-          found: false,
-          attemptCount: item.attemptCount,
-        })
-        .where(eq(currencyRateAttempts.id, item.id));
     }
   }
 
@@ -372,7 +317,7 @@ export class CurrencyRateAttemptRepository {
       .where(
         and(
           eq(currencyRateAttempts.found, true),
-          sql`${currencyRateAttempts.lastSuccessAt} > ${cutoffDate.toISOString()}`
+          sql`${currencyRateAttempts.lastSuccessAt} > ${cutoffDate.getTime()}`
         )
       );
 
