@@ -146,6 +146,110 @@ export class CurrencyRateAttemptRepository {
   }
 
   /**
+   * Record multiple successful rate fetches in batch (optimized)
+   * Uses a single query to check existing records and batch upsert
+   */
+  async recordBatchSuccess(results: CurrencyAttemptResult[]): Promise<void> {
+    if (results.length === 0) return;
+    
+    const now = new Date();
+    const codes = results.map(r => r.code.toUpperCase());
+    
+    // Get existing records in one query
+    const existing = await this.getByCodes(codes);
+    const existingMap = new Map<string, CurrencyRateAttempt>();
+    for (const [code, record] of existing) {
+      existingMap.set(code, record);
+    }
+
+    // Separate into updates and inserts
+    const toUpdate: Array<{ code: string; usdValue: number; sourceApi: string }> = [];
+    const toInsert: NewCurrencyRateAttempt[] = [];
+
+    for (const result of results) {
+      const upperCode = result.code.toUpperCase();
+      const existingRecord = existingMap.get(upperCode);
+
+      if (result.found && result.usdValue !== undefined) {
+        if (existingRecord) {
+          toUpdate.push({
+            code: upperCode,
+            usdValue: result.usdValue,
+            sourceApi: result.sourceApi || "unknown",
+          });
+        } else {
+          toInsert.push({
+            id: generateId(ID_PREFIXES.RATE_CACHE),
+            currencyCode: upperCode,
+            lastAttemptAt: now,
+            lastSuccessAt: now,
+            usdValue: result.usdValue,
+            sourceApi: result.sourceApi || "unknown",
+            found: true,
+            attemptCount: 1,
+          });
+        }
+      } else {
+        // Not found case
+        if (existingRecord) {
+          toUpdate.push({
+            code: upperCode,
+            usdValue: 0,
+            sourceApi: "",
+          });
+        } else {
+          toInsert.push({
+            id: generateId(ID_PREFIXES.RATE_CACHE),
+            currencyCode: upperCode,
+            lastAttemptAt: now,
+            lastSuccessAt: null,
+            usdValue: null,
+            sourceApi: null,
+            found: false,
+            attemptCount: 1,
+          });
+        }
+      }
+    }
+
+    // Batch insert
+    if (toInsert.length > 0) {
+      await this.db.insert(currencyRateAttempts).values(toInsert);
+    }
+
+    // Batch update (still needs individual queries due to different values)
+    const updatePromises = toUpdate.map(async (item) => {
+      const existingRecord = existingMap.get(item.code);
+      if (existingRecord) {
+        if (item.usdValue > 0) {
+          await this.db
+            .update(currencyRateAttempts)
+            .set({
+              lastAttemptAt: now,
+              lastSuccessAt: now,
+              usdValue: item.usdValue,
+              sourceApi: item.sourceApi,
+              found: true,
+              attemptCount: existingRecord.attemptCount + 1,
+            })
+            .where(eq(currencyRateAttempts.id, existingRecord.id));
+        } else {
+          await this.db
+            .update(currencyRateAttempts)
+            .set({
+              lastAttemptAt: now,
+              found: false,
+              attemptCount: existingRecord.attemptCount + 1,
+            })
+            .where(eq(currencyRateAttempts.id, existingRecord.id));
+        }
+      }
+    });
+
+    await Promise.all(updatePromises);
+  }
+
+  /**
    * Record a failed/not-found rate fetch
    * This prevents immediate retry of the same currency
    */
@@ -179,17 +283,56 @@ export class CurrencyRateAttemptRepository {
   }
 
   /**
-   * Record multiple successful rate fetches in batch
+   * Record multiple not-found in batch
    */
-  async recordBatchSuccess(results: CurrencyAttemptResult[]): Promise<void> {
-    const now = new Date();
+  async recordBatchNotFound(codes: string[]): Promise<void> {
+    if (codes.length === 0) return;
     
-    for (const result of results) {
-      if (result.found && result.usdValue !== undefined) {
-        await this.recordSuccess(result.code, result.usdValue, result.sourceApi || "unknown");
+    const now = new Date();
+    const upperCodes = codes.map(c => c.toUpperCase());
+    
+    // Get existing records
+    const existing = await this.getByCodes(upperCodes);
+    
+    const toInsert: NewCurrencyRateAttempt[] = [];
+    const toUpdate: Array<{ id: string; attemptCount: number }> = [];
+
+    for (const code of upperCodes) {
+      const existingRecord = existing.get(code);
+      if (existingRecord) {
+        toUpdate.push({
+          id: existingRecord.id,
+          attemptCount: existingRecord.attemptCount + 1,
+        });
       } else {
-        await this.recordNotFound(result.code);
+        toInsert.push({
+          id: generateId(ID_PREFIXES.RATE_CACHE),
+          currencyCode: code,
+          lastAttemptAt: now,
+          lastSuccessAt: null,
+          usdValue: null,
+          sourceApi: null,
+          found: false,
+          attemptCount: 1,
+        });
       }
+    }
+
+    // Batch insert
+    if (toInsert.length > 0) {
+      await this.db.insert(currencyRateAttempts).values(toInsert);
+    }
+
+    // Batch update
+    for (const item of toUpdate) {
+      await this.db
+        .update(currencyRateAttempts)
+        .set({
+          lastAttemptAt: now,
+          found: false,
+          attemptCount: item.attemptCount,
+        })
+        .where(eq(currencyRateAttempts.id, item.id));
     }
   }
 
@@ -216,25 +359,27 @@ export class CurrencyRateAttemptRepository {
   }
 
   /**
-   * Get all cached values that are still valid
+   * Get all cached values that are still valid (optimized with single query)
    */
   async getAllCachedValues(maxAgeMs: number): Promise<Map<string, number>> {
     const cutoffTimestamp = Date.now() - maxAgeMs;
+    const cutoffDate = new Date(cutoffTimestamp);
     
-    // Get all successful attempts and filter by timestamp in memory
-    // SQLite timestamp comparisons can be tricky with Date objects
+    // Use a single query with a WHERE clause to filter by found=true and timestamp
     const results = await this.db
       .select()
       .from(currencyRateAttempts)
-      .where(eq(currencyRateAttempts.found, true));
+      .where(
+        and(
+          eq(currencyRateAttempts.found, true),
+          sql`${currencyRateAttempts.lastSuccessAt} > ${cutoffDate.toISOString()}`
+        )
+      );
 
     const map = new Map<string, number>();
     for (const result of results) {
-      if (result.usdValue !== null && result.lastSuccessAt) {
-        const successTime = new Date(result.lastSuccessAt).getTime();
-        if (successTime > cutoffTimestamp) {
-          map.set(result.currencyCode, result.usdValue);
-        }
+      if (result.usdValue !== null) {
+        map.set(result.currencyCode, result.usdValue);
       }
     }
     return map;
@@ -256,6 +401,18 @@ export class CurrencyRateAttemptRepository {
     await this.db
       .delete(currencyRateAttempts)
       .where(eq(currencyRateAttempts.currencyCode, code.toUpperCase()));
+  }
+
+  /**
+   * Clear all attempts for multiple currencies
+   */
+  async clearForCurrencies(codes: string[]): Promise<void> {
+    if (codes.length === 0) return;
+    
+    const upperCodes = codes.map(c => c.toUpperCase());
+    await this.db
+      .delete(currencyRateAttempts)
+      .where(inArray(currencyRateAttempts.currencyCode, upperCodes));
   }
 
   /**

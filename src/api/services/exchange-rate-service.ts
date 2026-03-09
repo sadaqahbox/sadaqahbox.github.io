@@ -9,8 +9,7 @@
  *   1. Fawaz Ahmed Currency API (comprehensive, free) - Primary
  *   2. ExchangeRate-API (free, no key)
  *   3. Frankfurter API (ECB rates)
- *   4. CurrencyAPI.net (free tier)
- *   5. exchangerate.host (free)
+ *   4. exchangerate.host (free)
  * - Cryptocurrencies:
  *   1. CoinGecko API (free tier)
  *   2. CryptoCompare (free tier)
@@ -22,11 +21,11 @@
  * Rate Limiting Strategy:
  * - Per-currency tracking with 1-hour cooldown
  * - Failed lookups are recorded to prevent immediate retry
- * - APIs are tried sequentially until currency is found
+ * - APIs are tried in parallel for faster response
  * - All returned currencies from successful API calls are cached
  */
 
-import { eq } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import type { Database } from "../../db";
 import { currencies } from "../../db/schema";
 import { CurrencyEntity } from "../entities/currency";
@@ -37,6 +36,7 @@ import { logger } from "../shared/logger";
 const TROY_OUNCE_TO_GRAMS = 31.1034768;
 const COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
 const MAX_CACHE_AGE_MS = 2 * 60 * 60 * 1000; // 2 hours for cached values
+const API_TIMEOUT_MS = 5000; // 5 seconds timeout (reduced from 10s)
 
 // API Keys from environment
 const GOLD_API_TOKEN = process.env.GOLD_API_TOKEN || "";
@@ -65,6 +65,14 @@ interface ApiResponse {
   source: string;
 }
 
+// Custom error for quick bailout
+class ApiSkipError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ApiSkipError";
+  }
+}
+
 export function calculateGoldValue(usdValue: number, xauUsdValue: number): number {
   if (xauUsdValue <= 0) return 0;
   return usdValue / xauUsdValue;
@@ -86,6 +94,24 @@ export function convertGoldToCurrency(
 ): number {
   if (!currencyUsdValue || currencyUsdValue <= 0 || !xauUsdValue || xauUsdValue <= 0) return 0;
   return (goldGrams * xauUsdValue) / currencyUsdValue;
+}
+
+/**
+ * Create an AbortSignal with timeout
+ */
+function timeoutSignal(ms: number): AbortSignal {
+  return AbortSignal.timeout(ms);
+}
+
+/**
+ * Fetch with timeout and error handling
+ */
+async function fetchWithTimeout(url: string, options?: RequestInit): Promise<Response> {
+  const response = await fetch(url, {
+    ...options,
+    signal: timeoutSignal(API_TIMEOUT_MS),
+  });
+  return response;
 }
 
 export class ExchangeRateService {
@@ -188,8 +214,8 @@ export class ExchangeRateService {
       };
     }
 
-    // Step 3: Try APIs for currencies that need fetching
-    const apiResults = await this.tryApisForCurrencies(codesNeedingAttempt);
+    // Step 3: Try APIs in parallel for currencies that need fetching
+    const apiResults = await this.tryApisInParallel(codesNeedingAttempt);
 
     // Process API results
     for (const [code, rate] of apiResults.rates) {
@@ -220,68 +246,130 @@ export class ExchangeRateService {
   }
 
   /**
-   * Try multiple APIs to fetch rates for given currencies
+   * Try multiple APIs in parallel to fetch rates for given currencies
+   * Uses Promise.any pattern for faster first response
    * Returns all successfully fetched rates (including those not specifically requested)
    */
-  private async tryApisForCurrencies(codes: string[]): Promise<{ rates: Map<string, number>; errors: string[] }> {
+  private async tryApisInParallel(codes: string[]): Promise<{ rates: Map<string, number>; errors: string[] }> {
     const allRates = new Map<string, number>();
     const errors: string[] = [];
     const foundCodes = new Set<string>();
 
-    // Define API fetchers in priority order
-    const apiFetchers = [
+    // Define API fetchers - grouped by type for efficient parallel execution
+    // Fiat APIs (return many currencies at once)
+    const fiatApiFetchers = [
       { name: "fawazahmed0", fetch: () => this.fetchFromFawazAhmed0() },
       { name: "exchangerate-api", fetch: () => this.fetchFromExchangeRateAPI() },
       { name: "frankfurter", fetch: () => this.fetchFromFrankfurter() },
       { name: "exchangerate-host", fetch: () => this.fetchFromExchangerateHost() },
+    ];
+
+    // Crypto APIs (return crypto prices)
+    const cryptoApiFetchers = [
       { name: "cryptocompare", fetch: () => this.fetchFromCryptoCompare() },
       { name: "coingecko", fetch: () => this.fetchFromCoinGecko() },
     ];
 
-    for (const api of apiFetchers) {
-      // Skip if we've found all requested codes
-      if (codes.every(c => foundCodes.has(c))) {
-        break;
-      }
+    // Check if we need crypto rates
+    const cryptoCodes = new Set([
+      "BTC", "ETH", "BNB", "XRP", "ADA", "SOL", "DOT", "DOGE",
+      "AVAX", "LINK", "LTC", "UNI", "XLM", "USDT", "USDC", "BCH",
+      "CRO", "DAI", "HBAR", "ICP", "KAS", "LEO", "NEAR", "PEPE",
+      "SHIB", "SUI", "TON", "TRX", "VET", "APT", "MATIC", "ATOM",
+      "FIL", "ETC", "ALGO", "ARB", "OP", "IMX", "GRT", "STX",
+    ]);
+    const needsCrypto = codes.some(c => cryptoCodes.has(c));
 
+    // Run fiat APIs in parallel first (they return the most currencies)
+    const fiatPromises = fiatApiFetchers.map(async (api) => {
       try {
         logger.info(`Trying API: ${api.name}`);
         const response = await api.fetch();
 
         if (response && response.rates.size > 0) {
           logger.info(`${api.name} returned ${response.rates.size} rates`);
-
-          // Save all returned rates (not just requested ones)
-          const savePromises: Promise<void>[] = [];
-
-          for (const [code, rate] of response.rates) {
-            // Store in our results
-            if (!allRates.has(code)) {
-              allRates.set(code, rate);
-            }
-
-            // Mark if this was a requested code
-            if (codes.includes(code)) {
-              foundCodes.add(code);
-            }
-
-            // Record successful fetch for this currency (in attempt tracking)
-            savePromises.push(
-              this.attemptRepo.recordSuccess(code, rate, api.name)
-            );
-          }
-
-          // Wait for all attempt records to complete
-          await Promise.all(savePromises);
-
-          // Also update the currencies table with the fetched rates
-          await this.updateCurrencyRates(response.rates);
+          return { api: api.name, response, error: null };
         }
+        return { api: api.name, response: null, error: "No rates returned" };
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         logger.warn(`${api.name} failed: ${errorMsg}`);
-        errors.push(`${api.name}: ${errorMsg}`);
+        return { api: api.name, response: null, error: errorMsg };
       }
+    });
+
+    // Wait for all fiat APIs to complete (they're fast and comprehensive)
+    const fiatResults = await Promise.all(fiatPromises);
+
+    // Process fiat results
+    const savePromises: Promise<void>[] = [];
+    for (const result of fiatResults) {
+      if (result.response && result.response.rates.size > 0) {
+        for (const [code, rate] of result.response.rates) {
+          if (!allRates.has(code)) {
+            allRates.set(code, rate);
+          }
+          if (codes.includes(code)) {
+            foundCodes.add(code);
+          }
+          savePromises.push(
+            this.attemptRepo.recordSuccess(code, rate, result.api)
+          );
+        }
+      } else if (result.error) {
+        errors.push(`${result.api}: ${result.error}`);
+      }
+    }
+
+    // Check if we found all requested codes
+    const allFound = codes.every(c => foundCodes.has(c));
+    
+    // Only run crypto APIs if we need them and haven't found all codes
+    if (needsCrypto && !allFound) {
+      const cryptoPromises = cryptoApiFetchers.map(async (api) => {
+        try {
+          logger.info(`Trying crypto API: ${api.name}`);
+          const response = await api.fetch();
+
+          if (response && response.rates.size > 0) {
+            logger.info(`${api.name} returned ${response.rates.size} rates`);
+            return { api: api.name, response, error: null };
+          }
+          return { api: api.name, response: null, error: "No rates returned" };
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          logger.warn(`${api.name} failed: ${errorMsg}`);
+          return { api: api.name, response: null, error: errorMsg };
+        }
+      });
+
+      const cryptoResults = await Promise.all(cryptoPromises);
+
+      for (const result of cryptoResults) {
+        if (result.response && result.response.rates.size > 0) {
+          for (const [code, rate] of result.response.rates) {
+            if (!allRates.has(code)) {
+              allRates.set(code, rate);
+            }
+            if (codes.includes(code)) {
+              foundCodes.add(code);
+            }
+            savePromises.push(
+              this.attemptRepo.recordSuccess(code, rate, result.api)
+            );
+          }
+        } else if (result.error) {
+          errors.push(`${result.api}: ${result.error}`);
+        }
+      }
+    }
+
+    // Wait for all attempt records to complete
+    await Promise.all(savePromises);
+
+    // Batch update the currencies table with the fetched rates
+    if (allRates.size > 0) {
+      await this.updateCurrencyRatesBatch(allRates);
     }
 
     return { rates: allRates, errors };
@@ -304,13 +392,9 @@ export class ExchangeRateService {
    * https://github.com/fawazahmed0/exchange-api
    */
   private async fetchFromFawazAhmed0(): Promise<ApiResponse> {
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json",
-      {
-        headers: { Accept: "application/json" },
-        // Add timeout
-        signal: AbortSignal.timeout(10000),
-      }
+      { headers: { Accept: "application/json" } }
     );
 
     if (!response.ok) {
@@ -343,9 +427,8 @@ export class ExchangeRateService {
    * ExchangeRate-API (free, no key required)
    */
   private async fetchFromExchangeRateAPI(): Promise<ApiResponse> {
-    const response = await fetch("https://open.er-api.com/v6/latest/USD", {
+    const response = await fetchWithTimeout("https://open.er-api.com/v6/latest/USD", {
       headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(10000),
     });
 
     if (!response.ok) {
@@ -375,9 +458,8 @@ export class ExchangeRateService {
    * Frankfurter API (ECB rates)
    */
   private async fetchFromFrankfurter(): Promise<ApiResponse> {
-    const response = await fetch("https://api.frankfurter.app/latest?from=USD", {
+    const response = await fetchWithTimeout("https://api.frankfurter.app/latest?from=USD", {
       headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(10000),
     });
 
     if (!response.ok) {
@@ -407,9 +489,8 @@ export class ExchangeRateService {
    * exchangerate.host (free tier)
    */
   private async fetchFromExchangerateHost(): Promise<ApiResponse> {
-    const response = await fetch("https://api.exchangerate.host/latest?base=USD", {
+    const response = await fetchWithTimeout("https://api.exchangerate.host/latest?base=USD", {
       headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(10000),
     });
 
     if (!response.ok) {
@@ -451,12 +532,9 @@ export class ExchangeRateService {
     const tsyms = cryptoCodes.join(",");
     const apiKeyParam = CRYPTOCOMPARE_API_KEY ? `&api_key=${CRYPTOCOMPARE_API_KEY}` : "";
 
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       `https://min-api.cryptocompare.com/data/price?fsym=${fsym}&tsyms=${tsyms}${apiKeyParam}`,
-      {
-        headers: { Accept: "application/json" },
-        signal: AbortSignal.timeout(10000),
-      }
+      { headers: { Accept: "application/json" } }
     );
 
     if (!response.ok) {
@@ -500,9 +578,8 @@ export class ExchangeRateService {
       ? `https://pro-api.coingecko.com/api/v3/simple/price?ids=${cryptoIds.join(",")}&vs_currencies=usd&x_cg_pro_api_key=${COINGECKO_API_KEY}`
       : `https://api.coingecko.com/api/v3/simple/price?ids=${cryptoIds.join(",")}&vs_currencies=usd`;
 
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(10000),
     });
 
     if (!response.ok) {
@@ -538,41 +615,55 @@ export class ExchangeRateService {
 
   /**
    * Fetch gold price in USD per troy ounce
+   * Skips APIs that require tokens if no token is configured
    */
   async fetchGoldPriceUsd(): Promise<number> {
-    // Try APIs in order
-    const goldApis = [
-      { name: "goldapi", fetch: () => this.fetchGoldFromGoldAPI() },
-      { name: "metals.live", fetch: () => this.fetchGoldFromMetalsLive() },
-      { name: "goldprice.org", fetch: () => this.fetchGoldFromGoldPrice() },
-    ];
+    // Build list of available gold APIs (skip those without tokens)
+    const goldApis: Array<{ name: string; fetch: () => Promise<number> }> = [];
 
-    for (const api of goldApis) {
+    // Only add GoldAPI if token is available
+    if (GOLD_API_TOKEN) {
+      goldApis.push({ name: "goldapi", fetch: () => this.fetchGoldFromGoldAPI() });
+    }
+
+    // Always try these free APIs
+    goldApis.push(
+      { name: "metals.live", fetch: () => this.fetchGoldFromMetalsLive() },
+      { name: "goldprice.org", fetch: () => this.fetchGoldFromGoldPrice() }
+    );
+
+    // Try APIs in parallel for faster response
+    const promises = goldApis.map(async (api) => {
       try {
         const price = await api.fetch();
         if (price > 0) {
           logger.info(`Gold price from ${api.name}: $${price}`);
           return price;
         }
+        return null;
       } catch (error) {
-        logger.warn(`${api.name} failed for gold price`);
+        logger.warn(`${api.name} failed for gold price: ${error instanceof Error ? error.message : String(error)}`);
+        return null;
       }
-    }
+    });
 
-    return 0;
+    // Use Promise.race with a wrapper that filters out nulls
+    const results = await Promise.all(promises);
+    const validPrice = results.find(p => p !== null && p > 0);
+    
+    return validPrice ?? 0;
   }
 
   private async fetchGoldFromGoldAPI(): Promise<number> {
     if (!GOLD_API_TOKEN) {
-      throw new Error("No API token");
+      throw new ApiSkipError("No API token configured");
     }
 
-    const response = await fetch("https://www.goldapi.io/api/XAU/USD", {
+    const response = await fetchWithTimeout("https://www.goldapi.io/api/XAU/USD", {
       headers: {
         "x-access-token": GOLD_API_TOKEN,
         "Content-Type": "application/json",
       },
-      signal: AbortSignal.timeout(10000),
     });
 
     if (!response.ok) {
@@ -589,9 +680,8 @@ export class ExchangeRateService {
   }
 
   private async fetchGoldFromMetalsLive(): Promise<number> {
-    const response = await fetch("https://api.metals.live/v1/spot/gold", {
+    const response = await fetchWithTimeout("https://api.metals.live/v1/spot/gold", {
       headers: { "User-Agent": "SadaqahBox/1.0" },
-      signal: AbortSignal.timeout(10000),
     });
 
     if (!response.ok) {
@@ -608,9 +698,8 @@ export class ExchangeRateService {
   }
 
   private async fetchGoldFromGoldPrice(): Promise<number> {
-    const response = await fetch("https://data-asg.goldprice.org/dbXRates/USD", {
+    const response = await fetchWithTimeout("https://data-asg.goldprice.org/dbXRates/USD", {
       headers: { "User-Agent": "SadaqahBox/1.0" },
-      signal: AbortSignal.timeout(10000),
     });
 
     if (!response.ok) {
@@ -648,16 +737,7 @@ export class ExchangeRateService {
 
     // Batch update database
     if (updates.length > 0) {
-      const now = new Date();
-      for (const update of updates) {
-        await this.db
-          .update(currencies)
-          .set({
-            usdValue: update.usdValue,
-            lastRateUpdate: now,
-          })
-          .where(eq(currencies.id, update.id));
-      }
+      await this.updateCurrencyRatesBatch(new Map(updates.map(u => [u.id, u.usdValue])), true);
     }
 
     return {
@@ -667,28 +747,55 @@ export class ExchangeRateService {
   }
 
   /**
-   * Update specific currency rates in the database
+   * Update specific currency rates in the database (batch operation)
    * Called when APIs return rates to ensure currencies table is updated
    */
-  private async updateCurrencyRates(rates: Map<string, number>): Promise<void> {
-    const currencyEntity = new CurrencyEntity(this.db);
+  private async updateCurrencyRatesBatch(rates: Map<string, number>, byId = false): Promise<void> {
     const now = new Date();
 
-    for (const [code, usdValue] of rates) {
-      try {
-        const currency = await currencyEntity.getByCode(code);
-        if (currency) {
+    if (byId) {
+      // Update by ID (for updateCurrencyValues)
+      for (const [id, usdValue] of rates) {
+        try {
           await this.db
             .update(currencies)
             .set({
               usdValue,
               lastRateUpdate: now,
             })
-            .where(eq(currencies.id, currency.id));
-          logger.debug(`Updated ${code} rate in currencies table: ${usdValue}`);
+            .where(eq(currencies.id, id));
+        } catch (error) {
+          logger.warn(`Failed to update currency ${id}`, { error: error instanceof Error ? error.message : String(error) });
         }
-      } catch (error) {
-        logger.warn(`Failed to update ${code} in currencies table`, { error: error instanceof Error ? error.message : String(error) });
+      }
+    } else {
+      // Update by code (for API results)
+      const currencyEntity = new CurrencyEntity(this.db);
+      
+      // Get all currencies that match the codes
+      const codes = Array.from(rates.keys());
+      const existingCurrencies = await this.db
+        .select()
+        .from(currencies)
+        .where(inArray(sql`UPPER(${currencies.code})`, codes));
+
+      // Update each existing currency
+      for (const currency of existingCurrencies) {
+        const usdValue = rates.get(currency.code.toUpperCase());
+        if (usdValue !== undefined) {
+          try {
+            await this.db
+              .update(currencies)
+              .set({
+                usdValue,
+                lastRateUpdate: now,
+              })
+              .where(eq(currencies.id, currency.id));
+            logger.debug(`Updated ${currency.code} rate in currencies table: ${usdValue}`);
+          } catch (error) {
+            logger.warn(`Failed to update ${currency.code} in currencies table`, { error: error instanceof Error ? error.message : String(error) });
+          }
+        }
       }
     }
   }
@@ -730,12 +837,11 @@ export class ExchangeRateService {
     const currencyEntity = new CurrencyEntity(this.db);
     const allCurrencies = await currencyEntity.list();
 
-    for (const currency of allCurrencies) {
-      await this.db
-        .update(currencies)
-        .set({ lastRateUpdate: null })
-        .where(eq(currencies.id, currency.id));
-    }
+    // Batch clear rates
+    await this.db
+      .update(currencies)
+      .set({ lastRateUpdate: null })
+      .where(inArray(currencies.id, allCurrencies.map(c => c.id)));
 
     return this.updateCurrencyValues();
   }
