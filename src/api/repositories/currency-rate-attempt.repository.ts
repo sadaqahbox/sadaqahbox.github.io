@@ -18,6 +18,9 @@ export interface CurrencyAttemptResult {
   sourceApi?: string;
 }
 
+// D1 has a limit on query parameters, so we batch large IN clauses
+const BATCH_SIZE = 50;
+
 export class CurrencyRateAttemptRepository {
   constructor(private db: Database) {}
 
@@ -35,20 +38,27 @@ export class CurrencyRateAttemptRepository {
 
   /**
    * Get multiple attempt records by codes
+   * Batches queries to avoid D1 parameter limits
    */
   async getByCodes(codes: string[]): Promise<Map<string, CurrencyRateAttempt>> {
     if (codes.length === 0) return new Map();
     
-    const upperCodes = codes.map(c => c.toUpperCase());
-    const results = await this.db
-      .select()
-      .from(currencyRateAttempts)
-      .where(inArray(currencyRateAttempts.currencyCode, upperCodes));
-    
+    const upperCodes = [...new Set(codes.map(c => c.toUpperCase()))];
     const map = new Map<string, CurrencyRateAttempt>();
-    for (const result of results) {
-      map.set(result.currencyCode, result);
+    
+    // Batch queries to avoid D1 parameter limit
+    for (let i = 0; i < upperCodes.length; i += BATCH_SIZE) {
+      const batch = upperCodes.slice(i, i + BATCH_SIZE);
+      const results = await this.db
+        .select()
+        .from(currencyRateAttempts)
+        .where(inArray(currencyRateAttempts.currencyCode, batch));
+      
+      for (const result of results) {
+        map.set(result.currencyCode, result);
+      }
     }
+    
     return map;
   }
 
@@ -350,14 +360,20 @@ export class CurrencyRateAttemptRepository {
 
   /**
    * Clear all attempts for multiple currencies
+   * Batches queries to avoid D1 parameter limits
    */
   async clearForCurrencies(codes: string[]): Promise<void> {
     if (codes.length === 0) return;
     
-    const upperCodes = codes.map(c => c.toUpperCase());
-    await this.db
-      .delete(currencyRateAttempts)
-      .where(inArray(currencyRateAttempts.currencyCode, upperCodes));
+    const upperCodes = [...new Set(codes.map(c => c.toUpperCase()))];
+    
+    // Batch deletes to avoid D1 parameter limit
+    for (let i = 0; i < upperCodes.length; i += BATCH_SIZE) {
+      const batch = upperCodes.slice(i, i + BATCH_SIZE);
+      await this.db
+        .delete(currencyRateAttempts)
+        .where(inArray(currencyRateAttempts.currencyCode, batch));
+    }
   }
 
   /**

@@ -83,6 +83,16 @@ export const updateGoldRatesHandler = async (c: Context<{ Bindings: Env }>) => {
 	});
 };
 
+// Sync Cached Rates (Admin only)
+export const syncCachedRatesHandler = async (c: Context<{ Bindings: Env }>) => {
+	const db = getDbFromContext(c);
+	const exchangeRateService = ExchangeRateService.getInstance(db);
+
+	const result = await exchangeRateService.syncCachedRatesToCurrencies();
+
+	return jsonSuccess(c, result);
+};
+
 // ============== Route Definitions ==============
 
 export const currencyRouteDefinitions: RouteDefinition[] = [
@@ -91,4 +101,5 @@ export const currencyRouteDefinitions: RouteDefinition[] = [
 	{ route: routes.getRoute, handler: getHandler, middleware: [requireAuth] },
 	{ route: routes.deleteRoute, handler: deleteHandler, middleware: [requireAuth, requireAdmin] },
 	{ route: routes.updateGoldRatesRoute, handler: updateGoldRatesHandler, middleware: [requireAuth, requireAdmin] },
+	{ route: routes.syncCachedRatesRoute, handler: syncCachedRatesHandler, middleware: [requireAuth, requireAdmin] },
 ];

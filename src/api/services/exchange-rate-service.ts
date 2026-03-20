@@ -27,7 +27,7 @@
 
 import { eq, inArray, sql } from "drizzle-orm";
 import type { Database } from "../../db";
-import { currencies } from "../../db/schema";
+import { currencies, currencyRateAttempts } from "../../db/schema";
 import { CurrencyEntity } from "../entities/currency";
 import { CurrencyRateAttemptRepository } from "../repositories/currency-rate-attempt.repository";
 import { logger } from "../shared/logger";
@@ -776,15 +776,17 @@ export class ExchangeRateService {
     } else {
       // Update by code (for API results)
       const codes = Array.from(rates.keys());
+      const upperCodes = codes.map(c => c.toUpperCase());
       
-      // Get all currencies that match the codes
-      const existingCurrencies = await this.db
-        .select()
-        .from(currencies)
-        .where(inArray(sql`UPPER(${currencies.code})`, codes));
+      // Get all currencies - filter in JS for case-insensitive match
+      // (Drizzle inArray with SQL fragment doesn't work reliably in D1)
+      const allCurrencies = await this.db.select().from(currencies);
+      const matchingCurrencies = allCurrencies.filter(c => 
+        upperCodes.includes(c.code.toUpperCase())
+      );
 
-      // Update each existing currency sequentially to avoid DB limits
-      for (const currency of existingCurrencies) {
+      // Update each matching currency
+      for (const currency of matchingCurrencies) {
         const usdValue = rates.get(currency.code.toUpperCase());
         if (usdValue !== undefined) {
           try {
@@ -849,6 +851,58 @@ export class ExchangeRateService {
     }
 
     return this.updateCurrencyValues();
+  }
+
+  /**
+   * Sync cached rates from currency_rate_attempt to currency table
+   * Used to backfill missing rates after bug fix
+   */
+  async syncCachedRatesToCurrencies(): Promise<{ updated: number; skipped: number }> {
+    const now = new Date();
+    let updated = 0;
+    let skipped = 0;
+
+    // Get all rate attempts with valid usdValue
+    const allAttempts = await this.db
+      .select()
+      .from(currencyRateAttempts)
+      .where(eq(currencyRateAttempts.found, true));
+
+    // Get all currencies
+    const allCurrencies = await this.db.select().from(currencies);
+    const currencyByCode = new Map(
+      allCurrencies.map(c => [c.code.toUpperCase(), c])
+    );
+
+    for (const attempt of allAttempts) {
+      if (attempt.usdValue === null) continue;
+
+      const currency = currencyByCode.get(attempt.currencyCode.toUpperCase());
+      if (!currency) {
+        skipped++;
+        continue;
+      }
+
+      // Only update if usdValue is null or outdated
+      if (currency.usdValue === null || currency.lastRateUpdate === null) {
+        try {
+          await this.db
+            .update(currencies)
+            .set({
+              usdValue: attempt.usdValue,
+              lastRateUpdate: attempt.lastSuccessAt || now,
+            })
+            .where(eq(currencies.id, currency.id));
+          updated++;
+          logger.debug(`Synced ${currency.code} rate: ${attempt.usdValue}`);
+        } catch (error) {
+          logger.warn(`Failed to sync ${currency.code}`, { error: error instanceof Error ? error.message : String(error) });
+        }
+      }
+    }
+
+    logger.info(`Synced ${updated} currency rates, skipped ${skipped}`);
+    return { updated, skipped };
   }
 
   /**

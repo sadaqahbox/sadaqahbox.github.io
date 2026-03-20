@@ -73,3 +73,17 @@ export const updateGoldRatesRoute = buildRoute({
   }), "Returns number of currencies updated"),
   requireAuth: true,
 });
+
+export const syncCachedRatesRoute = buildRoute({
+  method: "post",
+  path: "/api/currencies/sync-cached-rates",
+  tags: ["Currencies"],
+  summary: "Sync cached rates to currencies",
+  description: "Syncs rates from currency_rate_attempt cache to currency table. Admin only.",
+  responses: create200Response(z.object({
+    success: z.boolean(),
+    updated: z.number(),
+    skipped: z.number(),
+  }), "Returns sync results"),
+  requireAuth: true,
+});
