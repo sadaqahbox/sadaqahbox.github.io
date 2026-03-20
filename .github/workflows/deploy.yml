@@ -69,6 +69,8 @@ jobs:
 
       - name: Build static site
         run: bun run build:static
+        env:
+          VITE_API_URL: https://sadaqahbox.apps.erklab.com/api
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

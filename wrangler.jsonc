@@ -21,7 +21,8 @@
 	],
 	"workers_dev": false,
 	"vars": {
-		"ALLOWED_ORIGINS": "https://sadaqahbox.github.io"
+		"ALLOWED_ORIGINS": "https://sadaqahbox.github.io",
+		"BETTER_AUTH_URL": "https://sadaqahbox.apps.erklab.com"
 	},
 	"d1_databases": [
 		{

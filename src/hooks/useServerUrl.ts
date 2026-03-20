@@ -28,11 +28,29 @@ export interface ServerUrlConfig {
 /**
  * Get the effective API base URL
  * Returns the configured URL or falls back to same-origin
+ * 
+ * In static mode (VITE_IS_STATIC_BUILD), we don't auto-connect to VITE_API_URL.
+ * User must explicitly configure via the dialog.
  */
 export function getApiBaseUrl(): string {
     if (typeof window === "undefined") return import.meta.env.VITE_API_URL || "/api";
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored || import.meta.env.VITE_API_URL || DEFAULT_URL || "/api";
+    if (stored) return stored;
+    
+    // In static mode, don't auto-connect - user must explicitly configure
+    if (import.meta.env.VITE_IS_STATIC_BUILD) {
+        return "";
+    }
+    
+    // For fullstack/non-static, use env or same-origin
+    return import.meta.env.VITE_API_URL || DEFAULT_URL || "/api";
+}
+
+/**
+ * Get the preset API URL (for static builds, shown as suggestion)
+ */
+export function getPresetApiUrl(): string {
+    return import.meta.env.VITE_API_URL || "";
 }
 
 /**

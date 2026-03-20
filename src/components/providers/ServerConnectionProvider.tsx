@@ -41,6 +41,14 @@ export function ServerConnectionProvider({ children }: ServerConnectionProviderP
 
         try {
             const apiUrl = getApiBaseUrl();
+            
+            // In static mode without configured URL, don't try to connect
+            if (!apiUrl) {
+                setIsConnected(false);
+                setLastError("No server configured. Click 'Server' to configure.");
+                return false;
+            }
+            
             const fullUrl = apiUrl.startsWith("http")
                 ? `${apiUrl}/health`
                 : `${window.location.origin}${apiUrl}/health`;

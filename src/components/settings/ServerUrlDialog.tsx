@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label";
 import { ServerIcon, CheckIcon, AlertCircleIcon, Loader2Icon, RotateCcwIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useServerConnection } from "@/components/providers";
+import { getPresetApiUrl } from "@/hooks/useServerUrl";
 
 const STORAGE_KEY = "sadaqahbox_server_url";
 
@@ -198,14 +199,16 @@ export function ServerUrlDialog({ children }: { children?: React.ReactNode }) {
                                 <Label htmlFor="server-url" className="text-sm font-semibold tracking-wide text-foreground/80">
                                     Server URL
                                 </Label>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setInputValue("https://sadaqahbox.apps.erklab.com")}
-                                    className="h-7 px-2 text-xs text-primary hover:text-primary hover:bg-primary/10"
-                                >
-                                    Use Official Server
-                                </Button>
+                                {getPresetApiUrl() && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setInputValue(getPresetApiUrl().replace(/\/api$/, ""))}
+                                        className="h-7 px-2 text-xs text-primary hover:text-primary hover:bg-primary/10"
+                                    >
+                                        Use Official Server
+                                    </Button>
+                                )}
                             </div>
                             <Input
                                 id="server-url"
@@ -214,9 +217,11 @@ export function ServerUrlDialog({ children }: { children?: React.ReactNode }) {
                                 onChange={(e) => setInputValue(e.target.value)}
                                 className="font-mono text-base h-12 bg-muted/30 border-border/50 focus-visible:ring-primary/40 focus-visible:border-primary/50 rounded-xl px-4"
                             />
-                            <p className="text-xs text-muted-foreground/70 pl-1">
-                                Supported servers: Official (<a href="https://sadaqahbox.apps.erklab.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">sadaqahbox.apps.erklab.com</a>) or self-hosted
-                            </p>
+                            {getPresetApiUrl() && (
+                                <p className="text-xs text-muted-foreground/70 pl-1">
+                                    Official server: <a href={getPresetApiUrl().replace(/\/api$/, "")} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{getPresetApiUrl().replace(/\/api$/, "").replace(/^https?:\/\//, "")}</a> or self-hosted
+                                </p>
+                            )}
                         </div>
 
                         {testResult && (
